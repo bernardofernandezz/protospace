@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* Tailwind v4: o tema é declarado em CSS; cada token vira utilitário (bg-dna, text-mist, font-display…). */
+@theme {
+  --color-ink: #04060b;
+  --color-abyss: #070c16;
+  --color-petrol: #0a2a33;
+  --color-violet-deep: #1a1033;
+  --color-dna: #3ef0d0;
+  --color-bio: #7dff9b;
+  --color-cas: #ff4fa3;
+  --color-rna: #ffb547;
+  --color-mist: #a9b8c9;
+
+  --font-display: "Space Grotesk Variable", system-ui, sans-serif;
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+  body {
+    @apply bg-ink font-sans text-white antialiased;
+    background-image:
+      radial-gradient(1200px 700px at 85% -10%, rgba(40, 20, 90, 0.45), transparent 60%),
+      radial-gradient(900px 600px at -10% 30%, rgba(10, 60, 70, 0.4), transparent 60%),
+      radial-gradient(1000px 800px at 60% 110%, rgba(60, 15, 70, 0.35), transparent 60%);
+    background-attachment: fixed;
+  }
+  ::selection { background: rgba(62, 240, 208, 0.35); }
+  :focus-visible { outline: 2px solid #3ef0d0; outline-offset: 3px; border-radius: 6px; }
+  h1, h2, h3, h4 { @apply font-display; }
+}
+
+@layer components {
+  .glass {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .hud-btn { @apply grid h-10 min-w-10 place-items-center rounded-xl px-2.5 text-sm text-white/90 transition hover:bg-white/10 active:scale-95; }
+  .hud-label { @apply text-[11px] font-medium uppercase tracking-[0.18em] text-mist/80; }
+  .eyebrow { @apply font-mono text-xs uppercase tracking-[0.3em] text-dna; }
+  .section { @apply relative mx-auto max-w-7xl px-5 py-28 md:px-10 md:py-36; }
+  .h2 { @apply font-display text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl; }
+  .lead { @apply max-w-2xl text-lg leading-relaxed text-mist md:text-xl; }
+  .verify { @apply rounded bg-rna/15 px-1 font-mono text-[0.75em] text-rna; }
+  .text-gradient { @apply bg-linear-to-r from-dna via-bio to-rna bg-clip-text text-transparent; }
+}
+
+.stage:fullscreen { height: 100vh; border-radius: 0; }
+
+/* grão de filme procedural */
+.grain {
+  pointer-events: none; position: fixed; inset: -50%; z-index: 70; opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 1.2s steps(6) infinite;
+}
+@keyframes grain {
+  0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
+}
+
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .has-cursor, .has-cursor * { cursor: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .grain { animation: none; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+.stage:fullscreen, .stage:fullscreen * { cursor: auto !important; }
