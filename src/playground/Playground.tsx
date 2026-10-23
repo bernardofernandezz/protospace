@@ -322,18 +322,18 @@ class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode
   render() { return this.state.failed ? this.props.fallback : this.props.children }
 }
 
-/** QR code do site (modo apresentação): a plateia abre no celular. */
+/** QR code do site (modo apresentação): a plateia abre no celular. Renderizado como imagem (sem injeção de HTML). */
 function Qr() {
   const t = useT()
-  const [svg, setSvg] = useState('')
+  const [src, setSrc] = useState('')
   useEffect(() => {
     const url = new URL(t.lang === 'en' ? '/en/' : '/', location.origin)
-    import('qrcode').then((q) => q.toString(url.toString(), { type: 'svg', margin: 1, color: { dark: '#04060bff', light: '#ffffffff' } })).then(setSvg).catch(() => setSvg(''))
+    import('qrcode').then((q) => q.toDataURL(url.toString(), { margin: 1, width: 240, color: { dark: '#04060bff', light: '#ffffffff' } })).then(setSrc).catch(() => setSrc(''))
   }, [t.lang])
-  if (!svg) return null
+  if (!src) return null
   return (
     <div className="absolute right-4 top-24 hidden w-28 rounded-xl bg-white p-1.5 text-center shadow-2xl md:block">
-      <div className="[&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
+      <img src={src} alt={t('QR code para abrir o site', 'QR code to open the site')} className="h-auto w-full" />
       <p className="pb-0.5 text-[9px] font-semibold uppercase tracking-wider text-ink">{t('abra no celular', 'open on your phone')}</p>
     </div>
   )

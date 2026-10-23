@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// Testes de fumaça contra o build de produção (vite preview).
+// Testes de fumaça contra o build de produção, servido com os mesmos cabeçalhos (CSP etc.) do vercel.json.
 export default defineConfig({
   testDir: 'tests',
   timeout: 60_000,
@@ -19,5 +19,5 @@ export default defineConfig({
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
   ],
-  webServer: { command: 'npm run preview -- --port 4173 --strictPort', url: 'http://localhost:4173', reuseExistingServer: !process.env.CI },
+  webServer: { command: 'node scripts/serve.mjs 4173', url: 'http://localhost:4173', reuseExistingServer: !process.env.CI },
 })
