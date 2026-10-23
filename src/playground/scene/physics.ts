@@ -20,8 +20,9 @@ export function integrate(b: Body, thrust: THREE.Vector3, boost: boolean, dt: nu
   b.pos.addScaledVector(b.vel, dt)
 }
 
-/** Mantém o corpo a pelo menos `r` de cada ponto (ex.: linha central do DNA) e quica de leve na parede. */
+/** Mantém o corpo a pelo menos `r` de cada ponto (ex.: linha central do DNA) e quica de leve na parede. Retorna a velocidade do impacto. */
 export function pushOut(b: Body, points: readonly THREE.Vector3[], n: number, r: number) {
+  let impact = 0
   for (let i = 0; i < n; i++) {
     _d.subVectors(b.pos, points[i])
     const dist = _d.length()
@@ -29,19 +30,22 @@ export function pushOut(b: Body, points: readonly THREE.Vector3[], n: number, r:
     _d.divideScalar(dist)
     b.pos.addScaledVector(_d, r - dist)
     const vn = b.vel.dot(_d)
-    if (vn < 0) b.vel.addScaledVector(_d, -vn * 1.3)
+    if (vn < 0) { b.vel.addScaledVector(_d, -vn * 1.3); impact = Math.max(impact, -vn) }
   }
+  return impact
 }
 
-/** Molécula livre: empurrada pela sonda (esfera de alcance `reach`) e puxada de volta por uma mola amortecida. */
+/** Molécula livre: empurrada pela sonda (esfera de alcance `reach`) e puxada de volta por uma mola amortecida. Retorna se foi tocada. */
 export function stepFloater(f: Floater, probe: Body, reach: number, dt: number) {
   _d.subVectors(f.pos, probe.pos)
   const dist = _d.length()
-  if (dist < reach && dist > 0) {
+  const hit = dist < reach && dist > 0
+  if (hit) {
     _d.divideScalar(dist)
     f.pos.addScaledVector(_d, reach - dist)
     f.vel.addScaledVector(_d, Math.max(0, probe.vel.dot(_d)) * 1.3 + 2)
   }
   f.vel.addScaledVector(_d.subVectors(f.home, f.pos), 1.6 * dt).multiplyScalar(Math.exp(-1.2 * dt))
   f.pos.addScaledVector(f.vel, dt)
+  return hit
 }

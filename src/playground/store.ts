@@ -51,6 +51,8 @@ interface SimState {
   flyTo: ZoneId | null
   /** Zonas já visitadas (persistidas por navegador). */
   seen: string[]
+  /** Som do modo Explorar ligado (preferência por navegador). */
+  sound: boolean
   set: (p: Partial<SimState>) => void
   setLocus: (s: string) => void
   select: (i: number) => void
@@ -60,6 +62,7 @@ interface SimState {
 }
 
 export const SEEN_KEY = 'protospace.seen'
+export const SOUND_KEY = 'protospace.sound'
 function loadSeen(): string[] {
   try { const v = JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x in EXHIBIT) : [] }
   catch { return [] }
@@ -123,6 +126,7 @@ export const useSim = create<SimState>((set, get) => ({
   zone: null,
   flyTo: null,
   seen: loadSeen(),
+  sound: (() => { try { return localStorage.getItem(SOUND_KEY) !== 'off' } catch { return true } })(),
   set: (p) => set(p),
   setLocus: (locus) => {
     const c = findCandidates(locus)

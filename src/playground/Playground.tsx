@@ -3,9 +3,10 @@ import { useShallow } from 'zustand/react/shallow'
 import { CAS, DELIVERY, MAX_LOCUS, clean, diffSegments, isSeed, mismatches, type CasType, type Delivery, type Repair } from '../lib/dna'
 import { hasWebGL, useInView } from '../lib/hooks'
 import { useT, type T } from '../i18n'
-import { SEEN_KEY, STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
+import { SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
 import { EXHIBIT, EXHIBITS, REGIONS, type Region } from '../content/exhibits'
 import { input } from './scene/shared'
+import { sound } from './sound'
 import { BASE_COLOR } from './colors'
 
 const Scene = lazy(() => import('./scene/Scene'))
@@ -60,6 +61,8 @@ const ICONS = {
   link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1m2 2.7a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   shot: 'M4 7h3l2-3h6l2 3h3v13H4zM12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z',
   explore: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm3.5 5.5-2 5-5 2 2-5z',
+  soundOn: 'M4 9h4l5-4v14l-5-4H4zM16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12',
+  soundOff: 'M4 9h4l5-4v14l-5-4H4zM17 9l5 6m0-6-5 6',
 }
 const Stroke = ({ d }: { d: string }) => (
   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>
@@ -430,11 +433,17 @@ export default function Playground() {
   const [lost, setLost] = useState(false)
   const [toast, setToast] = useState('')
   const [tab, setTab] = useState<'guia' | 'params' | 'resultado'>('guia')
-  const sim = useSim(useShallow((s) => ({ step: s.step, playing: s.playing, presentation: s.presentation, cinema: s.cinema, explore: s.explore, cas: s.cas, delivery: s.delivery, repair: s.repair })))
+  const sim = useSim(useShallow((s) => ({ step: s.step, playing: s.playing, presentation: s.presentation, cinema: s.cinema, explore: s.explore, sound: s.sound, cas: s.cas, delivery: s.delivery, repair: s.repair })))
   const d = useDerived()
   const acts = !!d.acts
   const steps = t.pick(STEPS)
 
+  const toggleSound = () => {
+    const on = !useSim.getState().sound
+    sound.unlock()
+    useSim.getState().set({ sound: on })
+    try { localStorage.setItem(SOUND_KEY, on ? 'on' : 'off') } catch { /* sem armazenamento: vale só nesta visita */ }
+  }
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2200) }
   const togglePlay = () => {
     const st = useSim.getState()
@@ -492,9 +501,16 @@ export default function Playground() {
 
   useEffect(() => { if (sim.step === 5) setTab('resultado') }, [sim.step])
 
+  // som só no modo Explorar, com a preferência ligada e o playground à vista
+  useEffect(() => { sound.setOn(sim.explore && sim.sound && (inView || sim.presentation)) }, [sim.explore, sim.sound, inView, sim.presentation])
+  useEffect(() => () => sound.setOn(false), [])
+
   // modo Explorar: cada zona visitada pela primeira vez conta como descoberta (guardada neste navegador)
   useEffect(() => useSim.subscribe((s, prev) => {
-    if (!s.zone || s.zone === prev.zone || s.seen.includes(s.zone)) return
+    if (!s.zone || s.zone === prev.zone) return
+    const fresh = !s.seen.includes(s.zone)
+    sound.chime(fresh)
+    if (!fresh) return
     const seen = [...s.seen, s.zone]
     s.set({ seen })
     try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)) } catch { /* sem armazenamento: vale só nesta visita */ }
@@ -518,7 +534,7 @@ export default function Playground() {
       else if (k === 'p') st.set({ presentation: !st.presentation })
       else if (k === 'm') cinema()
       else if (k === 'f') fullscreen()
-      else if (k === 'x' && webgl && !lost) st.setExplore(!st.explore)
+      else if (k === 'x' && webgl && !lost) { sound.unlock(); st.setExplore(!st.explore) }
       else if (k === 'escape' && st.explore) st.setExplore(false)
       else if (k === 'escape' && st.presentation && !document.fullscreenElement) st.set({ presentation: false, cinema: false })
       else return
@@ -580,7 +596,8 @@ export default function Playground() {
           <button type="button" className="hud-btn" onClick={() => st.goto(sim.step + 1)} aria-label={t('Próxima etapa', 'Next step')} title={`${t('Próxima etapa', 'Next step')} (→)`}><Icon d={ICONS.next} /></button>
           <span className="mx-1 h-6 w-px shrink-0 bg-white/15" />
           <button type="button" className={`hud-btn gap-1.5 ${sim.cinema ? 'text-rna' : ''}`} aria-pressed={sim.cinema} onClick={cinema} title={`${t('Modo cinema: toca as 6 etapas', 'Cinema mode: plays all 6 steps')} (M)`}><Stroke d={ICONS.film} /><span className="hidden sm:inline">{t('Cinema', 'Cinema')}</span></button>
-          {webgl && !lost && <button type="button" className={`hud-btn gap-1.5 ${sim.explore ? 'text-dna' : ''}`} aria-pressed={sim.explore} onClick={() => st.setExplore(!sim.explore)} title={`${t('Explorar o núcleo livremente', 'Explore the nucleus freely')} (X)`}><Stroke d={ICONS.explore} /><span className="hidden sm:inline">{t('Explorar', 'Explore')}</span></button>}
+          {webgl && !lost && <button type="button" className={`hud-btn gap-1.5 ${sim.explore ? 'text-dna' : ''}`} aria-pressed={sim.explore} onClick={() => { sound.unlock(); st.setExplore(!sim.explore) }} title={`${t('Explorar o núcleo livremente', 'Explore the nucleus freely')} (X)`}><Stroke d={ICONS.explore} /><span className="hidden sm:inline">{t('Explorar', 'Explore')}</span></button>}
+          {sim.explore && <button type="button" className="hud-btn" aria-pressed={sim.sound} onClick={toggleSound} aria-label={t('Som', 'Sound')} title={sim.sound ? t('Silenciar', 'Mute') : t('Ligar som', 'Unmute')}><Stroke d={sim.sound ? ICONS.soundOn : ICONS.soundOff} /></button>}
           <button type="button" className="hud-btn" onClick={() => st.reset()} aria-label={t('Resetar experimento', 'Reset experiment')} title={`${t('Resetar experimento', 'Reset experiment')} (R)`}><Icon d={ICONS.reset} /></button>
           <button type="button" className="hud-btn" onClick={() => st.set({ camTick: st.camTick + 1 })} aria-label={t('Recentralizar câmera', 'Recenter camera')} title={`${t('Recentralizar câmera', 'Recenter camera')} (C)`}><Stroke d={ICONS.cam} /></button>
           <button type="button" className={`hud-btn gap-1.5 ${big ? 'text-rna' : ''}`} aria-pressed={big} onClick={() => st.set({ presentation: !big })} title={`${t('Modo apresentação', 'Presentation mode')} (P)`}><Stroke d={ICONS.screen} /><span className="hidden lg:inline">{t('Apresentação', 'Present')}</span></button>

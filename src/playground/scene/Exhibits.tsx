@@ -1,8 +1,10 @@
-import { useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
 import { useFrame, useThree, type ThreeElements } from '@react-three/fiber'
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { EXHIBIT, type Vec3 } from '../../content/exhibits'
 import { useT } from '../../i18n'
+import { useSim } from '../store'
 import { BASE_COLOR, PALETTE } from '../colors'
 import { Label } from './Labels'
 import { organicMaterial, tickOrganic } from './materials'
@@ -18,7 +20,6 @@ const cache = new Map<string, THREE.Material>()
 const memo = <M extends THREE.Material>(key: string, make: () => M) => (cache.get(key) ?? cache.set(key, make()).get(key)) as M
 const std = (c: string, e = 0.25) => memo(`s${c}${e}`, () => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: e, roughness: 0.45 }))
 const glow = (c: string, k = 2) => memo(`g${c}${k}`, () => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k), toneMapped: false }))
-const flat = (c: string) => memo(`f${c}`, () => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }))
 const org = (c: string, opacity = 0.55, irid = 0) => memo(`o${c}${opacity}${irid}`, () => organicMaterial({ color: c, rim: '#ffffff', opacity, amp: 0.16, freq: 1.8, power: 1.6, irid }))
 const tube = (pts: THREE.Vector3[], r: number, seg = 160) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'centripetal'), seg, r, 8, false)
 
@@ -34,10 +35,12 @@ function Spot({ id, children, label = 3, face = true }: { id: string; children: 
   const g = useRef<THREE.Group>(null!)
   const near = useRef(false)
   const camera = useThree((s) => s.camera)
+  const explore = useSim((s) => s.explore)
   const pos = useMemo(() => V(...(e.pos as Vec3)), [e.pos])
   // calculado já na criação: filhos (ex.: fagos com lookAt) dependem da orientação final
   const quat = useMemo(() => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(ORIGIN, pos, UP)), [pos])
   useFrame(({ clock }) => {
+    if (!useSim.getState().explore) return
     const d = camera.position.distanceTo(pos)
     near.current = d < 45 && d > (e.size ?? 2) + 3
     g.current.visible = d < 140
@@ -46,7 +49,7 @@ function Spot({ id, children, label = 3, face = true }: { id: string; children: 
   return (
     <group ref={g} position={pos}>
       {face ? <group quaternion={quat}>{children}</group> : children}
-      <Label tone="#d6f4ff" at={(o) => { o.set(0, (e.size ?? 2) + label - 3, 0); return near.current }}>{t.pick(e.title)}</Label>
+      {explore && <Label tone="#d6f4ff" at={(o) => { o.set(0, (e.size ?? 2) + label - 3, 0); return near.current }}>{t.pick(e.title)}</Label>}
     </group>
   )
 }
@@ -224,78 +227,105 @@ function Splicing() {
 
 const PORES: Vec3[] = [[0, 0, 0], ...Array.from({ length: 6 }, (_, k): Vec3 => [Math.cos(k * Math.PI / 3) * 5, 0, Math.sin(k * Math.PI / 3) * 5])]
 function NuclearPore() {
+  const rings = useRef<THREE.InstancedMesh>(null!)
+  const knobs = useRef<THREE.InstancedMesh>(null!)
   const mrna = useMemo(() => tube(Array.from({ length: 12 }, (_, k) => V(Math.sin(k) * 0.25, -4 + k * 0.75, Math.cos(k * 1.3) * 0.25)), 0.12), [])
+  useLayoutEffect(() => {
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion().setFromAxisAngle(V(1, 0, 0), Math.PI / 2), one = V(1, 1, 1)
+    PORES.forEach((p, i) => {
+      rings.current.setMatrixAt(i, m.compose(V(...p), q, one))
+      for (let k = 0; k < 8; k++) knobs.current.setMatrixAt(i * 8 + k, m.makeTranslation(p[0] + Math.cos(k * Math.PI / 4) * 1.5, 0, p[2] + Math.sin(k * Math.PI / 4) * 1.5))
+    })
+    rings.current.instanceMatrix.needsUpdate = knobs.current.instanceMatrix.needsUpdate = true
+  }, [])
   // referencial local com a normal da membrana em y; o grupo externo vira a normal para +z (de frente)
   return (
     <group rotation-x={Math.PI / 2}>
       {[-0.6, 0.6].map((y) => <mesh key={y} position={[0, y, 0]} material={org('#2a9df4', 0.18, 0.7)}><cylinderGeometry args={[9, 9, 0.25, 64]} /></mesh>)}
-      {PORES.map((p, i) => (
-        <group key={i} position={p}>
-          <mesh rotation-x={Math.PI / 2} material={org('#b06bff', 0.8)}><torusGeometry args={[1.1, 0.35, 12, 32]} /></mesh>
-          {Array.from({ length: 8 }, (_, k) => (
-            <mesh key={k} position={[Math.cos(k * Math.PI / 4) * 1.5, 0, Math.sin(k * Math.PI / 4) * 1.5]} material={std('#d8c0ff', 0.4)}><sphereGeometry args={[0.22, 10, 8]} /></mesh>
-          ))}
-        </group>
-      ))}
+      <instancedMesh ref={rings} args={[undefined, std('#8a5cff', 0.45), PORES.length]}><torusGeometry args={[1.1, 0.35, 12, 32]} /></instancedMesh>
+      <instancedMesh ref={knobs} args={[undefined, std('#d8c0ff', 0.4), PORES.length * 8]}><sphereGeometry args={[0.22, 10, 8]} /></instancedMesh>
       <Growing geo={mrna} mat={std(PALETTE.rna, 0.6)} period={4} />
     </group>
   )
 }
 
 function Ribosome() {
-  const beads = useRef<THREE.Group>(null!)
-  const geo = useMemo(() => {
+  const beads = useRef<THREE.InstancedMesh>(null!)
+  const mrna = useMemo(() => tube(Array.from({ length: 16 }, (_, k) => V(-7 + k * 0.95, -0.15 + Math.sin(k * 0.8) * 0.2, 0)), 0.12), [])
+  useLayoutEffect(() => {
     const path = new THREE.CatmullRomCurve3([V(0, 2.4, 0), V(0.6, 3.4, 0.4), V(1.6, 4, -0.2), V(2.2, 5, 0.6), V(3.2, 5.6, 0)])
-    return { mrna: tube(Array.from({ length: 16 }, (_, k) => V(-7 + k * 0.95, -0.15 + Math.sin(k * 0.8) * 0.2, 0)), 0.12), path }
+    const cols = Object.values(PALETTE), m = new THREE.Matrix4(), c = new THREE.Color()
+    for (let i = 0; i < 15; i++) {
+      beads.current.setMatrixAt(i, m.makeTranslation(path.getPointAt(i / 14)))
+      beads.current.setColorAt(i, c.set(cols[i % cols.length]))
+    }
   }, [])
-  const cols = useMemo(() => Object.values(PALETTE), [])
-  useFrame(({ clock }) => {
-    const shown = Math.floor(clock.elapsedTime * 1.5) % 16
-    beads.current.children.forEach((c, i) => { c.visible = i < shown })
-  })
+  useFrame(({ clock }) => { beads.current.count = Math.floor(clock.elapsedTime * 1.5) % 16 })
   return (
     <group>
       <mesh position={[0, 0.9, 0]} scale={[2.4, 1.6, 2]} material={org(PALETTE.ku, 0.55)}><sphereGeometry args={[1, 32, 24]} /></mesh>
       <mesh position={[0, -1, 0]} scale={[1.8, 0.85, 1.5]} material={org(PALETTE.deaminase, 0.6)}><sphereGeometry args={[1, 32, 24]} /></mesh>
-      <mesh geometry={geo.mrna} material={std(PALETTE.rna, 0.6)} />
-      <group ref={beads}>
-        {Array.from({ length: 15 }, (_, i) => (
-          <mesh key={i} position={geo.path.getPointAt(i / 14)} material={std(cols[i % cols.length], 0.5)}><sphereGeometry args={[0.26, 12, 10]} /></mesh>
-        ))}
-      </group>
+      <mesh geometry={mrna} material={std(PALETTE.rna, 0.6)} />
+      <instancedMesh ref={beads} args={[undefined, memo('bead', () => new THREE.MeshStandardMaterial({ roughness: 0.45, emissive: '#ffffff', emissiveIntensity: 0.2 })), 15]}>
+        <sphereGeometry args={[0.26, 12, 10]} />
+      </instancedMesh>
     </group>
   )
 }
 
 const RNA_BASES = ['U', 'C', 'A', 'G']
 const STOPS = new Set(['UAA', 'UAG', 'UGA'])
+/** Junta segmentos de anel numa geometria só, com a cor de cada um nos vértices. */
+function ringSegments(segs: { r: [number, number]; a: number; len: number; color: string }[], k = 1) {
+  const c = new THREE.Color()
+  return mergeGeometries(segs.map((s) => {
+    const g = new THREE.RingGeometry(s.r[0], s.r[1], 6, 1, s.a + s.len * 0.03, s.len * 0.94)
+    c.set(s.color).multiplyScalar(k)
+    const n = g.attributes.position.count
+    const col = new Float32Array(n * 3)
+    for (let v = 0; v < n; v++) col.set([c.r, c.g, c.b], v * 3)
+    return g.setAttribute('color', new THREE.BufferAttribute(col, 3))
+  }))
+}
+
 function Codons() {
-  const segs = useMemo(() => {
-    const out: { key: string; r: [number, number]; a: number; len: number; color: string; hot?: string }[] = []
+  const geo = useMemo(() => {
+    const segs: { r: [number, number]; a: number; len: number; color: string; hot?: boolean }[] = []
     RNA_BASES.forEach((b1, i) => {
-      out.push({ key: b1, r: [0.6, 1.8], a: (i * Math.PI) / 2, len: Math.PI / 2, color: BASE_COLOR[b1] })
+      segs.push({ r: [0.6, 1.8], a: (i * Math.PI) / 2, len: Math.PI / 2, color: BASE_COLOR[b1] })
       RNA_BASES.forEach((b2, j) => {
-        out.push({ key: b1 + b2, r: [1.9, 3.1], a: ((i * 4 + j) * Math.PI) / 8, len: Math.PI / 8, color: BASE_COLOR[b2] })
+        segs.push({ r: [1.9, 3.1], a: ((i * 4 + j) * Math.PI) / 8, len: Math.PI / 8, color: BASE_COLOR[b2] })
         RNA_BASES.forEach((b3, k) => {
           const c = b1 + b2 + b3
-          out.push({ key: c, r: [3.2, 4.6], a: ((i * 16 + j * 4 + k) * Math.PI) / 32, len: Math.PI / 32, color: BASE_COLOR[b3], hot: STOPS.has(c) ? PALETTE.mismatch : c === 'AUG' ? '#ffffff' : undefined })
+          const hot = STOPS.has(c) ? PALETTE.mismatch : c === 'AUG' ? '#ffffff' : undefined
+          segs.push({ r: [3.2, 4.6], a: ((i * 16 + j * 4 + k) * Math.PI) / 32, len: Math.PI / 32, color: hot ?? BASE_COLOR[b3], hot: !!hot })
         })
       })
     })
-    return out
+    return { base: ringSegments(segs.filter((s) => !s.hot)), hot: ringSegments(segs.filter((s) => s.hot), 2.2) }
   }, [])
   return (
     <Spin axis="z" speed={0.04}>
-      {segs.map((s) => (
-        <mesh key={s.key} material={s.hot ? glow(s.hot, 2.2) : flat(s.color)}>
-          <ringGeometry args={[s.r[0], s.r[1], 6, 1, s.a + s.len * 0.03, s.len * 0.94]} />
-        </mesh>
-      ))}
+      <mesh geometry={geo.base} material={memo('wheel', () => new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }))} />
+      <mesh geometry={geo.hot} material={memo('wheelHot', () => new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, toneMapped: false }))} />
     </Spin>
   )
 }
 
 // ---------- Origem do CRISPR ----------
+let phageBody: THREE.BufferGeometry | null = null
+/** Cauda + placa + 6 pernas do fago numa geometria só (compartilhada por todos os fagos). */
+function phageGeometry() {
+  if (phageBody) return phageBody
+  const parts = [
+    new THREE.CylinderGeometry(0.2, 0.2, 2.4, 10).translate(0, 0.5, 0),
+    new THREE.CylinderGeometry(0.55, 0.55, 0.16, 12).translate(0, 1.75, 0),
+    ...Array.from({ length: 6 }, (_, k) => new THREE.CylinderGeometry(0.05, 0.05, 1.6, 6).rotateZ(-0.9).translate(0.7, 2.25, 0).rotateY((k * Math.PI) / 3)),
+  ]
+  phageBody = mergeGeometries(parts)
+  return phageBody
+}
+
 /** Fago T4 estilizado, cauda apontando para +z (use lookAt para mirar). */
 function Phage({ scale = 1 }: { scale?: number }) {
   return (
@@ -304,13 +334,7 @@ function Phage({ scale = 1 }: { scale?: number }) {
         <mesh position={[0, -1.7, 0]} material={memo('phage', () => new THREE.MeshStandardMaterial({ color: '#c7d2e0', metalness: 0.6, roughness: 0.3, flatShading: true, emissive: '#3a4a66', emissiveIntensity: 0.4 }))}>
           <icosahedronGeometry args={[1.1, 0]} />
         </mesh>
-        <mesh position={[0, 0.5, 0]} material={std('#a9b8c9')}><cylinderGeometry args={[0.2, 0.2, 2.4, 10]} /></mesh>
-        <mesh position={[0, 1.75, 0]} material={std('#a9b8c9')}><cylinderGeometry args={[0.55, 0.55, 0.16, 12]} /></mesh>
-        {Array.from({ length: 6 }, (_, k) => (
-          <group key={k} position={[0, 1.8, 0]} rotation-y={(k * Math.PI) / 3}>
-            <mesh position={[0.7, 0.45, 0]} rotation-z={-0.9} material={std('#a9b8c9')}><cylinderGeometry args={[0.05, 0.05, 1.6, 6]} /></mesh>
-          </group>
-        ))}
+        <mesh geometry={phageGeometry()} material={std('#a9b8c9')} />
       </group>
     </group>
   )
@@ -354,6 +378,7 @@ function CasFamily() {
   const home = useMemo(() => V(...(EXHIBIT.casfamily.pos as Vec3)), [])
   const rna = useMemo(() => tube([V(-1.4, -1.6, 0.8), V(-0.4, -1.1, 1.4), V(0.6, -1.8, 1), V(1.6, -1.2, 0.6)], 0.09), [])
   const peg = useMemo(() => tube([V(0.6, 1.2, 0.6), V(1.6, 2.1, 0.3), V(2.6, 1.6, -0.4), V(3.2, 2.4, 0)], 0.09), [])
+  const explore = useSim((s) => s.explore)
   const near = (o: THREE.Vector3, x: number) => { o.set(x, 2.6, 0); return camera.position.distanceTo(home) < 22 }
   return (
     <group>
@@ -370,9 +395,11 @@ function CasFamily() {
         <mesh position={[1.7, -0.6, 0.4]} scale={0.85} material={org(PALETTE.rna, 0.7)}><sphereGeometry args={[1, 24, 16]} /></mesh>
         <group position={[-1.6, 0, 0]}><mesh geometry={peg} material={std(PALETTE.rna, 0.6)} /></group>
       </group>
-      <Label tone={PALETTE.ku} at={(o) => near(o, -5)}>Cas12a · DNA</Label>
-      <Label tone={PALETTE.ligase} at={(o) => near(o, 0)}>Cas13 · RNA</Label>
-      <Label tone={PALETTE.cas} at={(o) => near(o, 5)}>{t('Prime editor', 'Prime editor')}</Label>
+      {explore && <>
+        <Label tone={PALETTE.ku} at={(o) => near(o, -5)}>Cas12a · DNA</Label>
+        <Label tone={PALETTE.ligase} at={(o) => near(o, 0)}>Cas13 · RNA</Label>
+        <Label tone={PALETTE.cas} at={(o) => near(o, 5)}>{t('Prime editor', 'Prime editor')}</Label>
+      </>}
     </group>
   )
 }
@@ -411,9 +438,45 @@ function Snp() {
   )
 }
 
+/**
+ * Monta oculto (ver Scene.tsx): pré-compila os shaders em paralelo, sem desenhar, e só aparece no
+ * modo Explorar — entrar no modo deixa de travar a cena.
+ */
 export default function Exhibits() {
+  const root = useRef<THREE.Group>(null!)
+  const ready = useRef(false)
+  const gl = useThree((s) => s.gl)
+  const camera = useThree((s) => s.camera)
+  const scene = useThree((s) => s.scene)
+  useEffect(() => {
+    let alive = true
+    const r = root.current
+    // compile() percorre só objetos visíveis: liga, dispara (a travessia é síncrona) e desliga
+    r.visible = true
+    const compiled = gl.compileAsync(r, camera, scene)
+    r.visible = false
+    const done = () => { if (alive) ready.current = true }
+    compiled.then(() => {
+      if (!alive || gl.extensions.has('KHR_parallel_shader_compile')) return done()
+      // sem compilação paralela, a ligação dos programas (e o envio da geometria) só acontece no 1º desenho:
+      // força-o agora, num alvo 1×1 e com uma câmera que vê o mundo todo, em vez de travar ao entrar no modo
+      const rt = new THREE.WebGLRenderTarget(1, 1)
+      const eye = new THREE.PerspectiveCamera(70, 1, 1, 600)
+      eye.position.set(0, 0, 260)
+      const prev = gl.getRenderTarget()
+      r.visible = true
+      gl.setRenderTarget(rt)
+      gl.render(scene, eye)
+      gl.setRenderTarget(prev)
+      r.visible = false
+      rt.dispose()
+      done()
+    }, done)
+    return () => { alive = false }
+  }, [gl, camera, scene])
+  useFrame(() => { root.current.visible = ready.current && useSim.getState().explore })
   return (
-    <>
+    <group ref={root} visible={false}>
       <Spot id="pairing"><Pairing /></Spot>
       <Spot id="nucleosome"><Nucleosomes /></Spot>
       <Spot id="methyl"><Methylation /></Spot>
@@ -431,6 +494,6 @@ export default function Exhibits() {
       <Spot id="casfamily"><CasFamily /></Spot>
       <Spot id="sickle"><Sickle /></Spot>
       <Spot id="snp"><Snp /></Spot>
-    </>
+    </group>
   )
 }

@@ -54,6 +54,11 @@ test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page }) =>
   const btn = page.getByRole('toolbar', { name: 'Controles da simulação' }).getByRole('button', { name: /Explorar/ })
   await btn.click()
   await expect(btn).toHaveAttribute('aria-pressed', 'true')
+  const snd = page.getByRole('toolbar', { name: 'Controles da simulação' }).getByRole('button', { name: 'Som' })
+  await snd.click()
+  await expect(snd).toHaveAttribute('aria-pressed', 'false')
+  await snd.click()
+  await expect(snd).toHaveAttribute('aria-pressed', 'true')
   const fly = page.getByRole('group', { name: 'Voar até' })
   await fly.getByRole('button', { name: 'Corte' }).click()
   // voo guiado; com WebGL por software (CI) o quadro é lento

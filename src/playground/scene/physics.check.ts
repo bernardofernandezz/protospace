@@ -15,13 +15,15 @@ assert.ok(b.pos.z < -10, 'empuxo move a sonda')
 // a sonda não atravessa a "hélice" (linha de pontos no eixo x)
 const line = Array.from({ length: 40 }, (_, i) => V((i - 20) * 0.34, 0, 0))
 const p = { pos: V(0, 4, 0), vel: V() }
-for (let i = 0; i < 300; i++) { integrate(p, V(0, -1, 0), true, dt); pushOut(p, line, line.length, 1.6) }
+let impact = 0
+for (let i = 0; i < 300; i++) { integrate(p, V(0, -1, 0), true, dt); impact = Math.max(impact, pushOut(p, line, line.length, 1.6)) }
+assert.ok(impact > 1, 'colisão informa a velocidade do impacto (usada no som)')
 assert.ok(line.every((q) => q.distanceTo(p.pos) >= 1.6 - 1e-3), 'sonda fica fora do DNA')
 
 // molécula empurrada se afasta e volta para casa
 const f = { pos: V(0, 0, 0), vel: V(), home: V(0, 0, 0) }
 const probe = { pos: V(0.5, 0, 0), vel: V(-8, 0, 0) }
-stepFloater(f, probe, 1.2, dt)
+assert.ok(stepFloater(f, probe, 1.2, dt), 'toque detectado')
 assert.ok(f.pos.x < -0.5, 'empurrão afasta a molécula')
 probe.pos.set(100, 0, 0)
 for (let i = 0; i < 1200; i++) stepFloater(f, probe, 1.2, dt)

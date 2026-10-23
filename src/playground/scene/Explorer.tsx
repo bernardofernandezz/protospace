@@ -6,9 +6,9 @@ import { EXHIBITS, type Vec3 } from '../../content/exhibits'
 import { BASE_COLOR, PALETTE } from '../colors'
 import { useSim, type Quality, type ZoneId } from '../store'
 import { organicMaterial, tickOrganic } from './materials'
-import { integrate, pushOut, stepFloater, type Body, type Floater } from './physics'
-import { input } from './shared'
-import Exhibits from './Exhibits'
+import { MAX_SPEED, integrate, pushOut, stepFloater, type Body, type Floater } from './physics'
+import { input, untip } from './shared'
+import { sound } from '../sound'
 import { casPose, centerAt, focus, frame, normalAt, type Ready } from './timeline'
 
 const PROBE_R = 0.45
@@ -58,6 +58,8 @@ function zonePositions(d: Ready, out: Map<ZoneId, THREE.Vector3>) {
 export default function Explorer({ d, quality }: { d: Ready; quality: Quality }) {
   const camera = useThree((s) => s.camera)
   const gl = useThree((s) => s.gl)
+  const scene = useThree((s) => s.scene)
+  const setEvents = useThree((s) => s.setEvents)
   const probe = useRef<THREE.Group>(null!)
   const inst = useRef<THREE.InstancedMesh>(null!)
   const look = useRef({ yaw: 0, pitch: -0.15 })
@@ -87,6 +89,16 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     floaters.forEach((_, i) => inst.current.setColorAt(i, cols[i % 4]))
     inst.current.instanceColor!.needsUpdate = true
   }, [floaters])
+
+  // ao pilotar não há tooltips: desliga o raycast de ponteiro (custava interseções a cada arrasto)
+  // e acende a luz da sonda (que já existe na cena, ver Scene.tsx)
+  const light = useMemo(() => scene.getObjectByName('probe-light') as THREE.PointLight | undefined, [scene])
+  useEffect(() => {
+    untip()
+    setEvents({ enabled: false })
+    if (light) light.intensity = 18
+    return () => { setEvents({ enabled: true }); if (light) light.intensity = 0 }
+  }, [setEvents, light])
 
   // começa onde a câmera estava olhando, para a transição não "pular"
   useEffect(() => {
@@ -180,15 +192,17 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
       if (_t.lengthSq() > 1) _t.normalize()
       integrate(body, _t, input.boost, dt)
     }
-    pushOut(body, L.center, L.n, DNA_R)
-    pushOut(body, OFF_POS, 2, 2.6)
-    for (const s of SOLID) pushOut(body, [s.pos], 1, s.solid + PROBE_R)
+    let impact = Math.max(pushOut(body, L.center, L.n, DNA_R), pushOut(body, OFF_POS, 2, 2.6))
+    for (const s of SOLID) impact = Math.max(impact, pushOut(body, [s.pos], 1, s.solid + PROBE_R))
+    if (impact > 1.5) sound.bump(impact)
+    sound.swim(body.vel.length() / MAX_SPEED)
     // borda do mundo: um "aquário" esférico, desliza ao longo da parede
     if (body.pos.length() > WORLD_R) { body.pos.setLength(WORLD_R); body.vel.multiplyScalar(0.5) }
 
     // sonda: inclina na direção do movimento
     const g = probe.current
     g.position.copy(body.pos)
+    light?.position.copy(body.pos)
     g.rotation.set(-body.vel.dot(_f) * 0.04, -yaw, -body.vel.dot(_r) * 0.06)
     tickOrganic(g, clock.elapsedTime)
 
@@ -201,7 +215,7 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     // nucleotídeos livres
     for (let i = 0; i < floaters.length; i++) {
       const f = floaters[i]
-      stepFloater(f, body, PROBE_R + 0.5, dt)
+      if (stepFloater(f, body, PROBE_R + 0.5, dt)) sound.blip()
       inst.current.setMatrixAt(i, _m.makeTranslation(f.pos.x, f.pos.y, f.pos.z))
     }
     inst.current.instanceMatrix.needsUpdate = true
@@ -225,10 +239,8 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
         <group ref={probe}>
           <mesh material={mat.shell} scale={PROBE_R}><icosahedronGeometry args={[1, 8]} /></mesh>
           <mesh material={mat.core} scale={PROBE_R * 0.35}><icosahedronGeometry args={[1, 2]} /></mesh>
-          <pointLight intensity={18} distance={9} color={PALETTE.strand1} />
         </group>
       </Trail>
-      <Exhibits />
       <instancedMesh ref={inst} args={[geo, mat.dot, floaters.length]} frustumCulled={false} />
     </>
   )
