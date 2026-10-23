@@ -1,9 +1,9 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
-import gsap from 'gsap'
 import { hasWebGL, isSoftwareGL, prefersReducedMotion, useInView } from '../lib/hooks'
 import { useT } from '../i18n'
 import { SITE } from '../content/site'
 import { bootDone, finishBoot } from '../lib/boot'
+import { loadMotion } from '../lib/motion'
 
 const HeroHelix = lazy(() => import('../components/HeroHelix'))
 
@@ -14,9 +14,9 @@ function Counter({ to, from = 0 }: { to: number; from?: number }) {
     if (!el.current) return
     if (prefersReducedMotion()) { el.current.textContent = String(to); return }
     const o = { v: from }
-    let tw: gsap.core.Tween | undefined
+    let tw: { kill(): void } | undefined
     let alive = true
-    bootDone.then(() => {
+    bootDone.then(loadMotion).then(({ gsap }) => {
       if (alive) tw = gsap.to(o, { v: to, duration: 1.6, ease: 'power3.out', delay: 0.5, onUpdate: () => { if (el.current) el.current.textContent = String(Math.round(o.v)) } })
     })
     return () => { alive = false; tw?.kill() }
@@ -39,9 +39,9 @@ export default function Hero() {
   // animações de entrada só depois que a tela de carregamento sai
   useEffect(() => {
     if (still) return
-    let ctx: gsap.Context | undefined
+    let ctx: { revert(): void } | undefined
     let alive = true
-    bootDone.then(() => {
+    bootDone.then(loadMotion).then(({ gsap }) => {
       if (!alive) return
       ctx = gsap.context(() => {
         gsap.from('[data-hero-word]', { yPercent: 110, duration: 1.1, ease: 'expo.out', stagger: 0.07 })

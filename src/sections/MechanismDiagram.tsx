@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import gsap from 'gsap'
 import { BASE_COLOR, PALETTE } from '../playground/colors'
 import { useT } from '../i18n'
 import { prefersReducedMotion, useInView } from '../lib/hooks'
+import { loadMotion } from '../lib/motion'
 
 // Ilustração vetorial "2,5D" na mesma linguagem visual da cena 3D do playground: dupla-hélice
 // em perspectiva (com profundidade), Cas9 orgânica e transições contínuas entre as etapas.
@@ -308,8 +308,12 @@ export default function MechanismDiagram({ step, label }: { step: number; label:
 
   useEffect(() => {
     if (still) { state.current.v = step; setV(step); return }
-    const tw = gsap.to(state.current, { v: step, duration: 0.6 + 0.35 * Math.min(3, Math.abs(step - state.current.v)), ease: 'power2.inOut', onUpdate: () => setV(state.current.v) })
-    return () => { tw.kill() }
+    let tw: { kill(): void } | undefined
+    let alive = true
+    void loadMotion().then(({ gsap }) => {
+      if (alive) tw = gsap.to(state.current, { v: step, duration: 0.6 + 0.35 * Math.min(3, Math.abs(step - state.current.v)), ease: 'power2.inOut', onUpdate: () => setV(state.current.v) })
+    })
+    return () => { alive = false; tw?.kill() }
   }, [step, still])
 
   useEffect(() => {
