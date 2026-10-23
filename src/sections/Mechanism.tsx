@@ -45,10 +45,10 @@ export default function Mechanism() {
         lead={t('Role a página e a ilustração acompanha cada etapa. Vale guardar uma ideia antes de começar: a Cas9 não reescreve o DNA. Ela apenas corta. Quem define o resultado final é a própria célula, ao consertar o corte.',
           'Scroll and the illustration follows each step. One idea worth keeping in mind before we start: Cas9 does not rewrite DNA. It only cuts. The final outcome is decided by the cell itself, as it repairs the cut.')} />
       <div className="grid gap-10 lg:grid-cols-[1fr_1.25fr]">
-        <ol className="space-y-[30vh] pb-[20vh] lg:pt-[8vh]">
+        <ol className="space-y-6 lg:space-y-[30vh] lg:pb-[20vh] lg:pt-[8vh]">
           {steps.map((st, i) => (
             <li key={st.k} data-i={i} ref={(el) => { refs.current[i] = el }}
-              className={`glass rounded-3xl p-7 transition duration-500 ${active === i ? 'opacity-100 ring-1 ring-dna/40' : 'opacity-40'}`}>
+              className={`glass rounded-3xl p-7 transition duration-500 ${active === i ? 'ring-1 ring-dna/40' : 'lg:opacity-60'}`}>
               <span className="font-mono text-sm text-dna">{String(i + 1).padStart(2, '0')}</span>
               <h3 className="mt-2 text-2xl font-semibold">{st.t}</h3>
               <p className="mt-3 leading-relaxed text-mist">{st.b}</p>

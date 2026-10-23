@@ -170,15 +170,15 @@ export default function Practices() {
                   // id estável (independe do idioma)
                   const id = `${g.k}:${ii}`
                   return (
-                    <li key={id}>
-                      <details className="group rounded-xl px-2 py-1.5 transition hover:bg-white/5">
+                    <li key={id} className="flex items-start gap-3 rounded-xl px-2 py-1.5 transition hover:bg-white/5">
+                      <input type="checkbox" checked={!!done[id]} onChange={(e) => setDone({ ...done, [id]: e.target.checked })}
+                        aria-label={item} className="mt-1 h-4 w-4 shrink-0 accent-[#3ef0d0]" />
+                      <details className="group flex-1">
                         <summary className="flex cursor-pointer list-none items-start gap-3">
-                          <input type="checkbox" checked={!!done[id]} onChange={(e) => setDone({ ...done, [id]: e.target.checked })} onClick={(e) => e.stopPropagation()}
-                            aria-label={item} className="mt-1 h-4 w-4 shrink-0 accent-[#3ef0d0]" />
                           <span className={`flex-1 ${done[id] ? 'text-mist line-through decoration-dna/60' : ''}`}>{item}</span>
                           <span className="text-mist transition group-open:rotate-45" aria-hidden="true">+</span>
                         </summary>
-                        <p className="ml-7 mt-2 text-sm leading-relaxed text-mist">{why}</p>
+                        <p className="mt-2 text-sm leading-relaxed text-mist">{why}</p>
                       </details>
                     </li>
                   )

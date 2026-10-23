@@ -26,7 +26,7 @@ export default function Quiz() {
               <legend className="sr-only">{t('Pergunta', 'Question')} {qi + 1}</legend>
               <p className="font-mono text-xs text-dna">{String(qi + 1).padStart(2, '0')} / {qs.length}</p>
               <h3 className="mt-2 text-xl font-semibold">{q.question}</h3>
-              <div className="mt-4 grid gap-2" role="radiogroup" aria-label={q.question}>
+              <div className="mt-4 grid gap-2">
                 {q.options.map((o, oi) => {
                   const isCorrect = oi === q.correct
                   const picked = chosen === oi
@@ -38,23 +38,26 @@ export default function Quiz() {
                         ? 'border-cas bg-cas/15 text-white'
                         : 'border-white/5 text-mist/50'
                   return (
-                    <button key={oi} type="button" role="radio" aria-checked={picked} disabled={done}
-                      onClick={() => setAnswers((a) => ({ ...a, [q.id]: oi }))}
-                      className={`flex items-center gap-3 rounded-xl border px-4 py-2.5 text-left text-sm transition disabled:cursor-default ${cls}`}>
+                    <button key={oi} type="button" aria-pressed={picked} aria-disabled={done}
+                      onClick={() => { if (!done) setAnswers((a) => ({ ...a, [q.id]: oi })) }}
+                      className={`flex items-center gap-3 rounded-xl border px-4 py-2.5 text-left text-sm transition aria-disabled:cursor-default ${cls}`}>
                       <span className="font-mono text-xs opacity-70">{LETTERS[oi]}</span>
                       <span className="flex-1">{o}</span>
-                      {done && isCorrect && <span className="text-bio" aria-label={t('correta', 'correct')}>✓</span>}
-                      {done && picked && !isCorrect && <span className="text-cas" aria-label={t('incorreta', 'incorrect')}>✕</span>}
+                      {done && isCorrect && <span className="text-bio"><span aria-hidden="true">✓</span><span className="sr-only">{t('correta', 'correct')}</span></span>}
+                      {done && picked && !isCorrect && <span className="text-cas"><span aria-hidden="true">✕</span><span className="sr-only">{t('incorreta', 'incorrect')}</span></span>}
                     </button>
                   )
                 })}
               </div>
-              {done && (
-                <p className="mt-4 rounded-xl border-l-2 border-dna bg-white/5 p-3 text-sm leading-relaxed text-mist" role="status">
-                  <b className={chosen === q.correct ? 'text-bio' : 'text-cas'}>{chosen === q.correct ? t('Correto. ', 'Correct. ') : t('Não é essa. ', 'Not quite. ')}</b>
-                  {q.feedback}
-                </p>
-              )}
+              {/* região viva montada desde o início: o leitor de tela anuncia o feedback quando ele aparece */}
+              <div role="status">
+                {done && (
+                  <p className="mt-4 rounded-xl border-l-2 border-dna bg-white/5 p-3 text-sm leading-relaxed text-mist">
+                    <b className={chosen === q.correct ? 'text-bio' : 'text-cas'}>{chosen === q.correct ? t('Correto. ', 'Correct. ') : t('Não é essa. ', 'Not quite. ')}</b>
+                    {q.feedback}
+                  </p>
+                )}
+              </div>
             </fieldset>
           )
         })}
