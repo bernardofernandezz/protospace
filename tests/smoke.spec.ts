@@ -48,6 +48,28 @@ test('playground percorre as 6 etapas e mostra o resultado', async ({ page }) =>
   expect(errors, errors.join('\n')).toEqual([])
 })
 
+test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page }) => {
+  const errors = trackErrors(page)
+  await page.goto('/?lang=pt#playground')
+  await page.locator('.stage').scrollIntoViewIfNeeded()
+  await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
+  const btn = page.getByRole('toolbar', { name: 'Controles da simulação' }).getByRole('button', { name: /Explorar/ })
+  await btn.click()
+  await expect(btn).toHaveAttribute('aria-pressed', 'true')
+  const snd = page.getByRole('toolbar', { name: 'Controles da simulação' }).getByRole('button', { name: 'Som' })
+  await snd.click()
+  await expect(snd).toHaveAttribute('aria-pressed', 'false')
+  await snd.click()
+  await expect(snd).toHaveAttribute('aria-pressed', 'true')
+  const fly = page.getByRole('group', { name: 'Voar até' })
+  await fly.getByRole('button', { name: 'Corte' }).click()
+  // voo guiado; com WebGL por software (CI) o quadro é lento
+  await expect(page.getByText('Sítio de corte')).toBeVisible({ timeout: 30_000 })
+  await page.keyboard.press('Escape')
+  await expect(btn).toHaveAttribute('aria-pressed', 'false')
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
 test('mismatches na região seed impedem a edição', async ({ page }) => {
   await page.goto('/?lang=pt#playground')
   const bases = page.getByRole('group', { name: 'Bases do guia' }).getByRole('button')

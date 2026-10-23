@@ -6,6 +6,7 @@ import {
   MAX_LOCUS, netLength, nhejOps, offTargetSites, type CasType, type Delivery, type Op, type Repair,
 } from '../lib/dna'
 import { useLang, type L } from '../i18n'
+import { EXHIBIT } from '../content/exhibits'
 
 export const STEPS: L<string[]> = {
   pt: ['Design do guia', 'Entrega', 'Busca e reconhecimento', 'Clivagem', 'Reparo', 'Resultado'],
@@ -18,6 +19,9 @@ export const STEP_SECONDS = [3.5, 6, 9, 4, 7, 3.5]
 export type Quality = 'low' | 'medium' | 'high'
 
 export interface Tip { title: string; body: string; x: number; y: number }
+
+/** Id de uma exposição do modo Explorar (src/content/exhibits.ts). */
+export type ZoneId = string
 
 interface SimState {
   locus: string
@@ -40,11 +44,28 @@ interface SimState {
   qualityAuto: boolean
   camTick: number
   tip: Tip | null
+  /** Modo Explorar: o usuário pilota uma sonda pelo núcleo; a timeline continua rodando. */
+  explore: boolean
+  zone: ZoneId | null
+  /** Pedido de voo até uma zona (consumido pelo Explorer). */
+  flyTo: ZoneId | null
+  /** Zonas já visitadas (persistidas por navegador). */
+  seen: string[]
+  /** Som do modo Explorar ligado (preferência por navegador). */
+  sound: boolean
   set: (p: Partial<SimState>) => void
   setLocus: (s: string) => void
   select: (i: number) => void
   goto: (step: number) => void
   reset: () => void
+  setExplore: (on: boolean) => void
+}
+
+export const SEEN_KEY = 'protospace.seen'
+export const SOUND_KEY = 'protospace.sound'
+function loadSeen(): string[] {
+  try { const v = JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x in EXHIBIT) : [] }
+  catch { return [] }
 }
 
 const isCoarse = () => typeof matchMedia !== 'undefined' && (matchMedia('(pointer: coarse)').matches || innerWidth < 768)
@@ -101,6 +122,11 @@ export const useSim = create<SimState>((set, get) => ({
   qualityAuto: true,
   camTick: 0,
   tip: null,
+  explore: false,
+  zone: null,
+  flyTo: null,
+  seen: loadSeen(),
+  sound: (() => { try { return localStorage.getItem(SOUND_KEY) !== 'off' } catch { return true } })(),
   set: (p) => set(p),
   setLocus: (locus) => {
     const c = findCandidates(locus)
@@ -112,6 +138,12 @@ export const useSim = create<SimState>((set, get) => ({
   },
   goto: (step) => set({ step: Math.max(0, Math.min(STEP_COUNT - 1, step)), progress: 0, playing: true, camTick: get().camTick + 1 }),
   reset: () => set({ step: 0, progress: 0, playing: false, cinema: false, camTick: get().camTick + 1, seed: get().seed + 1 }),
+  setExplore: (on) => {
+    const s = get()
+    set({ explore: on, cinema: false, zone: null, flyTo: null, camTick: s.camTick + 1 })
+    // a etapa de entrega é outra escala (a célula inteira): no mundo aberto começamos no locus
+    if (on && s.step === 1) s.goto(0)
+  },
 }))
 
 /** Tudo que deriva dos parâmetros: candidatos, probabilidades, resultado da edição. */
