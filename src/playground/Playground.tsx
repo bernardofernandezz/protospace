@@ -4,8 +4,9 @@ import { CAS, DELIVERY, MAX_LOCUS, clean, diffSegments, isSeed, mismatches, type
 import { hasWebGL, useInView } from '../lib/hooks'
 import { report } from '../lib/monitor'
 import { useT, type T } from '../i18n'
-import { SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
+import { MISSIONS_KEY, SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
 import { EXHIBIT, EXHIBITS, REGIONS, type Region } from '../content/exhibits'
+import { MISSIONS, accomplished, currentMission } from '../content/missions'
 import { input } from './scene/shared'
 import { sound } from './sound'
 import { BASE_COLOR } from './colors'
@@ -353,6 +354,29 @@ function TouchKeys() {
 
 const COARSE = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
 
+/** Missão atual da trilha, com atalho para voar até ela; no fim, a opção de recomeçar. */
+function MissionPill() {
+  const t = useT()
+  const done = useSim((s) => s.missionsDone)
+  const m = currentMission(done)
+  const go = () => {
+    if (m) return useSim.getState().set({ flyTo: m.zone })
+    useSim.getState().set({ missionsDone: [] })
+    try { localStorage.removeItem(MISSIONS_KEY) } catch { /* sem armazenamento */ }
+  }
+  return (
+    <div className="glass flex items-center gap-3 rounded-2xl px-3 py-2" role="status">
+      <div className="min-w-0 flex-1">
+        <div className="hud-label text-rna">{m ? `${t('Missão', 'Mission')} ${done.length + 1}/${MISSIONS.length}` : t('Trilha completa', 'Trail complete')}</div>
+        <p className="text-xs leading-snug text-white">{m ? t.pick(m.goal) : t('Você percorreu do guia à clínica. Explore livremente!', 'You went from the guide to the clinic. Roam freely!')}</p>
+      </div>
+      <button type="button" onClick={go} className="shrink-0 rounded-lg bg-dna/20 px-2.5 py-1.5 text-xs text-dna hover:bg-dna/30 pointer-coarse:py-2.5">
+        {m ? t('Ir', 'Go') : t('Recomeçar', 'Restart')}
+      </button>
+    </div>
+  )
+}
+
 /**
  * HUD do modo Explorar: cartão da zona atual, "voar até" por região (caminho por teclado/leitor de tela) e dicas.
  * No toque o cartão começa recolhido e o "voar até" vira uma folha aberta pelo botão Mapa.
@@ -365,8 +389,10 @@ function ExplorePanel() {
   const e = zone ? EXHIBIT[zone] : undefined
   return (
     <>
+      <div className="absolute left-3 top-14 flex max-h-[calc(100%-10rem)] w-[min(20rem,calc(100%-13rem))] flex-col gap-2 md:left-5 pointer-coarse:right-16 pointer-coarse:top-3 pointer-coarse:max-h-[55%] pointer-coarse:w-auto">
+      <MissionPill />
       {e && (
-        <div key={e.id} className="glass caption-in absolute left-3 top-14 max-h-[calc(100%-10rem)] w-[min(20rem,calc(100%-13rem))] overflow-auto rounded-2xl p-4 md:left-5 pointer-coarse:right-16 pointer-coarse:top-3 pointer-coarse:max-h-[45%] pointer-coarse:w-auto pointer-coarse:p-3" role="status">
+        <div key={e.id} className="glass caption-in min-h-0 overflow-auto rounded-2xl p-4 pointer-coarse:p-3" role="status">
           <details open={!COARSE} className="group">
           <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
             <div className="hud-label">{t.pick(REGIONS[e.region])}</div>
@@ -386,6 +412,7 @@ function ExplorePanel() {
           </details>
         </div>
       )}
+      </div>
       <button type="button" aria-expanded={map} onClick={() => setMap(!map)}
         className={`glass absolute right-3 top-3 hidden h-11 min-w-11 place-items-center rounded-xl px-2 text-xs pointer-coarse:grid ${map ? 'text-dna ring-1 ring-dna/60' : 'text-white'}`}>
         {map ? '✕' : t('Mapa', 'Map')}
@@ -556,15 +583,27 @@ export default function Playground() {
 
   // modo Explorar: cada zona visitada pela primeira vez conta como descoberta (guardada neste navegador)
   useEffect(() => useSim.subscribe((s, prev) => {
+    const save = (key: string, v: string[]) => { try { localStorage.setItem(key, JSON.stringify(v)) } catch { /* sem armazenamento: vale só nesta visita */ } }
+    const say = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2200) }
+    // missão da trilha cumprida (ao entrar na zona ou quando a etapa assistida ali termina)
+    const m = s.explore ? currentMission(s.missionsDone) : undefined
+    const won = !!m && accomplished(m, s)
+    if (won) {
+      const missionsDone = [...s.missionsDone, m.id]
+      s.set({ missionsDone })
+      save(MISSIONS_KEY, missionsDone)
+      sound.chime(true)
+      navigator.vibrate?.(30)
+      say(missionsDone.length === MISSIONS.length ? `🧬 ${t('Trilha completa!', 'Trail complete!')}` : `✓ ${t('Missão cumprida', 'Mission complete')} · ${missionsDone.length}/${MISSIONS.length}`)
+    }
     if (!s.zone || s.zone === prev.zone) return
     const fresh = !s.seen.includes(s.zone)
-    sound.chime(fresh)
+    if (!won) sound.chime(fresh)
     if (!fresh) return
     const seen = [...s.seen, s.zone]
     s.set({ seen })
-    try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)) } catch { /* sem armazenamento: vale só nesta visita */ }
-    setToast(`✦ ${t('Nova descoberta', 'New discovery')} · ${seen.length}/${EXHIBITS.length}`)
-    setTimeout(() => setToast(''), 2200)
+    save(SEEN_KEY, seen)
+    if (!won) say(`✦ ${t('Nova descoberta', 'New discovery')} · ${seen.length}/${EXHIBITS.length}`)
   }), [t])
 
   // atalhos: ← → etapas, espaço play/pausa, R reset, C câmera, P apresentação, M cinema, F tela cheia, X explorar
@@ -657,7 +696,7 @@ export default function Playground() {
 
         {sim.explore && <ExplorePanel />}
 
-        {toast && <p className="glass absolute left-1/2 top-16 z-20 -translate-x-1/2 whitespace-nowrap rounded-full pointer-coarse:top-24 px-4 py-1.5 text-sm text-white" role="status">{toast}</p>}
+        {toast && <p className="glass absolute left-1/2 top-16 z-20 -translate-x-1/2 whitespace-nowrap rounded-full pointer-coarse:top-auto pointer-coarse:bottom-52 px-4 py-1.5 text-sm text-white" role="status">{toast}</p>}
         <p className="absolute bottom-3 right-4 hidden max-w-[220px] text-right text-[10px] leading-tight text-mist/60 xl:block">{t('Simulação didática simplificada; não representa um protocolo experimental real.', 'Simplified teaching simulation; not a real experimental protocol.')}</p>
         {big && !sim.explore && <p className="absolute right-4 top-14 hidden text-[11px] text-mist/70 md:block">← → {t('etapas', 'steps')} · {t('espaço', 'space')} play · M {t('cinema', 'cinema')} · R reset · C {t('câmera', 'camera')} · F {t('tela cheia', 'fullscreen')} · P {t('sair', 'exit')}</p>}
         {big && !sim.explore && <Qr />}

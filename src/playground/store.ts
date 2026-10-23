@@ -7,6 +7,7 @@ import {
 } from '../lib/dna'
 import { useLang, type L } from '../i18n'
 import { EXHIBIT } from '../content/exhibits'
+import { MISSIONS } from '../content/missions'
 
 export const STEPS: L<string[]> = {
   pt: ['Design do guia', 'Entrega', 'Busca e reconhecimento', 'Clivagem', 'Reparo', 'Resultado'],
@@ -51,6 +52,8 @@ interface SimState {
   flyTo: ZoneId | null
   /** Zonas já visitadas (persistidas por navegador). */
   seen: string[]
+  /** Missões concluídas (persistidas por navegador). */
+  missionsDone: string[]
   /** Som do modo Explorar ligado (preferência por navegador). */
   sound: boolean
   set: (p: Partial<SimState>) => void
@@ -63,8 +66,9 @@ interface SimState {
 
 export const SEEN_KEY = 'protospace.seen'
 export const SOUND_KEY = 'protospace.sound'
-function loadSeen(): string[] {
-  try { const v = JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x in EXHIBIT) : [] }
+export const MISSIONS_KEY = 'protospace.missions'
+function load(key: string, valid: (id: string) => boolean): string[] {
+  try { const v = JSON.parse(localStorage.getItem(key) ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string' && valid(x)) : [] }
   catch { return [] }
 }
 
@@ -125,7 +129,8 @@ export const useSim = create<SimState>((set, get) => ({
   explore: false,
   zone: null,
   flyTo: null,
-  seen: loadSeen(),
+  seen: load(SEEN_KEY, (x) => x in EXHIBIT),
+  missionsDone: load(MISSIONS_KEY, (x) => MISSIONS.some((m) => m.id === x)),
   sound: (() => { try { return localStorage.getItem(SOUND_KEY) !== 'off' } catch { return true } })(),
   set: (p) => set(p),
   setLocus: (locus) => {

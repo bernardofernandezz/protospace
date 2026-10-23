@@ -61,6 +61,10 @@ test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page, isMo
   await expect(snd).toHaveAttribute('aria-pressed', 'false')
   await snd.click()
   await expect(snd).toHaveAttribute('aria-pressed', 'true')
+  // missão 1: "Ir" voa até o guia e a trilha avança
+  await expect(page.getByText('Missão 1/9')).toBeVisible()
+  await page.getByRole('button', { name: 'Ir', exact: true }).click()
+  await expect(page.getByText('Missão 2/9')).toBeVisible({ timeout: 30_000 })
   if (isMobile) {
     // no toque o palco cobre a tela inteira e o "voar até" fica atrás do botão Mapa
     const vp = page.viewportSize()!

@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { Trail } from '@react-three/drei'
 import * as THREE from 'three'
 import { EXHIBITS, type Vec3 } from '../../content/exhibits'
+import { currentMission } from '../../content/missions'
 import { BASE_COLOR, PALETTE } from '../colors'
 import { useSim, type Quality, type ZoneId } from '../store'
 import { organicMaterial, tickOrganic } from './materials'
@@ -26,6 +27,7 @@ const KEYS: Record<string, [axis: 'x' | 'y' | 'z', dir: number]> = {
 }
 
 const rand = (seed: number) => { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647) }
+const UP = new THREE.Vector3(0, 1, 0)
 const _a = new THREE.Vector3(), _n = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3(), _t = new THREE.Vector3(), _m = new THREE.Matrix4()
 
 /** Posição de cada zona neste quadro (tudo se move com a timeline). */
@@ -62,6 +64,8 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
   const setEvents = useThree((s) => s.setEvents)
   const probe = useRef<THREE.Group>(null!)
   const inst = useRef<THREE.InstancedMesh>(null!)
+  const beacon = useRef<THREE.Mesh>(null!)
+  const arrow = useRef<THREE.Mesh>(null!)
   const look = useRef({ yaw: 0, pitch: -0.15 })
   const zones = useMemo(() => new Map<ZoneId, THREE.Vector3>(), [])
   const body = useMemo<Body>(() => ({ pos: new THREE.Vector3(), vel: new THREE.Vector3() }), [])
@@ -80,6 +84,7 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     shell: organicMaterial({ color: PALETTE.strand1, rim: '#d6fffa', opacity: 0.55, amp: 0.18, freq: 2.4, power: 1.4 }),
     core: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.strand1).multiplyScalar(3), toneMapped: false }),
     dot: new THREE.MeshStandardMaterial({ roughness: 0.4, emissive: '#ffffff', emissiveIntensity: 0.15 }),
+    goal: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.rna).multiplyScalar(2), toneMapped: false, transparent: true, depthWrite: false, side: THREE.DoubleSide }),
   }), [])
   const geo = useMemo(() => new THREE.IcosahedronGeometry(0.22, 1), [])
 
@@ -213,6 +218,23 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     camera.lookAt(_t.copy(body.pos).addScaledVector(_f, 3))
     focus.copy(body.pos)
 
+    // missão atual: anel pulsando no alvo e seta na sonda apontando para ele (somem ao chegar)
+    const goal = currentMission(st.missionsDone)?.zone
+    const gp = goal ? zones.get(goal) : undefined
+    const there = !!gp && st.zone === goal
+    beacon.current.visible = !!gp && !there
+    arrow.current.visible = !!gp && !there && !st.flyTo
+    if (gp && !there) {
+      const pulse = 1 + 0.15 * Math.sin(clock.elapsedTime * 4)
+      beacon.current.position.copy(gp)
+      beacon.current.quaternion.copy(camera.quaternion)
+      beacon.current.scale.setScalar(reach(goal!) * 0.6 * pulse)
+      _a.subVectors(gp, body.pos).normalize()
+      arrow.current.position.copy(body.pos).addScaledVector(_a, PROBE_R + 0.5)
+      arrow.current.quaternion.setFromUnitVectors(UP, _a)
+      mat.goal.opacity = 0.55 + 0.3 * Math.sin(clock.elapsedTime * 4)
+    }
+
     // nucleotídeos livres
     for (let i = 0; i < floaters.length; i++) {
       const f = floaters[i]
@@ -244,6 +266,8 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     <>
       {/* o rastro custa um desenho extra por quadro: fica de fora na qualidade baixa */}
       {quality === 'low' ? ship : <Trail width={1.4} length={5} color={PALETTE.strand1} attenuation={(t) => t * t}>{ship}</Trail>}
+      <mesh ref={beacon} material={mat.goal} visible={false}><ringGeometry args={[0.9, 1, 48]} /></mesh>
+      <mesh ref={arrow} material={mat.goal} visible={false}><coneGeometry args={[0.16, 0.5, 12]} /></mesh>
       <instancedMesh ref={inst} args={[geo, mat.dot, floaters.length]} frustumCulled={false} />
     </>
   )
