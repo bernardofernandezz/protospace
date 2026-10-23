@@ -163,7 +163,8 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
   }, [gl])
 
   useFrame(({ clock }, rawDt) => {
-    const dt = Math.min(rawDt, 1 / 20)
+    const dt = Math.min(rawDt, 1 / 20) // física: passo limitado para não atravessar paredes
+    const fly = Math.min(rawDt, 0.5) // voo guiado: tempo real, chega no mesmo tempo mesmo com poucos FPS
     const st = useSim.getState()
     const { L } = frame(d)
     zonePositions(d, zones)
@@ -181,8 +182,8 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
       _t.copy(zp).addScaledVector(_a, 1 - reach(st.flyTo))
       _t.y += 1
       body.vel.set(0, 0, 0)
-      body.pos.lerp(_t, 1 - Math.exp(-dt * 3))
-      const k = 1 - Math.exp(-dt * 4)
+      body.pos.lerp(_t, 1 - Math.exp(-fly * 3))
+      const k = 1 - Math.exp(-fly * 4)
       const dy = Math.atan2(_a.x, -_a.z) - look.current.yaw
       look.current.yaw += Math.atan2(Math.sin(dy), Math.cos(dy)) * k
       look.current.pitch += (Math.asin(THREE.MathUtils.clamp(_a.y, -1, 1)) - 0.1 - look.current.pitch) * k
