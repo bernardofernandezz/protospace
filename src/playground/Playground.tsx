@@ -5,6 +5,7 @@ import { hasWebGL, useInView } from '../lib/hooks'
 import { useT, type T } from '../i18n'
 import { STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
 import { BASE_COLOR } from './colors'
+import { requestCapture } from './scene/shared'
 
 const Scene = lazy(() => import('./scene/Scene'))
 
@@ -376,7 +377,6 @@ export default function Playground() {
     catch { flash(t('Não foi possível copiar', 'Could not copy')) }
   }
   const capture = async () => {
-    const { requestCapture } = await import('./scene/shared')
     const url = await requestCapture()
     const a = document.createElement('a')
     a.href = url

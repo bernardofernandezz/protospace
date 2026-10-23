@@ -56,6 +56,16 @@ test('mismatches na região seed impedem a edição', async ({ page }) => {
   await expect(page.getByText(/Sem edição/)).toBeVisible()
 })
 
+test('link compartilhável restaura o experimento', async ({ page }) => {
+  await page.goto('/?lang=pt&cas=be&delivery=viral&tol=9#playground')
+  await page.getByRole('tab', { name: 'Parâmetros' }).click()
+  await expect(page.getByRole('button', { name: 'Editor de bases (CBE)' })).toHaveAttribute('aria-pressed', 'true')
+  // valores fora da lista fechada caem no padrão / são limitados
+  await page.goto('/?lang=pt&cas=<script>#playground')
+  await page.getByRole('tab', { name: 'Parâmetros' }).click()
+  await expect(page.getByRole('button', { name: 'Editor de bases (CBE)' })).toHaveAttribute('aria-pressed', 'false')
+})
+
 test('sem WebGL, o playground continua funcional', async ({ page }) => {
   await page.addInitScript(() => {
     const orig = HTMLCanvasElement.prototype.getContext

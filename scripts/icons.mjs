@@ -1,6 +1,6 @@
 // Rasteriza public/favicon.svg nos tamanhos de ícone usados pelo manifest/iOS.
 // Uso: node scripts/icons.mjs   (requer Chromium: npx playwright install chromium, ou CHROMIUM_PATH)
-import { chromium } from 'playwright'
+import { chromium } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 
 const svg = readFileSync(new URL('../public/favicon.svg', import.meta.url), 'utf8')
