@@ -133,3 +133,24 @@ main > .section:not(#o-que-e) { content-visibility: auto; contain-intrinsic-size
   .mech-diagram .label3d-line { height: 12px; }
   .mech-diagram .label3d-dot { width: 5px; height: 5px; }
 }
+
+/* termos do glossário (ver src/components/Term.tsx): a palavra fica legível na frase,
+   e a explicação em linguagem comum abre num cartão, sem tirar ninguém da página */
+.term {
+  display: inline; color: inherit; font: inherit; text-align: left;
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-dna, #3ef0d0) 70%, transparent);
+  cursor: help; text-decoration: none; transition: color .2s, border-color .2s;
+}
+.term:hover, .term:focus-visible { color: var(--color-dna, #3ef0d0); border-bottom-style: solid; }
+.term-pop {
+  position: fixed; inset: auto 0 1.5rem 0; margin-inline: auto; width: min(26rem, calc(100% - 2rem));
+  border-radius: 16px; padding: 1rem 1.15rem; color: #fff; text-align: left;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8);
+}
+.term-pop::backdrop { background: rgba(4, 6, 11, .45); }
+.term-pop-title { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+.term-pop-full { display: block; margin-top: 2px; font-family: var(--font-mono); font-size: 11px; color: var(--color-mist, #a9b8c9); }
+.term-pop-body { display: block; margin-top: .55rem; font-size: .875rem; line-height: 1.65; color: color-mix(in srgb, #fff 85%, transparent); }
+.term-pop:popover-open { animation: term-in .22s cubic-bezier(.2, .8, .2, 1); }
+@keyframes term-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .term-pop:popover-open { animation: none; } }
