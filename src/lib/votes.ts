@@ -33,6 +33,9 @@ const fold = (rows: Row[], into: Tallies = {}) => {
   return into
 }
 
+/** Falha de rede (offline, DNS): vale reenviar depois. Recusas do banco (validação, limite de taxa) trazem `code`. */
+export const isNetworkError = (e: unknown) => !(e && typeof e === 'object' && 'code' in e && e.code)
+
 export async function fetchTallies(): Promise<Tallies> {
   const { data, error } = await (await db()).from('dilemma_tallies').select('dilemma_id, stance, votes')
   if (error) throw error
