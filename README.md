@@ -104,6 +104,8 @@ Detalhes em [SECURITY.md](SECURITY.md).
 
 O site é publicado na **Vercel** a cada merge na `main`. A configuração (cabeçalhos e cache) está em `vercel.json`.
 
+Erros de produção vão para o **Sentry** quando a variável `VITE_SENTRY_DSN` está definida no projeto da Vercel. Sem ela, nada é carregado.
+
 Para regenerar as imagens de compartilhamento depois de mudar a cena, rode `node scripts/og.mjs http://localhost:5173` com o `npm run dev` ativo.
 
 ---

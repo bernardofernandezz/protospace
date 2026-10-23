@@ -2,6 +2,7 @@ import { Component, Suspense, lazy, useEffect, useRef, useState, type ReactNode 
 import { useShallow } from 'zustand/react/shallow'
 import { CAS, DELIVERY, MAX_LOCUS, clean, diffSegments, isSeed, mismatches, type CasType, type Delivery, type Repair } from '../lib/dna'
 import { hasWebGL, useInView } from '../lib/hooks'
+import { report } from '../lib/monitor'
 import { useT, type T } from '../i18n'
 import { SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
 import { EXHIBIT, EXHIBITS, REGIONS, type Region } from '../content/exhibits'
@@ -401,6 +402,7 @@ function Fallback({ reason }: { reason: 'nogl' | 'lost' }) {
 class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
   state = { failed: false }
   static getDerivedStateFromError() { return { failed: true } }
+  componentDidCatch(e: unknown) { report(e) }
   render() { return this.state.failed ? this.props.fallback : this.props.children }
 }
 
