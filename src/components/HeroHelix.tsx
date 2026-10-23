@@ -20,6 +20,21 @@ const COMP: Record<string, string> = { A: 'T', T: 'A', C: 'G', G: 'C' }
 /** Lê o progresso de rolagem do hero (0 no topo, 1 quando ele sai da tela). */
 const heroScroll = () => Math.min(1, Math.max(0, scrollY / Math.max(1, innerHeight)))
 
+// temporários reutilizados (sem alocação por quadro durante a rolagem)
+const _m = new THREE.Matrix4(), _y = new THREE.Vector3(), _ys = new THREE.Vector3(), _x = new THREE.Vector3(0, 1, 0), _z = new THREE.Vector3(), _mid = new THREE.Vector3(), _col = new THREE.Color()
+
+/** Placa de base k, de `from` em direção a `to`, encolhendo conforme a fita abre. */
+function plate(im: THREE.InstancedMesh, k: number, from: THREE.Vector3, to: THREE.Vector3, base: string, open: number) {
+  _y.subVectors(to, from)
+  const len = (_y.length() * 0.5 - 0.04) * (1 - open * 0.85)
+  _y.normalize()
+  _z.crossVectors(_x, _y)
+  _mid.copy(from).addScaledVector(_y, len / 2)
+  _m.makeBasis(_x, _ys.copy(_y).multiplyScalar(Math.max(0.01, len)), _z).setPosition(_mid)
+  im.setMatrixAt(k, _m)
+  im.setColorAt(k, _col.set(BASE_COLOR[base]).multiplyScalar(1 + open * 0.8))
+}
+
 function Helix({ still }: { still: boolean }) {
   const group = useRef<THREE.Group>(null!)
   const plates = useRef<THREE.InstancedMesh>(null!)
@@ -32,6 +47,7 @@ function Helix({ still }: { still: boolean }) {
     phos: glowingPhysical({ roughness: 0.2, clearcoat: 1, glow: 0.3 }),
   }), [])
   const geo = useMemo(() => ({ plate: new RoundedBoxGeometry(0.13, 1, 0.36, 2, 0.04), phos: new THREE.SphereGeometry(0.17, 16, 12) }), [])
+  useEffect(() => () => { for (const m of Object.values(mats)) m.dispose(); geo.plate.dispose(); geo.phos.dispose() }, [mats, geo])
   const pts = useMemo(() => ({ a: Array.from({ length: N }, () => new THREE.Vector3()), b: Array.from({ length: N }, () => new THREE.Vector3()) }), [])
   const state = useRef({ u: -1 })
   const c1 = useMemo(() => new THREE.Color(PALETTE.strand1), [])
@@ -50,7 +66,6 @@ function Helix({ still }: { still: boolean }) {
     const u = s.u < 0 ? target : THREE.MathUtils.lerp(s.u, target, 0.12)
     if (Math.abs(u - s.u) < 1e-4) return
     s.u = u
-    const m = new THREE.Matrix4(), y = new THREE.Vector3(), x = new THREE.Vector3(0, 1, 0), z = new THREE.Vector3(), mid = new THREE.Vector3(), col = new THREE.Color()
     for (let i = 0; i < N; i++) {
       const open = smooth(0, 1, u * 2.2 - (1 - i / N) * 1.1)
       const yy = (i - N / 2) * RISE * 1.12
@@ -59,18 +74,10 @@ function Helix({ still }: { still: boolean }) {
       pts.a[i].set(Math.cos(phi) * r, yy, Math.sin(phi) * r)
       pts.b[i].set(Math.cos(phi + GROOVE) * r, yy, Math.sin(phi + GROOVE) * r)
       const b1 = SEQ[i % SEQ.length]
-      for (const [k, from, to, base, f] of [[i, pts.a[i], pts.b[i], b1, 0.5], [N + i, pts.b[i], pts.a[i], COMP[b1], 0.5]] as const) {
-        y.subVectors(to, from)
-        const len = (y.length() * f - 0.04) * (1 - open * 0.85)
-        y.normalize()
-        z.crossVectors(x, y)
-        mid.copy(from).addScaledVector(y, len / 2)
-        m.makeBasis(x, y.clone().multiplyScalar(Math.max(0.01, len)), z).setPosition(mid)
-        plates.current.setMatrixAt(k, m)
-        plates.current.setColorAt(k, col.set(BASE_COLOR[base]).multiplyScalar(1 + open * 0.8))
-      }
-      phos.current.setMatrixAt(i, m.makeTranslation(pts.a[i]))
-      phos.current.setMatrixAt(N + i, m.makeTranslation(pts.b[i]))
+      plate(plates.current, i, pts.a[i], pts.b[i], b1, open)
+      plate(plates.current, N + i, pts.b[i], pts.a[i], COMP[b1], open)
+      phos.current.setMatrixAt(i, _m.makeTranslation(pts.a[i]))
+      phos.current.setMatrixAt(N + i, _m.makeTranslation(pts.b[i]))
       phos.current.setColorAt(i, c1)
       phos.current.setColorAt(N + i, c2)
     }
@@ -100,6 +107,7 @@ function Particles({ still }: { still: boolean }) {
     for (let i = 0; i < pos.length; i++) pos[i] = (r() - 0.5) * (i % 3 === 2 ? 30 : 50)
     return new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3))
   }, [])
+  useEffect(() => () => geo.dispose(), [geo])
   useFrame(({ pointer }, dt) => {
     if (still) return
     ref.current.rotation.y += dt * 0.02
@@ -126,8 +134,9 @@ function Placement({ children }: { children: React.ReactNode }) {
 /** Avisa "pronto" só depois de alguns quadros realmente desenhados (shaders compilados, ambiente gerado). */
 function ReadySignal({ onReady }: { onReady?: () => void }) {
   const frames = useRef(0)
-  useFrame(() => {
+  useFrame(({ invalidate }) => {
     frames.current += 1
+    if (frames.current < 4) invalidate() // no frameloop 'demand' os quadros iniciais precisam ser pedidos
     if (frames.current === 4) onReady?.()
   })
   return null
@@ -135,7 +144,7 @@ function ReadySignal({ onReady }: { onReady?: () => void }) {
 
 export default function HeroHelix({ active, still, onReady }: { active: boolean; still: boolean; onReady?: () => void }) {
   return (
-    <Canvas frameloop={active ? 'always' : 'never'} camera={{ position: [0, 0, 16], fov: 45 }} dpr={COARSE ? [1, 1.25] : [1, 1.75]} gl={{ antialias: false, stencil: false }} aria-hidden="true">
+    <Canvas frameloop={!active ? 'never' : still ? 'demand' : 'always'} camera={{ position: [0, 0, 16], fov: 45 }} dpr={COARSE ? [1, 1.25] : [1, 1.75]} gl={{ antialias: false, stencil: false }} aria-hidden="true">
       <ReadySignal onReady={onReady} />
       <ambientLight intensity={0.4} />
       <directionalLight position={[6, 8, 8]} intensity={2} color={'#d6f4ff'} />
