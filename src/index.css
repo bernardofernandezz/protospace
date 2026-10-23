@@ -113,8 +113,6 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 .lenis.lenis-stopped { overflow: hidden; }
-.poster-float { animation: poster-float 9s ease-in-out infinite; }
-@keyframes poster-float { 0%, 100% { translate: 0 -50%; } 50% { translate: 0 calc(-50% - 14px); } }
 
 /* seções fora da tela não passam por estilo/layout/pintura até se aproximarem (performance) */
 main > .section:not(#o-que-e) { content-visibility: auto; contain-intrinsic-size: auto 1400px; }

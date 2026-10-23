@@ -1,31 +1,11 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
-import { hasWebGL, prefersReducedMotion, useInView } from '../lib/hooks'
+import { hasWebGL, isSoftwareGL, prefersReducedMotion, useInView } from '../lib/hooks'
 import { useT } from '../i18n'
 import { SITE } from '../content/site'
+import { bootDone, finishBoot } from '../lib/boot'
 
 const HeroHelix = lazy(() => import('../components/HeroHelix'))
-
-/** Pôster estático (SVG) exibido instantaneamente, até a hélice 3D ficar pronta. */
-function Poster({ hidden }: { hidden: boolean }) {
-  const cols = ['#3ee6a0', '#ff5c8a', '#4cc9ff', '#ffc24b']
-  return (
-    <svg viewBox="0 0 400 800" aria-hidden="true" preserveAspectRatio="xMidYMid meet"
-      className={`poster-float absolute right-[-18%] top-1/2 h-[92%] -translate-y-1/2 rotate-[28deg] transition-opacity duration-1000 md:right-[4%] ${hidden ? 'opacity-0' : 'opacity-40 md:opacity-70'}`}>
-      {Array.from({ length: 34 }, (_, i) => {
-        const y = 30 + i * 22
-        const a = Math.sin(i * 0.6) * 90
-        return (
-          <g key={i}>
-            <line x1={200 - a} x2={200 + a} y1={y} y2={y} stroke={cols[i % 4]} strokeWidth="6" strokeLinecap="round" opacity={0.75} />
-            <circle cx={200 - a} cy={y} r="7" fill="#3ef0d0" />
-            <circle cx={200 + a} cy={y} r="7" fill="#2a9df4" />
-          </g>
-        )
-      })}
-    </svg>
-  )
-}
 
 /** Número que conta até o valor final quando entra na tela. */
 function Counter({ to, from = 0 }: { to: number; from?: number }) {
@@ -34,8 +14,12 @@ function Counter({ to, from = 0 }: { to: number; from?: number }) {
     if (!el.current) return
     if (prefersReducedMotion()) { el.current.textContent = String(to); return }
     const o = { v: from }
-    const tw = gsap.to(o, { v: to, duration: 1.6, ease: 'power3.out', delay: 1, onUpdate: () => { if (el.current) el.current.textContent = String(Math.round(o.v)) } })
-    return () => { tw.kill() }
+    let tw: gsap.core.Tween | undefined
+    let alive = true
+    bootDone.then(() => {
+      if (alive) tw = gsap.to(o, { v: to, duration: 1.6, ease: 'power3.out', delay: 0.5, onUpdate: () => { if (el.current) el.current.textContent = String(Math.round(o.v)) } })
+    })
+    return () => { alive = false; tw?.kill() }
   }, [to, from])
   return <span ref={el}>{from}</span>
 }
@@ -44,29 +28,28 @@ export default function Hero() {
   const t = useT()
   const ref = useRef<HTMLElement>(null)
   const inView = useInView(ref)
-  const [gl] = useState(hasWebGL)
+  // hélice decorativa só com GPU de verdade (com WebGL por software ela travaria a página)
+  const [gl] = useState(() => hasWebGL() && !isSoftwareGL())
   const [still] = useState(prefersReducedMotion)
   const [ready, setReady] = useState(false)
-  const [load, setLoad] = useState(false)
 
-  // a hélice 3D (three.js) só carrega no desktop e em tempo ocioso; no celular fica o pôster SVG
-  useEffect(() => {
-    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
-    if (!gl || matchMedia('(pointer: coarse)').matches || innerWidth < 768 || conn?.saveData) return
-    const ric = window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 600))
-    const id = ric(() => setLoad(true), { timeout: 2500 })
-    return () => (window.cancelIdleCallback ?? clearTimeout)(id)
-  }, [gl])
+  // sem 3D no hero não há o que esperar: libera a tela de carregamento na hora
+  useEffect(() => { if (!gl) finishBoot() }, [gl])
 
+  // animações de entrada só depois que a tela de carregamento sai
   useEffect(() => {
     if (still) return
-    const ctx = gsap.context(() => {
-      // só transform no título e no parágrafo (sem opacidade): não atrasa o LCP
-      gsap.from('[data-hero-word]', { yPercent: 110, duration: 1.1, ease: 'expo.out', stagger: 0.07 })
-      gsap.from('[data-hero-rise]', { y: 18, duration: 0.9, ease: 'power3.out' })
-      gsap.from('[data-hero-fade]', { y: 20, opacity: 0, duration: 0.8, ease: 'power3.out', stagger: 0.08, delay: 0.35 })
-    }, ref)
-    return () => ctx.revert()
+    let ctx: gsap.Context | undefined
+    let alive = true
+    bootDone.then(() => {
+      if (!alive) return
+      ctx = gsap.context(() => {
+        gsap.from('[data-hero-word]', { yPercent: 110, duration: 1.1, ease: 'expo.out', stagger: 0.07 })
+        gsap.from('[data-hero-rise]', { y: 18, duration: 0.9, ease: 'power3.out' })
+        gsap.from('[data-hero-fade]', { y: 20, opacity: 0, duration: 0.8, ease: 'power3.out', stagger: 0.08, delay: 0.35 })
+      }, ref)
+    })
+    return () => { alive = false; ctx?.revert() }
   }, [still, t.lang])
 
   const words = t.lang === 'en' ? ['Edit', 'the', 'genome.'] : ['Editar', 'o', 'genoma.']
@@ -80,11 +63,10 @@ export default function Hero() {
   return (
     <section id="inicio" ref={ref} className="relative flex min-h-[100svh] items-center overflow-hidden">
       <div className="absolute inset-0">
-        <Poster hidden={ready} />
-        {load && (
+        {gl && (
           <Suspense fallback={null}>
             <div className={`absolute inset-0 transition-opacity duration-1000 ${ready ? 'opacity-100' : 'opacity-0'}`}>
-              <HeroHelix active={inView} still={still} onReady={() => setReady(true)} />
+              <HeroHelix active={inView} still={still} onReady={() => { setReady(true); finishBoot() }} />
             </div>
           </Suspense>
         )}

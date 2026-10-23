@@ -20,6 +20,7 @@ import Conclusion from './sections/Conclusion'
 import About from './sections/About'
 import { prefersReducedMotion } from './lib/hooks'
 import { useMicroInteractions } from './lib/fx'
+import { BOOT_TIMEOUT_MS, finishBoot } from './lib/boot'
 import { useT } from './i18n'
 
 const Playground = lazy(() => import('./playground/Playground'))
@@ -45,12 +46,9 @@ export default function App() {
   const t = useT()
   useMicroInteractions()
 
-  // pré-carregador inline (index.html): some assim que o app monta
+  // tela de carregamento (index.html): o hero a libera quando o 3D está pronto; aqui fica o limite de segurança
   useEffect(() => {
-    const el = document.getElementById('boot')
-    if (!el) return
-    el.classList.add('boot-out')
-    const id = setTimeout(() => el.remove(), 700)
+    const id = setTimeout(finishBoot, BOOT_TIMEOUT_MS)
     return () => clearTimeout(id)
   }, [])
 
