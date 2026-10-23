@@ -8,8 +8,8 @@ export default tseslint.config(
   { ignores: ['dist', 'dev-dist', 'node_modules', 'playwright-report', 'test-results'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ['**/*.{ts,tsx}'],
-    languageOptions: { ecmaVersion: 2022, globals: { ...globals.browser, ...globals.node } },
+    files: ['**/*.{ts,tsx,mjs}'],
+    languageOptions: { ecmaVersion: 2022, globals: globals.browser },
     plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
     rules: {
       'react-hooks/rules-of-hooks': 'error',
@@ -18,4 +18,6 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
+  // scripts, testes e configs rodam no Node
+  { files: ['scripts/**', 'tests/**', '*.config.{ts,js}', 'src/**/*.check.ts'], languageOptions: { globals: globals.node } },
 )

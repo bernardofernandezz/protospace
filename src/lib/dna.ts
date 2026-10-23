@@ -25,7 +25,6 @@ export const MAX_LOCUS = 160
 export const COMP: Record<string, string> = { A: 'T', T: 'A', C: 'G', G: 'C' }
 
 export const clean = (s: string) => s.toUpperCase().replace(/[^ACGT]/g, '')
-export const complement = (s: string) => [...s].map((b) => COMP[b] ?? 'N').join('')
 export const gcContent = (s: string) => (s.match(/[GC]/g)?.length ?? 0) / Math.max(1, s.length)
 
 /** Score ilustrativo de on-target: penaliza GC fora de 40–70 %, TTTT (terminador do promotor U6) e homopolímeros. */

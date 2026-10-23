@@ -1,7 +1,7 @@
 // Gera public/og-pt.png e public/og-en.png (1200×630) a partir da cena 3D real.
 // Uso: com `npm run dev` rodando →  node scripts/og.mjs [http://localhost:5173]
 // (requer Chromium: npx playwright install chromium, ou CHROMIUM_PATH)
-import { chromium } from 'playwright'
+import { chromium } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 
 const base = process.argv[2] || 'http://localhost:5173'
