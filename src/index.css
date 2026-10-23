@@ -43,7 +43,7 @@
     backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
   }
-  .hud-btn { @apply grid h-10 min-w-10 place-items-center rounded-xl px-2.5 text-sm text-white/90 transition hover:bg-white/10 active:scale-95; }
+  .hud-btn { @apply inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl px-2.5 text-sm whitespace-nowrap text-white/90 transition hover:bg-white/10 active:scale-95; }
   .hud-label { @apply text-[11px] font-medium uppercase tracking-[0.18em] text-mist/80; }
   .eyebrow { @apply font-mono text-xs uppercase tracking-[0.3em] text-dna; }
   .section { @apply relative mx-auto max-w-7xl px-5 py-28 md:px-10 md:py-36; }
@@ -76,3 +76,53 @@
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
 .stage:fullscreen, .stage:fullscreen * { cursor: auto !important; }
+
+/* rótulos 3D do playground (ancorados por drei <Html>) */
+.label3d {
+  position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center;
+  transform: translate(-50%, -100%); white-space: nowrap; opacity: 0; transition: opacity .35s ease;
+  user-select: none;
+}
+.label3d[data-on="1"] { opacity: 1; }
+.label3d-text {
+  border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent); color: var(--tone);
+  background: rgba(4, 6, 11, .72); backdrop-filter: blur(6px); border-radius: 8px;
+  padding: 2px 8px; font: 500 11px/1.6 var(--font-mono); letter-spacing: .04em;
+}
+.label3d-line { width: 1px; height: 22px; background: linear-gradient(var(--tone), transparent); }
+.label3d-dot { width: 6px; height: 6px; border-radius: 99px; background: var(--tone); box-shadow: 0 0 10px var(--tone); }
+.caption-in { animation: caption-in .5s cubic-bezier(.2,.8,.2,1); }
+@keyframes caption-in { from { opacity: 0; filter: blur(4px); } to { opacity: 1; filter: none; } }
+
+/* micro-interações (ver src/lib/fx.ts) */
+.tilt-card {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform .4s cubic-bezier(.2,.8,.2,1), background-color .3s, box-shadow .3s;
+  position: relative; isolation: isolate;
+}
+.tilt-card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(62, 240, 208, .10), transparent 45%);
+  opacity: 0; transition: opacity .3s;
+}
+.tilt-card:hover::after { opacity: 1; }
+.magnetic { translate: var(--tx, 0) var(--ty, 0); transition: translate .35s cubic-bezier(.2,.8,.2,1), box-shadow .3s, background-color .3s; }
+
+/* Lenis (rolagem suave) */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+.poster-float { animation: poster-float 9s ease-in-out infinite; }
+@keyframes poster-float { 0%, 100% { translate: 0 -50%; } 50% { translate: 0 calc(-50% - 14px); } }
+
+/* seções fora da tela não passam por estilo/layout/pintura até se aproximarem (performance) */
+main > .section:not(#o-que-e) { content-visibility: auto; contain-intrinsic-size: auto 1400px; }
+.grain { will-change: transform; }
+
+/* revelação ao rolar (classe .in adicionada por IntersectionObserver em App.tsx) */
+.motion [data-reveal] {
+  opacity: 0; translate: 0 40px;
+  transition: opacity .9s cubic-bezier(.2,.8,.2,1), translate .9s cubic-bezier(.2,.8,.2,1), transform .4s cubic-bezier(.2,.8,.2,1), background-color .3s;
+}
+.motion [data-reveal].in { opacity: 1; translate: none; }

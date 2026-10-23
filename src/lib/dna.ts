@@ -80,26 +80,35 @@ const TRANSITION: Record<string, string> = { A: 'G', G: 'A', C: 'T', T: 'C' }
 const mutateAt = (s: string, idx: number[]) =>
   [...s].map((b, i) => (idx.includes(i) ? TRANSITION[b] : b)).join('')
 
-export interface OffTargetSite { label: string; site: string; pam: string }
+export interface OffTargetSite { label: { pt: string; en: string }; site: string; pam: string }
 
 /** Dois sítios "em outro ponto do genoma" (fictícios), parecidos com o alvo: 2 mm distais e 1 distal + 1 seed. */
 export function offTargetSites(protospacer: string): OffTargetSite[] {
   return [
-    { label: 'Sítio OT-1 · cromossomo ilustrativo 7', site: mutateAt(protospacer, [1, 4]), pam: 'AGG' },
-    { label: 'Sítio OT-2 · cromossomo ilustrativo 12', site: mutateAt(protospacer, [2, 13]), pam: 'TGG' },
+    { label: { pt: 'Sítio OT-1 · cromossomo ilustrativo 7', en: 'Site OT-1 · illustrative chromosome 7' }, site: mutateAt(protospacer, [1, 4]), pam: 'AGG' },
+    { label: { pt: 'Sítio OT-2 · cromossomo ilustrativo 12', en: 'Site OT-2 · illustrative chromosome 12' }, site: mutateAt(protospacer, [2, 13]), pam: 'TGG' },
   ]
 }
 
 export const DELIVERY = {
-  rnp: { name: 'RNP', eff: 0.9, offMult: 0.6, note: 'Proteína + guia prontos: ação rápida e transitória, menos off-target.' },
-  plasmid: { name: 'Plasmídeo', eff: 0.7, offMult: 1.35, note: 'Barato, mas a expressão prolongada aumenta off-target e há risco de integração.' },
-  viral: { name: 'Vetor viral', eff: 0.85, offMult: 1.5, note: 'Alta eficiência (inclusive in vivo); expressão persistente, imunogenicidade, limite de carga (AAV ≈ 4,7 kb).' },
+  rnp: {
+    name: { pt: 'RNP', en: 'RNP' }, eff: 0.9, offMult: 0.6,
+    note: { pt: 'Proteína + guia prontos: ação rápida e transitória, menos off-target.', en: 'Pre-assembled protein + guide: fast, transient activity and fewer off-targets.' },
+  },
+  plasmid: {
+    name: { pt: 'Plasmídeo', en: 'Plasmid' }, eff: 0.7, offMult: 1.35,
+    note: { pt: 'Barato, mas a expressão prolongada aumenta off-target e há risco de integração.', en: 'Cheap, but prolonged expression raises off-target activity and there is a risk of integration.' },
+  },
+  viral: {
+    name: { pt: 'Vetor viral', en: 'Viral vector' }, eff: 0.85, offMult: 1.5,
+    note: { pt: 'Alta eficiência (inclusive in vivo); expressão persistente, imunogenicidade, limite de carga (AAV ≈ 4,7 kb).', en: 'High efficiency (including in vivo); persistent expression, immunogenicity, cargo limit (AAV ≈ 4.7 kb).' },
+  },
 } as const
 
 export const CAS = {
-  wt: { name: 'SpCas9 selvagem', cuts: 'dsb' },
-  nickase: { name: 'Cas9 nickase (D10A)', cuts: 'nick' },
-  be: { name: 'Editor de bases (CBE)', cuts: 'none' },
+  wt: { name: { pt: 'SpCas9 selvagem', en: 'Wild-type SpCas9' }, cuts: 'dsb' },
+  nickase: { name: { pt: 'Cas9 nickase (D10A)', en: 'Cas9 nickase (D10A)' }, cuts: 'nick' },
+  be: { name: { pt: 'Editor de bases (CBE)', en: 'Base editor (CBE)' }, cuts: 'none' },
 } as const
 
 /** PRNG determinístico (mulberry32) para que cada "rodada" seja reproduzível. */
