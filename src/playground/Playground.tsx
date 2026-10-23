@@ -3,7 +3,10 @@ import { useShallow } from 'zustand/react/shallow'
 import { CAS, DELIVERY, MAX_LOCUS, clean, diffSegments, isSeed, mismatches, type CasType, type Delivery, type Repair } from '../lib/dna'
 import { hasWebGL, useInView } from '../lib/hooks'
 import { useT, type T } from '../i18n'
-import { STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
+import { SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
+import { EXHIBIT, EXHIBITS, REGIONS, type Region } from '../content/exhibits'
+import { input } from './scene/shared'
+import { sound } from './sound'
 import { BASE_COLOR } from './colors'
 import { requestCapture } from './scene/shared'
 
@@ -58,6 +61,9 @@ const ICONS = {
   screen: 'M3 4h18v12H3zM8 20h8M12 16v4',
   link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1m2 2.7a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   shot: 'M4 7h3l2-3h6l2 3h3v13H4zM12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z',
+  explore: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm3.5 5.5-2 5-5 2 2-5z',
+  soundOn: 'M4 9h4l5-4v14l-5-4H4zM16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12',
+  soundOff: 'M4 9h4l5-4v14l-5-4H4zM17 9l5 6m0-6-5 6',
 }
 const Stroke = ({ d }: { d: string }) => (
   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>
@@ -302,6 +308,81 @@ function Tooltip() {
   )
 }
 
+/** Joystick de toque: escreve direto na entrada do Explorer. */
+function Joystick() {
+  const base = useRef<HTMLDivElement>(null)
+  const [k, setK] = useState({ x: 0, y: 0 })
+  const move = (e: React.PointerEvent) => {
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
+    const r = base.current!.getBoundingClientRect()
+    let x = (e.clientX - r.left) / (r.width / 2) - 1
+    let y = (e.clientY - r.top) / (r.height / 2) - 1
+    const l = Math.hypot(x, y)
+    if (l > 1) { x /= l; y /= l }
+    input.x = x
+    input.z = -y
+    setK({ x, y })
+  }
+  const end = () => { input.x = input.z = 0; setK({ x: 0, y: 0 }) }
+  return (
+    <div ref={base} aria-hidden="true" className="glass absolute bottom-20 left-4 hidden h-28 w-28 touch-none rounded-full pointer-coarse:block"
+      onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); useSim.getState().set({ flyTo: null }); move(e) }}
+      onPointerMove={move} onPointerUp={end} onPointerCancel={end}>
+      <span className="absolute left-1/2 top-1/2 h-12 w-12 rounded-full bg-dna/40 ring-1 ring-dna" style={{ transform: `translate(calc(-50% + ${k.x * 32}px), calc(-50% + ${k.y * 32}px))` }} />
+    </div>
+  )
+}
+
+/** HUD do modo Explorar: cartão da zona atual, "voar até" por região (caminho por teclado/leitor de tela) e dicas. */
+function ExplorePanel() {
+  const t = useT()
+  const zone = useSim((s) => s.zone)
+  const seen = useSim((s) => s.seen)
+  const e = zone ? EXHIBIT[zone] : undefined
+  return (
+    <>
+      {e && (
+        <div key={e.id} className="glass caption-in absolute left-3 top-14 max-h-[calc(100%-10rem)] w-[min(20rem,calc(100%-13rem))] overflow-auto rounded-2xl p-4 md:left-5" role="status">
+          <div className="hud-label">{t.pick(REGIONS[e.region])}</div>
+          <div className="font-display text-lg leading-tight text-white">{t.pick(e.title)}</div>
+          <p className="mt-1.5 text-xs leading-relaxed text-mist">{t.pick(e.body)}</p>
+          <p className="mt-2 rounded-lg bg-white/5 p-2 text-[11px] leading-relaxed text-white/85"><b className="text-rna">{t('Você sabia?', 'Did you know?')}</b> {t.pick(e.fact)}</p>
+          {e.steps && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {e.steps.map((i) => (
+                <button key={i} type="button" onClick={() => useSim.getState().goto(i)} className="rounded-lg bg-dna/20 px-3 py-1 text-xs text-dna hover:bg-dna/30">
+                  ▶ {t('Ver etapa', 'Play step')} {i + 1}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <div className="glass absolute right-3 top-14 max-h-[calc(100%-10rem)] w-44 overflow-auto rounded-2xl p-2 text-xs md:right-5">
+        <div className="hud-label px-1">{t('Voar até', 'Fly to')} · <span className="text-dna">{seen.length}/{EXHIBITS.length}</span></div>
+        <div role="group" aria-label={t('Voar até', 'Fly to')} className="mt-1 space-y-2">
+          {(Object.keys(REGIONS) as Region[]).map((r) => (
+            <div key={r}>
+              <div className="px-1 text-[10px] uppercase tracking-wider text-mist/60">{t.pick(REGIONS[r])}</div>
+              {EXHIBITS.filter((x) => x.region === r).map((x) => (
+                <button key={x.id} type="button" aria-pressed={zone === x.id} onClick={() => useSim.getState().set({ flyTo: x.id })}
+                  className={`flex w-full items-center justify-between rounded-lg px-2 py-1 text-left transition ${zone === x.id ? 'bg-dna/15 text-white ring-1 ring-dna/60' : 'text-mist hover:bg-white/5 hover:text-white'}`}>
+                  {t.pick(x.short)}
+                  {seen.includes(x.id) && <><span aria-hidden="true" className="text-dna">✓</span><span className="sr-only">, {t('visitado', 'visited')}</span></>}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <p className="pointer-events-none absolute bottom-3 left-4 hidden max-w-[220px] text-[10px] leading-tight text-mist/70 xl:pointer-fine:block">
+        WASD {t('nadar', 'swim')} · Q/E {t('descer/subir', 'down/up')} · Shift turbo · {t('arraste para olhar', 'drag to look')} · X {t('sair', 'exit')}
+      </p>
+      <Joystick />
+    </>
+  )
+}
+
 function Fallback({ reason }: { reason: 'nogl' | 'lost' }) {
   const t = useT()
   return (
@@ -353,11 +434,17 @@ export default function Playground() {
   const [lost, setLost] = useState(false)
   const [toast, setToast] = useState('')
   const [tab, setTab] = useState<'guia' | 'params' | 'resultado'>('guia')
-  const sim = useSim(useShallow((s) => ({ step: s.step, playing: s.playing, presentation: s.presentation, cinema: s.cinema, cas: s.cas, delivery: s.delivery, repair: s.repair })))
+  const sim = useSim(useShallow((s) => ({ step: s.step, playing: s.playing, presentation: s.presentation, cinema: s.cinema, explore: s.explore, sound: s.sound, cas: s.cas, delivery: s.delivery, repair: s.repair })))
   const d = useDerived()
   const acts = !!d.acts
   const steps = t.pick(STEPS)
 
+  const toggleSound = () => {
+    const on = !useSim.getState().sound
+    sound.unlock()
+    useSim.getState().set({ sound: on })
+    try { localStorage.setItem(SOUND_KEY, on ? 'on' : 'off') } catch { /* sem armazenamento: vale só nesta visita */ }
+  }
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2200) }
   const togglePlay = () => {
     const st = useSim.getState()
@@ -369,7 +456,7 @@ export default function Playground() {
   const cinema = () => {
     const st = useSim.getState()
     if (st.cinema) return st.set({ cinema: false, playing: false })
-    st.set({ cinema: true, presentation: true })
+    st.set({ cinema: true, presentation: true, explore: false })
     st.goto(0)
   }
   const copyLink = async () => {
@@ -422,7 +509,24 @@ export default function Playground() {
 
   useEffect(() => { if (sim.step === 5) setTab('resultado') }, [sim.step])
 
-  // atalhos: ← → etapas, espaço play/pausa, R reset, C câmera, P apresentação, M cinema, F tela cheia
+  // som só no modo Explorar, com a preferência ligada e o playground à vista
+  useEffect(() => { sound.setOn(sim.explore && sim.sound && (inView || sim.presentation)) }, [sim.explore, sim.sound, inView, sim.presentation])
+  useEffect(() => () => sound.setOn(false), [])
+
+  // modo Explorar: cada zona visitada pela primeira vez conta como descoberta (guardada neste navegador)
+  useEffect(() => useSim.subscribe((s, prev) => {
+    if (!s.zone || s.zone === prev.zone) return
+    const fresh = !s.seen.includes(s.zone)
+    sound.chime(fresh)
+    if (!fresh) return
+    const seen = [...s.seen, s.zone]
+    s.set({ seen })
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)) } catch { /* sem armazenamento: vale só nesta visita */ }
+    setToast(`✦ ${t('Nova descoberta', 'New discovery')} · ${seen.length}/${EXHIBITS.length}`)
+    setTimeout(() => setToast(''), 2200)
+  }), [t])
+
+  // atalhos: ← → etapas, espaço play/pausa, R reset, C câmera, P apresentação, M cinema, F tela cheia, X explorar
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const st = useSim.getState()
@@ -438,16 +542,21 @@ export default function Playground() {
       else if (k === 'p') st.set({ presentation: !st.presentation })
       else if (k === 'm') cinema()
       else if (k === 'f') fullscreen()
+      else if (k === 'x' && webgl && !lost) { sound.unlock(); st.setExplore(!st.explore) }
+      else if (k === 'escape' && st.explore) st.setExplore(false)
       else if (k === 'escape' && st.presentation && !document.fullscreenElement) st.set({ presentation: false, cinema: false })
       else return
       e.preventDefault()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [inView])
+  }, [inView, webgl, lost])
 
   const st = useSim.getState()
   const caption = narration(t, sim.step, sim.cas, sim.delivery, sim.repair, acts)
+  // no Explorar, a narração das etapas só aparece nas zonas do locus (as outras têm o próprio cartão)
+  const zone = useSim((s) => s.zone)
+  const showCaption = !sim.explore || !!(zone && EXHIBIT[zone].steps)
   const TABS = [['guia', t('Guia', 'Guide')], ['params', t('Parâmetros', 'Parameters')], ['resultado', t('Resultado', 'Outcome')]] as const
   const onTabKey = (e: React.KeyboardEvent, i: number) => {
     const n = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
@@ -485,7 +594,7 @@ export default function Playground() {
 
         {/* legenda / narração */}
         <div className={`pointer-events-none absolute left-1/2 w-[min(92%,920px)] -translate-x-1/2 text-center ${big ? 'bottom-24' : 'bottom-20'}`} aria-live="polite">
-          <p key={caption} className={`caption-in inline rounded-xl bg-black/60 box-decoration-clone px-3 py-1 leading-relaxed text-white backdrop-blur-sm ${big ? 'text-xl md:text-2xl' : 'text-sm md:text-base'}`}>{caption}</p>
+          {showCaption && <p key={caption} className={`caption-in inline rounded-xl bg-black/60 box-decoration-clone px-3 py-1 leading-relaxed text-white backdrop-blur-sm ${big ? 'text-xl md:text-2xl' : 'text-sm md:text-base'}`}>{caption}</p>}
         </div>
 
         {/* HUD de controle */}
@@ -495,6 +604,8 @@ export default function Playground() {
           <button type="button" className="hud-btn" onClick={() => st.goto(sim.step + 1)} aria-label={t('Próxima etapa', 'Next step')} title={`${t('Próxima etapa', 'Next step')} (→)`}><Icon d={ICONS.next} /></button>
           <span className="mx-1 h-6 w-px shrink-0 bg-white/15" />
           <button type="button" className={`hud-btn gap-1.5 ${sim.cinema ? 'text-rna' : ''}`} aria-pressed={sim.cinema} onClick={cinema} title={`${t('Modo cinema: toca as 6 etapas', 'Cinema mode: plays all 6 steps')} (M)`}><Stroke d={ICONS.film} /><span className="hidden sm:inline">{t('Cinema', 'Cinema')}</span></button>
+          {webgl && !lost && <button type="button" className={`hud-btn gap-1.5 ${sim.explore ? 'text-dna' : ''}`} aria-pressed={sim.explore} onClick={() => { sound.unlock(); st.setExplore(!sim.explore) }} title={`${t('Explorar o núcleo livremente', 'Explore the nucleus freely')} (X)`}><Stroke d={ICONS.explore} /><span className="hidden sm:inline">{t('Explorar', 'Explore')}</span></button>}
+          {sim.explore && <button type="button" className="hud-btn" aria-pressed={sim.sound} onClick={toggleSound} aria-label={t('Som', 'Sound')} title={sim.sound ? t('Silenciar', 'Mute') : t('Ligar som', 'Unmute')}><Stroke d={sim.sound ? ICONS.soundOn : ICONS.soundOff} /></button>}
           <button type="button" className="hud-btn" onClick={() => st.reset()} aria-label={t('Resetar experimento', 'Reset experiment')} title={`${t('Resetar experimento', 'Reset experiment')} (R)`}><Icon d={ICONS.reset} /></button>
           <button type="button" className="hud-btn" onClick={() => st.set({ camTick: st.camTick + 1 })} aria-label={t('Recentralizar câmera', 'Recenter camera')} title={`${t('Recentralizar câmera', 'Recenter camera')} (C)`}><Stroke d={ICONS.cam} /></button>
           <button type="button" className={`hud-btn gap-1.5 ${big ? 'text-rna' : ''}`} aria-pressed={big} onClick={() => st.set({ presentation: !big })} title={`${t('Modo apresentação', 'Presentation mode')} (P)`}><Stroke d={ICONS.screen} /><span className="hidden lg:inline">{t('Apresentação', 'Present')}</span></button>
@@ -503,10 +614,12 @@ export default function Playground() {
           <button type="button" className="hud-btn" onClick={fullscreen} title={`${t('Tela cheia', 'Fullscreen')} (F)`} aria-label={t('Tela cheia', 'Fullscreen')}><Icon d={ICONS.full} /></button>
         </div>
 
+        {sim.explore && <ExplorePanel />}
+
         {toast && <p className="glass absolute left-1/2 top-16 -translate-x-1/2 rounded-full px-4 py-1.5 text-sm text-white" role="status">{toast}</p>}
         <p className="absolute bottom-3 right-4 hidden max-w-[220px] text-right text-[10px] leading-tight text-mist/60 xl:block">{t('Simulação didática simplificada; não representa um protocolo experimental real.', 'Simplified teaching simulation; not a real experimental protocol.')}</p>
-        {big && <p className="absolute right-4 top-14 hidden text-[11px] text-mist/70 md:block">← → {t('etapas', 'steps')} · {t('espaço', 'space')} play · M {t('cinema', 'cinema')} · R reset · C {t('câmera', 'camera')} · F {t('tela cheia', 'fullscreen')} · P {t('sair', 'exit')}</p>}
-        {big && <Qr />}
+        {big && !sim.explore && <p className="absolute right-4 top-14 hidden text-[11px] text-mist/70 md:block">← → {t('etapas', 'steps')} · {t('espaço', 'space')} play · M {t('cinema', 'cinema')} · R reset · C {t('câmera', 'camera')} · F {t('tela cheia', 'fullscreen')} · P {t('sair', 'exit')}</p>}
+        {big && !sim.explore && <Qr />}
       </div>
 
       <p className="mt-2 text-center text-xs text-mist/70 xl:hidden">{t('Simulação didática simplificada; não representa um protocolo experimental real.', 'Simplified teaching simulation; not a real experimental protocol.')}</p>
