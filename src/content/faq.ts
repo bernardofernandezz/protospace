@@ -18,8 +18,8 @@ export interface FaqGroup {
 }
 
 export const FAQ_HEADER: L<{ eyebrow: string; title: [string, string, string]; lead: string; count: string }> = {
-  pt: { eyebrow: 'Perguntas frequentes', title: ['O que costumam ', 'perguntar', ' depois.'], lead: 'Reunidas as dúvidas que mais aparecem na discussão — inclusive as que são sobre o próprio simulador: o que ele calcula de verdade e o que é apenas ilustrativo.', count: 'perguntas' },
-  en: { eyebrow: 'FAQ', title: ['What people usually ', 'ask', ' afterwards.'], lead: 'The questions that come up most in discussion — including ones about the simulator itself: what it really computes and what is only illustrative.', count: 'questions' },
+  pt: { eyebrow: 'Perguntas frequentes', title: ['O que costumam ', 'perguntar', ' depois.'], lead: 'Reunidas as dúvidas que mais aparecem na discussão. Começa do zero, para quem chegou sem nenhuma base, e segue até as perguntas sobre o próprio simulador: o que ele calcula de verdade e o que é apenas ilustrativo.', count: 'perguntas' },
+  en: { eyebrow: 'FAQ', title: ['What people usually ', 'ask', ' afterwards.'], lead: 'The questions that come up most in discussion. It starts from scratch, for anyone arriving with no background, and runs through to questions about the simulator itself: what it really computes and what is only illustrative.', count: 'questions' },
 }
 
 export const FAQ: L<FaqGroup[]> = {
@@ -27,9 +27,17 @@ export const FAQ: L<FaqGroup[]> = {
     {
       id: 'conceitos',
       title: 'Dúvidas conceituais',
-      summary: 'As perguntas que costumam aparecer logo depois da explicação do mecanismo.',
+      summary: 'Do começo de tudo — o que é um gene, por que editar — às dúvidas que aparecem logo depois da explicação do mecanismo.',
       color: '#3ef0d0',
       items: [
+        { id: 'c0', q: 'Nunca ouvi falar de CRISPR. Dá para entender isso aqui sem saber biologia?', a: [
+          'Dá. Três ideias bastam para o resto fazer sentido. Primeira: dentro de quase toda célula sua existe um [[dna|DNA]], um texto escrito com quatro letras que funciona como manual de instruções. Segunda: trechos desse texto são os [[gene|genes]], e cada um descreve como montar uma peça do corpo. Terceira: desde 2012 existe uma forma barata e precisa de ir até um ponto escolhido desse texto e alterá-lo.',
+          'CRISPR é essa forma. O resto do site detalha como ela funciona, o que ainda dá errado e quem decide até onde ir. Ao longo dos textos, palavras sublinhadas com tracinhos abrem uma explicação curta quando você clica nelas — use sempre que travar numa delas.',
+        ] },
+        { id: 'c0b', q: 'Por que alguém iria querer editar um gene?', a: [
+          'Porque algumas doenças vêm de um erro de digitação nesse manual. Na anemia falciforme, por exemplo, uma única letra trocada num [[gene|gene]] basta para deformar as hemácias e entupir vasos sanguíneos. Corrigir ou contornar esse erro ataca a causa, não só os sintomas.',
+          'Fora da medicina, o motivo mais comum é entender: desligar um gene de propósito e observar o que deixa de funcionar é hoje a forma mais direta de descobrir para que ele servia. Também há usos na agricultura e em testes de diagnóstico. Cada um desses usos carrega riscos e limites próprios, discutidos adiante.',
+        ] },
         { id: 'c1', q: 'CRISPR, Cas9 e sgRNA: afinal, o que é o quê?', a: [
           'CRISPR é a região do genoma bacteriano onde ficam as repetições e os pedaços de vírus arquivados. Cas9 é a proteína que corta. O sgRNA é o RNA que diz a ela onde cortar.',
           'No uso corrente, "CRISPR" acabou virando sinônimo da técnica inteira. Não é errado, mas na aula ajuda separar: a bactéria tem o arquivo (CRISPR) e a tesoura (Cas); o laboratório usa só a tesoura, com um endereço escolhido por nós.',
@@ -122,9 +130,17 @@ export const FAQ: L<FaqGroup[]> = {
     {
       id: 'conceitos',
       title: 'Concepts',
-      summary: 'The questions that usually come up right after the mechanism is explained.',
+      summary: 'From the very beginning — what a gene is, why edit one — to the questions that come up right after the mechanism is explained.',
       color: '#3ef0d0',
       items: [
+        { id: 'c0', q: 'I have never heard of CRISPR. Can I follow this without a biology background?', a: [
+          'Yes. Three ideas are enough for the rest to make sense. First: inside almost every one of your cells there is [[dna|DNA]], a text written with four letters that works as an instruction manual. Second: stretches of that text are [[gene|genes]], each describing how to build one part of the body. Third: since 2012 there has been a cheap, precise way to go to a chosen point in that text and change it.',
+          'CRISPR is that way. The rest of the site covers how it works, what still goes wrong and who decides how far to go. Throughout the text, words with a dashed underline open a short explanation when you click them — use them whenever one trips you up.',
+        ] },
+        { id: 'c0b', q: 'Why would anyone want to edit a gene?', a: [
+          'Because some diseases come from a typo in that manual. In sickle cell disease, for instance, a single swapped letter in one [[gene|gene]] is enough to bend red blood cells out of shape and block blood vessels. Correcting or working around that error attacks the cause, not just the symptoms.',
+          'Outside medicine, the commonest reason is simply to understand: switching a gene off on purpose and watching what stops working is the most direct way to find out what it was for. There are also uses in agriculture and in diagnostic tests. Each of these carries its own risks and limits, discussed further on.',
+        ] },
         { id: 'c1', q: 'CRISPR, Cas9 and sgRNA: what is what?', a: [
           'CRISPR is the region of the bacterial genome that holds the repeats and the archived pieces of viruses. Cas9 is the protein that cuts. The sgRNA is the RNA that tells it where to cut.',
           'In everyday use, "CRISPR" has become shorthand for the whole technique. That is not wrong, but it helps to separate them: the bacterium has the archive (CRISPR) and the scissors (Cas); the lab uses only the scissors, with an address we choose.',

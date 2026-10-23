@@ -170,7 +170,7 @@ export const ETHICS: L<EthicsContent> = {
       title: 'O que diz a regulação brasileira',
       summary: 'O Brasil tem um marco legal específico para engenharia genética, separando o que é proibido, o que é avaliado caso a caso e o que segue as regras de pesquisa clínica.',
       items: [
-        { label: 'Lei de Biossegurança (11.105/2005)', text: 'Proíbe a engenharia genética em célula germinal humana, zigoto e embrião humanos (art. 6º) e tipifica essa prática como crime (art. 25). Também cria a CTNBio e o sistema de CIBios.' },
+        { label: 'Lei de Biossegurança (11.105/2005)', text: 'Proíbe a engenharia genética em célula germinal humana, zigoto e embrião humanos (art. 6º, III) e tipifica a prática como crime, com pena de reclusão de 1 a 4 anos e multa (art. 25). Também cria a CTNBio e o sistema de CIBios.' },
         { label: 'CTNBio · RN nº 16/2018', text: 'Define a avaliação caso a caso das Técnicas Inovadoras de Melhoramento de Precisão (TIMP). Um produto editado sem DNA recombinante no resultado final pode não ser classificado como OGM.' },
         { label: 'Pesquisa clínica e terapias avançadas', text: 'Ensaios em humanos passam pelo sistema CEP/Conep; produtos de terapia gênica e celular são regulados pela Anvisa como terapias avançadas.' },
       ],
@@ -309,7 +309,7 @@ export const ETHICS: L<EthicsContent> = {
       title: 'What Brazilian regulation says',
       summary: 'Brazil has a specific legal framework for genetic engineering, separating what is prohibited, what is assessed case by case and what follows clinical-research rules.',
       items: [
-        { label: 'Biosafety Law (11,105/2005)', text: 'Prohibits genetic engineering of human germ cells, zygotes and embryos (art. 6) and makes it a crime (art. 25). It also creates CTNBio, the national biosafety commission, and the system of internal biosafety committees.' },
+        { label: 'Biosafety Law (11,105/2005)', text: 'Prohibits genetic engineering of human germ cells, zygotes and embryos (art. 6, III) and makes the practice a crime punishable by 1 to 4 years’ imprisonment and a fine (art. 25). It also creates CTNBio, the national biosafety commission, and the system of internal biosafety committees.' },
         { label: 'CTNBio · Normative Resolution 16/2018', text: 'Sets case-by-case assessment of Innovative Precision Breeding Techniques (TIMP). An edited product with no recombinant DNA in the final result may not be classified as a GMO.' },
         { label: 'Clinical research and advanced therapies', text: 'Human trials go through the CEP/Conep research-ethics system; gene and cell therapy products are regulated by Anvisa as advanced therapies.' },
       ],
