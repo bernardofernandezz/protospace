@@ -1,55 +1,115 @@
+<div align="center">
+
 # Protospace
 
-**CRISPR-Cas9, do guia ao reparo, em 3D.** · *CRISPR-Cas9 from guide to repair, in 3D.*
+**CRISPR-Cas9, do guia ao reparo, em 3D.**
 
-![Preview](docs/preview.png)
+[**Abrir o site →**](https://protospace-crispr.vercel.app) · [English version](https://protospace-crispr.vercel.app/en/)
 
-O nome vem do *protoespaçador* — os 20 nucleotídeos que o RNA guia reconhece no DNA.
+![Prévia do Protospace](docs/preview.png)
 
-Site interativo (PT/EN) sobre CRISPR-Cas9 — mecanismo, evolução da ferramenta, boas práticas, aplicações e bioética — com um **playground 3D** que simula um experimento do desenho do guia ao reparo do DNA.
+</div>
 
-*Interactive bilingual site about CRISPR-Cas9 with a procedural 3D playground, from guide design to DNA repair.*
+## O que é
 
-## Destaques
+O Protospace é um site interativo que explica a edição genética com CRISPR-Cas9, criado para apoiar um seminário de biologia molecular e bioética.
 
-- **Simulação 3D procedural** (React Three Fiber + GLSL): B-DNA com sulcos maior/menor, Cas9 com domínios REC/HNH/RuvC/PI, busca com paradas em PAMs, R-loop, dobra do DNA, corte (DSB ou nick), editor de bases, NHEJ (Ku70/80 + ligase) e HDR com molde doador. Câmera cinematográfica, profundidade de campo, bloom e AO, com qualidade adaptativa.
-- **Lógica de sequência real** (`src/lib/dna.ts`): busca de PAM NGG, pontos de corte, indels reproduzíveis por semente, HDR e edição de bases — testada em `src/lib/dna.check.ts`.
-- **Para apresentar**: modo cinema (`M`), modo apresentação com QR code (`P`), atalhos de teclado, link que reproduz o experimento e captura PNG.
-- **Bilíngue** (`?lang=en` ou `/en/`), acessível (teclado, leitores de tela, reduzir movimento), **offline** (PWA).
-- Lighthouse mobile: Performance 91 · Acessibilidade 100 · Boas práticas 100 · SEO 100 (medição local).
+Em vez de só ler sobre o mecanismo, você **conduz um experimento em 3D**: escolhe onde cortar o DNA, cria erros no RNA guia e vê a Cas9 procurar o alvo, cortar e a célula consertar o corte. Ao lado da simulação, o site cobre a ciência, as boas práticas de laboratório e as questões éticas.
 
-## Rodando
+> O nome vem do **protoespaçador**: os 20 nucleotídeos do DNA que o RNA guia reconhece.
+
+## O que tem no site
+
+| Seção | O que você encontra |
+|---|---|
+| **Ciência** | Como bactérias usam CRISPR como sistema imune, o passo a passo do corte e a evolução da ferramenta (nickases, editores de bases, prime editing) |
+| **Playground 3D** | Um experimento completo em 6 etapas: desenho do guia, entrega na célula, busca, corte, reparo e resultado |
+| **Prática** | Checklist de boas práticas de laboratório e aplicações reais (terapias aprovadas, agricultura, diagnóstico) |
+| **Sociedade** | Tópicos de bioética, dilemas com **votação ao vivo entre os visitantes** e o contexto da lei brasileira |
+| **Recursos** | Quiz, perguntas frequentes e referências científicas com DOI |
+
+Tudo em **português e inglês**, acessível por teclado e leitores de tela, e funciona **offline** depois da primeira visita.
+
+## Usando numa apresentação
+
+O playground foi pensado para ser projetado em sala.
+
+| Tecla | Ação |
+|---|---|
+| `M` | **Modo cinema**: percorre as 6 etapas sozinho, com câmera automática |
+| `P` | **Modo apresentação**: legendas maiores e QR code para a plateia abrir o site no celular |
+| `←` `→` | Etapa anterior / próxima |
+| `Espaço` | Pausar / continuar |
+| `R` · `C` · `F` | Reiniciar · recentralizar a câmera · tela cheia |
+
+Também dá para **copiar um link** que reproduz exatamente o experimento atual e **salvar uma imagem** da cena.
+
+**Roteiro sugerido:** rode o modo cinema com o guia perfeito; depois volte à etapa 1, clique em duas bases do guia para criar erros e rode de novo. A plateia vê o reconhecimento falhar e o risco de cortes fora do alvo subir.
+
+> A simulação é didática e simplificada: as probabilidades são ilustrativas, não previsões experimentais.
+
+---
+
+## Para desenvolvedores
+
+### Rodando localmente
+
+Requer **Node.js 22.18+**.
 
 ```bash
 npm install
-npm run dev          # http://localhost:5173
-npm run build        # typecheck + build de produção em dist/
-npm run preview      # serve o build
+npm run dev        # abre em http://localhost:5173
 ```
 
-## Qualidade
+| Comando | O que faz |
+|---|---|
+| `npm run build` | Verifica os tipos e gera o build de produção em `dist/` |
+| `npm run lint` | Verifica o estilo do código (ESLint) |
+| `npm test` | Testa a lógica de sequência de DNA |
+| `npm run test:e2e` | Testes de ponta a ponta (Playwright, desktop e celular) |
 
-```bash
-npm run lint
-npm run typecheck
-npm test             # lógica de sequência
-npm run test:e2e     # Playwright (desktop + mobile) contra o build
+O CI roda tudo isso a cada push e pull request.
+
+### Como o projeto está organizado
+
+```
+src/
+├── sections/         # cada seção da página (Hero, Intro, Ethics…)
+├── playground/       # o playground: painéis, estado e a cena 3D (scene/)
+├── content/          # todos os textos em PT/EN, separados do código
+├── lib/
+│   ├── dna.ts        # lógica real de sequência: PAMs, cortes, indels, HDR
+│   └── votes.ts      # votação dos dilemas (Supabase)
+└── i18n/             # troca de idioma
 ```
 
-O CI (`.github/workflows/ci.yml`) roda tudo isso a cada push/PR.
+Para **editar textos** (bioética, quiz, FAQ, referências), mexa só em `src/content/`. Nome, links e stack do autor ficam em `src/content/site.ts`.
 
-## Deploy (Vercel)
+### Tecnologias
 
-Importe o repositório na Vercel (framework: Vite). Cabeçalhos de segurança e cache estão em `vercel.json`. A URL pública usada em canonical/Open Graph vem de `VITE_SITE_URL` ou, se ausente, do domínio de produção da Vercel. Depois do deploy, valide o preview no [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/).
+React 18 · TypeScript · Three.js com React Three Fiber · shaders GLSL próprios · GSAP · Tailwind CSS v4 · Vite · Supabase (votação) · Vercel (hospedagem)
 
-## Conteúdo e assets
+A cena 3D é **toda gerada por código**, sem modelos 3D externos, e ajusta a qualidade gráfica ao aparelho.
 
-- Textos (PT/EN) ficam em `src/content/` e nas seções; nome, links e stack do autor em `src/content/site.ts`.
-- Imagens Open Graph: `node scripts/og.mjs http://localhost:5173` (com `npm run dev` rodando).
-- Ícones: `node scripts/icons.mjs` (a partir de `public/favicon.svg`).
+### Qualidade e segurança
 
-> Simulação didática simplificada: números e probabilidades são ilustrativos, não previsões experimentais.
+- **Lighthouse (celular):** Performance 91 · Acessibilidade 100 · Boas práticas 100 · SEO 100
+- **Sem segredos no código:** a única chave é a pública do Supabase; o acesso é controlado no banco
+- **Votação protegida:** votos anônimos, limite por IP e nenhum voto individual exposto
+- **Cabeçalhos de segurança** (CSP, HSTS e outros) testados no CI exatamente como em produção
 
-## Licença
+Detalhes em [SECURITY.md](SECURITY.md).
+
+### Deploy
+
+O site é publicado na **Vercel** a cada merge na `main`. A configuração (cabeçalhos e cache) está em `vercel.json`.
+
+Para regenerar as imagens de compartilhamento depois de mudar a cena, rode `node scripts/og.mjs http://localhost:5173` com o `npm run dev` ativo.
+
+---
+
+<div align="center">
 
 [MIT](LICENSE) © Bernardo Fernandez
+
+</div>
