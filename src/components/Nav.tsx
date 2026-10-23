@@ -32,6 +32,9 @@ export default function Nav() {
   const t = useT()
   const [active, setActive] = useState('inicio')
   const [open, setOpen] = useState(false)
+  const [drop, setDrop] = useState<number | null>(null)
+  const burger = useRef<HTMLButtonElement>(null)
+  const menu = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
   const bar = useRef<HTMLDivElement>(null)
 
@@ -57,7 +60,17 @@ export default function Nav() {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
     window.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
+    // gaveta aberta: o conteúdo atrás fica inerte e o foco entra no menu
+    const main = document.querySelector('main')
+    const panel = menu.current, button = burger.current
+    main?.setAttribute('inert', '')
+    const raf = requestAnimationFrame(() => panel?.querySelector('a')?.focus())
+    return () => {
+      window.removeEventListener('keydown', onKey); document.body.style.overflow = ''
+      cancelAnimationFrame(raf); main?.removeAttribute('inert')
+      // fechou sem navegar (Esc, botão): o foco volta ao botão do menu
+      if (panel?.contains(document.activeElement) || document.activeElement === document.body) button?.focus()
+    }
   }, [open])
 
   const groupOf = (id: string) => GROUPS.findIndex((g) => g.items.some(([i]) => i === id))
@@ -86,13 +99,16 @@ export default function Nav() {
                 )
               }
               return (
-                <li key={gi} className="group relative">
-                  <button type="button" aria-haspopup="true" className={`relative flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm transition ${on ? 'text-white' : 'text-mist hover:text-white'}`}>
+                <li key={gi} className="group relative"
+                  onFocus={() => setDrop(gi)}
+                  onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDrop(null) }}
+                  onKeyDown={(e) => { if (e.key === 'Escape' && drop === gi) { setDrop(null); e.currentTarget.querySelector('button')?.focus() } }}>
+                  <button type="button" aria-expanded={drop === gi} onClick={() => setDrop(drop === gi ? null : gi)} className={`relative flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm transition ${on ? 'text-white' : 'text-mist hover:text-white'}`}>
                     {t.pick(g.label)}
-                    <svg viewBox="0 0 12 12" className="h-3 w-3 opacity-60 transition group-focus-within:rotate-180 group-hover:rotate-180" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
+                    <svg viewBox="0 0 12 12" className={`h-3 w-3 opacity-60 transition group-hover:rotate-180 ${drop === gi ? 'rotate-180' : ''}`} aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
                     {on && <span className="absolute inset-x-3 -bottom-0.5 h-px bg-linear-to-r from-dna to-cas" />}
                   </button>
-                  <ul className="invisible absolute left-0 top-full min-w-48 translate-y-1 rounded-2xl border border-white/10 bg-ink/95 p-1.5 opacity-0 shadow-2xl backdrop-blur-xl transition group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                  <ul className={`absolute left-0 top-full min-w-48 rounded-2xl border border-white/10 bg-ink/95 p-1.5 shadow-2xl backdrop-blur-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 ${drop === gi ? 'visible translate-y-0 opacity-100' : 'invisible translate-y-1 opacity-0'}`}>
                     {g.items.map(([id, label]) => (
                       <li key={id}>
                         <a href={`#${id}`} aria-current={active === id ? 'true' : undefined}
@@ -108,7 +124,7 @@ export default function Nav() {
           <div className="flex items-center gap-2">
             <LangToggle />
             <a href={SITE.repo} target="_blank" rel="noreferrer noopener" className="hud-btn hidden text-mist hover:text-white sm:inline-flex" aria-label={t('Código no GitHub', 'Source on GitHub')}><GitHub /></a>
-            <button type="button" className="hud-btn lg:hidden" aria-expanded={open} aria-controls="menu" onClick={() => setOpen(!open)}>
+            <button ref={burger} type="button" className="hud-btn lg:hidden" aria-expanded={open} aria-controls="menu" onClick={() => setOpen(!open)}>
               <span aria-hidden="true" className="relative block h-3 w-5">
                 <span className={`absolute left-0 h-0.5 w-5 rounded bg-white transition ${open ? 'top-1.5 rotate-45' : 'top-0'}`} />
                 <span className={`absolute left-0 top-1.5 h-0.5 w-5 rounded bg-white transition ${open ? 'opacity-0' : ''}`} />
@@ -122,7 +138,7 @@ export default function Nav() {
       <div ref={bar} className="h-[2px] origin-left bg-linear-to-r from-dna via-bio to-cas" style={{ transform: 'scaleX(0)' }} aria-hidden="true" />
 
       {/* drawer mobile */}
-      <div id="menu" className={`fixed inset-x-0 bottom-0 top-14 overflow-y-auto bg-ink/97 px-6 pb-10 pt-6 backdrop-blur-xl transition duration-300 lg:hidden ${open ? 'visible opacity-100' : 'invisible -translate-y-2 opacity-0'}`}>
+      <div id="menu" ref={menu} className={`fixed inset-x-0 bottom-0 top-14 overflow-y-auto bg-ink/97 px-6 pb-10 pt-6 backdrop-blur-xl transition duration-300 lg:hidden ${open ? 'visible opacity-100' : 'invisible -translate-y-2 opacity-0'}`}>
         {GROUPS.map((g) => (
           <div key={g.label.pt} className="mb-6">
             <p className="hud-label">{t.pick(g.label)}</p>

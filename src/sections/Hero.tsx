@@ -96,10 +96,9 @@ export default function Hero() {
 
         <dl className="mt-14 grid max-w-3xl grid-cols-2 gap-x-8 gap-y-6 md:grid-cols-4" data-hero-fade>
           {stats.map(([n, from, label]) => (
-            <div key={label} className="border-l border-white/15 pl-4">
-              <dt className="sr-only">{label}</dt>
-              <dd className="font-display text-3xl font-semibold tabular-nums text-white md:text-4xl"><Counter to={n} from={from} /></dd>
-              <dd className="mt-1 text-xs leading-snug text-mist">{label}</dd>
+            <div key={label} className="flex flex-col-reverse border-l border-white/15 pl-4">
+              <dt className="mt-1 text-xs leading-snug text-mist">{label}</dt>
+              <dd className="font-display text-3xl font-semibold tabular-nums text-white md:text-4xl"><span aria-hidden="true"><Counter to={n} from={from} /></span><span className="sr-only">{n}</span></dd>
             </div>
           ))}
         </dl>
