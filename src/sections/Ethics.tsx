@@ -109,19 +109,31 @@ export default function Ethics() {
   const E = t.pick(ETHICS)
   const area = useRef<HTMLDivElement>(null)
   const near = useInView(area, '800px')
-  const [armed, setArmed] = useState(false)
+  const [visible, setVisible] = useState(() => document.visibilityState === 'visible')
   const [mine, setMine] = useState<Mine>(() => read(MINE_KEY))
   const [tallies, setTallies] = useState<Tallies>({})
   const [status, setStatus] = useState<Status>('loading')
-  useEffect(() => { if (near) setArmed(true) }, [near])
+  useEffect(() => {
+    const f = () => setVisible(document.visibilityState === 'visible')
+    document.addEventListener('visibilitychange', f)
+    return () => document.removeEventListener('visibilitychange', f)
+  }, [])
   useEffect(() => write(MINE_KEY, mine), [mine])
 
-  // conecta ao banco quando os dilemas se aproximam da tela: reenvia pendências, lê totais e assina o tempo real.
-  // Repete quando a rede volta.
+  // conecta ao banco só enquanto os dilemas estão perto da tela e a aba está visível: reenvia pendências, lê totais
+  // e assina o tempo real. Fecha o canal ao sair (o plano do Supabase limita conexões simultâneas) e repete quando a rede volta.
+  const live = near && visible
   useEffect(() => {
-    if (!armed) return
+    if (!live) return
     let alive = true
     let sub: Promise<() => void> | undefined
+    let poll: ReturnType<typeof setInterval> | undefined
+    // canal recusado (ex.: limite de conexões num pico): larga o tempo real e relê os totais a cada 20 s
+    const fallback = () => {
+      if (poll || !alive) return
+      void sub?.then((off) => off(), () => {})
+      poll = setInterval(() => fetchTallies().then((all) => alive && setTallies(all), () => {}), 20_000)
+    }
     const sync = async () => {
       // uma a uma: recusadas pelo banco são descartadas, as que falharam por rede ficam para a próxima
       const pending = read(PENDING_KEY)
@@ -134,7 +146,7 @@ export default function Ethics() {
         const all = await fetchTallies()
         if (!alive) return
         setTallies(all)
-        sub ??= subscribeTallies((id, st, v) => setTallies((x) => ({ ...x, [id]: { ...(x[id] ?? EMPTY), [st]: v } })))
+        sub ??= subscribeTallies((id, st, v) => setTallies((x) => ({ ...x, [id]: { ...(x[id] ?? EMPTY), [st]: v } })), fallback)
           .catch((e) => { sub = undefined; throw e })
         await sub
         if (alive) setStatus(Object.keys(pending).length ? 'offline' : 'live')
@@ -144,8 +156,8 @@ export default function Ethics() {
     }
     void sync()
     addEventListener('online', sync)
-    return () => { alive = false; removeEventListener('online', sync); void sub?.then((off) => off(), () => {}) }
-  }, [armed])
+    return () => { alive = false; clearInterval(poll); removeEventListener('online', sync); void sub?.then((off) => off(), () => {}) }
+  }, [live])
 
   // 1 voto por pessoa e por dilema (pode trocar); atualização otimista, confirmada pelo banco.
   // `seq` descarta respostas de votos já substituídos por um clique mais recente.

@@ -150,6 +150,26 @@ test('dilemas: voto recusado pelo banco é desfeito; falha de rede fica na fila'
   expect(await page.evaluate(() => localStorage.getItem('protospace-pending-votes'))).toContain('"embriao":"pro"')
 })
 
+test('dilemas: canal de tempo real recusado cai para releitura periódica', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.clock.install()
+  let votes = 1
+  await page.route('**/rest/v1/dilemma_tallies*', (r) => r.fulfill({
+    json: ['embriao', 'gene-drive', 'sus'].flatMap((d) => ['pro', 'con', 'depends'].map((stance) => ({ dilemma_id: d, stance, votes }))),
+  }))
+  // servidor recusa o canal (ex.: limite de conexões estourado num pico)
+  await page.routeWebSocket(/supabase\.co/, (ws) => ws.close())
+
+  await page.goto('/?lang=pt#bioetica')
+  const card = page.locator('article', { hasText: 'Editar embriões' })
+  await card.scrollIntoViewIfNeeded()
+  await expect(card.getByText('3 pessoas votaram ·')).toBeVisible()
+
+  votes = 2
+  await page.clock.runFor(30_000)
+  await expect(card.getByText('6 pessoas votaram ·')).toBeVisible()
+})
+
 test('cabeçalhos de segurança de produção estão presentes', async ({ request }) => {
   const res = await request.get('/')
   const h = res.headers()
