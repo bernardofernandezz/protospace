@@ -26,6 +26,7 @@ export default function CameraRig({ d }: { d: Ready }) {
   const goal = useMemo(() => ({ pos: new THREE.Vector3(), tgt: new THREE.Vector3(), a: new THREE.Vector3(), b: new THREE.Vector3() }), [])
 
   useFrame(({ clock }, dt) => {
+    if (useSim.getState().explore) return // o Explorer pilota a câmera
     const { v, L } = frame(d)
     const { p } = v
     const c = v.cand

@@ -19,6 +19,10 @@ export type Quality = 'low' | 'medium' | 'high'
 
 export interface Tip { title: string; body: string; x: number; y: number }
 
+/** Zonas do modo Explorar e as etapas que cada uma demonstra. */
+export type ZoneId = 'guide' | 'pam' | 'decoy' | 'cas9' | 'cut' | 'off0' | 'off1'
+export const ZONE_STEPS: Record<ZoneId, number[]> = { guide: [0], pam: [2], decoy: [2], cas9: [2], cut: [3, 4], off0: [5], off1: [5] }
+
 interface SimState {
   locus: string
   selected: number
@@ -40,11 +44,17 @@ interface SimState {
   qualityAuto: boolean
   camTick: number
   tip: Tip | null
+  /** Modo Explorar: o usuário pilota uma sonda pelo núcleo; a timeline continua rodando. */
+  explore: boolean
+  zone: ZoneId | null
+  /** Pedido de voo até uma zona (consumido pelo Explorer). */
+  flyTo: ZoneId | null
   set: (p: Partial<SimState>) => void
   setLocus: (s: string) => void
   select: (i: number) => void
   goto: (step: number) => void
   reset: () => void
+  setExplore: (on: boolean) => void
 }
 
 const isCoarse = () => typeof matchMedia !== 'undefined' && (matchMedia('(pointer: coarse)').matches || innerWidth < 768)
@@ -101,6 +111,9 @@ export const useSim = create<SimState>((set, get) => ({
   qualityAuto: true,
   camTick: 0,
   tip: null,
+  explore: false,
+  zone: null,
+  flyTo: null,
   set: (p) => set(p),
   setLocus: (locus) => {
     const c = findCandidates(locus)
@@ -112,6 +125,12 @@ export const useSim = create<SimState>((set, get) => ({
   },
   goto: (step) => set({ step: Math.max(0, Math.min(STEP_COUNT - 1, step)), progress: 0, playing: true, camTick: get().camTick + 1 }),
   reset: () => set({ step: 0, progress: 0, playing: false, cinema: false, camTick: get().camTick + 1, seed: get().seed + 1 }),
+  setExplore: (on) => {
+    const s = get()
+    set({ explore: on, cinema: false, zone: null, flyTo: null, camTick: s.camTick + 1 })
+    // a etapa de entrega é outra escala (a célula inteira): no mundo aberto começamos no locus
+    if (on && s.step === 1) s.goto(0)
+  },
 }))
 
 /** Tudo que deriva dos parâmetros: candidatos, probabilidades, resultado da edição. */

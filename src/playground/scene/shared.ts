@@ -18,3 +18,6 @@ export function takeCaptureRequest() {
   captureRequest = null
   return r
 }
+
+/** Entrada do modo Explorar (teclado e joystick escrevem; o Explorer lê): x direita, y cima, z frente. */
+export const input = { x: 0, y: 0, z: 0, boost: false }

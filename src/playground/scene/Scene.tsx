@@ -8,6 +8,7 @@ import Repair from './Repair'
 import Delivery from './Delivery'
 import Nucleoplasm from './Nucleoplasm'
 import CameraRig from './CameraRig'
+import Explorer from './Explorer'
 import Effects from './Effects'
 import { takeCaptureRequest, untip } from './shared'
 import type { Ready } from './timeline'
@@ -25,6 +26,7 @@ function Capture() {
 
 function World({ quality }: { quality: Quality }) {
   const d = useDerived()
+  const explore = useSim((s) => s.explore)
   if (!d.cand) return null
   const r = d as Ready
   return (
@@ -35,12 +37,14 @@ function World({ quality }: { quality: Quality }) {
       <Repair d={r} quality={quality} />
       <Delivery quality={quality} />
       <CameraRig d={r} />
+      {explore && <Explorer d={r} quality={quality} />}
     </>
   )
 }
 
 export default function Scene({ active, onLost }: { active: boolean; onLost: () => void }) {
   const quality = useSim((s) => s.quality)
+  const explore = useSim((s) => s.explore)
   useEffect(() => untip, [])
   return (
     <Canvas
@@ -63,7 +67,7 @@ export default function Scene({ active, onLost }: { active: boolean; onLost: () 
         <Lightformer form="rect" intensity={0.8} color="#ffffff" position={[0, -8, 0]} rotation-x={Math.PI / 2} scale={[20, 20, 1]} />
       </Environment>
       <World quality={quality} />
-      <OrbitControls makeDefault enableDamping dampingFactor={0.08} minDistance={4} maxDistance={110} />
+      <OrbitControls makeDefault enabled={!explore} enableDamping dampingFactor={0.08} minDistance={4} maxDistance={110} />
       <PerformanceMonitor
         flipflops={2}
         onDecline={() => { const s = useSim.getState(); if (s.qualityAuto && s.quality !== 'low') s.set({ quality: DOWN[s.quality] }) }}
