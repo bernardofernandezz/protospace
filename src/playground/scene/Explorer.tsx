@@ -139,21 +139,23 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     }
     const blur = () => { held.clear(); sync(); input.boost = false }
     const el = gl.domElement
-    let drag: { x: number; y: number } | null = null
-    const pDown = (e: PointerEvent) => { drag = { x: e.clientX, y: e.clientY } }
+    // só o dedo que começou o arrasto gira a câmera (o outro pode estar no joystick)
+    let drag: { id: number; x: number; y: number } | null = null
+    const pDown = (e: PointerEvent) => { if (!drag) drag = { id: e.pointerId, x: e.clientX, y: e.clientY } }
     const pMove = (e: PointerEvent) => {
-      if (!drag) return
+      if (!drag || e.pointerId !== drag.id) return
       look.current.yaw += (e.clientX - drag.x) * 0.005
       look.current.pitch = THREE.MathUtils.clamp(look.current.pitch - (e.clientY - drag.y) * 0.004, -1.3, 1.3)
-      drag = { x: e.clientX, y: e.clientY }
+      drag = { id: drag.id, x: e.clientX, y: e.clientY }
     }
-    const pUp = () => { drag = null }
+    const pUp = (e: PointerEvent) => { if (e.pointerId === drag?.id) drag = null }
     addEventListener('keydown', down)
     addEventListener('keyup', up)
     addEventListener('blur', blur)
     el.addEventListener('pointerdown', pDown)
     addEventListener('pointermove', pMove)
     addEventListener('pointerup', pUp)
+    addEventListener('pointercancel', pUp)
     el.style.cursor = 'grab'
     return () => {
       removeEventListener('keydown', down)
@@ -162,6 +164,7 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
       el.removeEventListener('pointerdown', pDown)
       removeEventListener('pointermove', pMove)
       removeEventListener('pointerup', pUp)
+      removeEventListener('pointercancel', pUp)
       el.style.cursor = ''
       blur()
     }
