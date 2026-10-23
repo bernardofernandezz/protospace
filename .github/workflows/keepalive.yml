@@ -1,0 +1,17 @@
+name: Supabase keep-alive
+# o plano gratuito do Supabase pausa o projeto após 7 dias sem uso: uma leitura diária mantém a votação no ar
+on:
+  schedule: [{ cron: '17 9 * * *' }]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      # URL e chave publicável são públicas por design (as mesmas de src/lib/votes.ts); a leitura é só dos totais
+      - run: >
+          curl -fsS --retry 3 -o /dev/null
+          -H "apikey: sb_publishable_efNaQHDNkRMaXEEGtYfodw_qsTIqrqh"
+          "https://vroqgaybxzzwmjrfacux.supabase.co/rest/v1/dilemma_tallies?select=votes&limit=1"

@@ -190,7 +190,7 @@ test('dilemas: canal de tempo real recusado cai para releitura periódica', asyn
   await expect(card.getByText('3 pessoas votaram ·')).toBeVisible()
 
   votes = 2
-  await page.clock.runFor(30_000)
+  await page.clock.runFor(31_000)
   await expect(card.getByText('6 pessoas votaram ·')).toBeVisible()
 })
 

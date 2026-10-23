@@ -128,11 +128,12 @@ export default function Ethics() {
     let alive = true
     let sub: Promise<() => void> | undefined
     let poll: ReturnType<typeof setInterval> | undefined
-    // canal recusado (ex.: limite de conexões num pico): larga o tempo real e relê os totais a cada 20 s
+    // canal recusado (ex.: limite de conexões num pico): larga o tempo real e relê os totais a cada 20–30 s
+    // (intervalo sorteado, para os visitantes que caíram juntos não baterem no banco em sincronia)
     const fallback = () => {
       if (poll || !alive) return
       void sub?.then((off) => off(), () => {})
-      poll = setInterval(() => fetchTallies().then((all) => alive && setTallies(all), () => {}), 20_000)
+      poll = setInterval(() => fetchTallies().then((all) => alive && setTallies(all), () => {}), 20_000 + Math.random() * 10_000)
     }
     const sync = async () => {
       // uma a uma: recusadas pelo banco são descartadas, as que falharam por rede ficam para a próxima
