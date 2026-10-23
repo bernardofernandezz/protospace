@@ -3,7 +3,7 @@ import SectionHeader from '../components/SectionHeader'
 import { ETHICS, type Dilemma, type EthicsTopic, type Stance } from '../content/ethics'
 import { useT } from '../i18n'
 import { useInView } from '../lib/hooks'
-import { EMPTY, castVote, fetchTallies, subscribeTallies, type Tallies, type Tally } from '../lib/votes'
+import { EMPTY, castVote, fetchTallies, isNetworkError, subscribeTallies, type Tallies, type Tally } from '../lib/votes'
 
 const ACCENTS = ['#ff4fa3', '#ffb547', '#7dff9b', '#4cc9ff', '#b98cff', '#ff7a59', '#3ef0d0']
 const STANCES: { k: Stance; label: [string, string]; color: string }[] = [
@@ -115,33 +115,44 @@ export default function Ethics() {
   useEffect(() => { if (near) setArmed(true) }, [near])
   useEffect(() => write(MINE_KEY, mine), [mine])
 
-  // conecta ao banco quando os dilemas se aproximam da tela: reenvia pendências, lê totais e assina o tempo real
+  // conecta ao banco quando os dilemas se aproximam da tela: reenvia pendências, lê totais e assina o tempo real.
+  // Repete quando a rede volta.
   useEffect(() => {
     if (!armed) return
     let alive = true
-    let off: (() => void) | undefined
-    ;(async () => {
+    let sub: Promise<() => void> | undefined
+    const sync = async () => {
+      // uma a uma: recusadas pelo banco são descartadas, as que falharam por rede ficam para a próxima
+      const pending = read(PENDING_KEY)
+      for (const [id, st] of Object.entries(pending)) {
+        try { await castVote(id, st); delete pending[id] }
+        catch (e) { if (!isNetworkError(e)) delete pending[id] }
+      }
+      write(PENDING_KEY, pending)
       try {
-        const pending = read(PENDING_KEY)
-        for (const [id, st] of Object.entries(pending)) await castVote(id, st)
-        write(PENDING_KEY, {})
         const all = await fetchTallies()
         if (!alive) return
         setTallies(all)
-        setStatus('live')
-        off = await subscribeTallies((id, st, v) => setTallies((x) => ({ ...x, [id]: { ...(x[id] ?? EMPTY), [st]: v } })))
-        if (!alive) off()
+        sub ??= subscribeTallies((id, st, v) => setTallies((x) => ({ ...x, [id]: { ...(x[id] ?? EMPTY), [st]: v } })))
+          .catch((e) => { sub = undefined; throw e })
+        await sub
+        if (alive) setStatus(Object.keys(pending).length ? 'offline' : 'live')
       } catch {
         if (alive) setStatus('offline')
       }
-    })()
-    return () => { alive = false; off?.() }
+    }
+    void sync()
+    addEventListener('online', sync)
+    return () => { alive = false; removeEventListener('online', sync); void sub?.then((off) => off(), () => {}) }
   }, [armed])
 
-  // 1 voto por pessoa e por dilema (pode trocar); atualização otimista, confirmada pelo banco
+  // 1 voto por pessoa e por dilema (pode trocar); atualização otimista, confirmada pelo banco.
+  // `seq` descarta respostas de votos já substituídos por um clique mais recente.
+  const seq = useRef<Record<string, number>>({})
   const vote = async (id: string, st: Stance) => {
     const prev = mine[id]
     if (prev === st) return
+    const n = (seq.current[id] = (seq.current[id] ?? 0) + 1)
     setMine((m) => ({ ...m, [id]: st }))
     setTallies((x) => {
       const t = { ...(x[id] ?? EMPTY) }
@@ -151,11 +162,27 @@ export default function Ethics() {
     })
     try {
       const fresh = await castVote(id, st)
+      if (seq.current[id] !== n) return
+      const pending = read(PENDING_KEY)
+      delete pending[id]
+      write(PENDING_KEY, pending)
       setTallies((x) => ({ ...x, [id]: fresh }))
       setStatus('live')
-    } catch {
-      write(PENDING_KEY, { ...read(PENDING_KEY), [id]: st })
-      setStatus('offline')
+    } catch (e) {
+      if (seq.current[id] !== n) return
+      if (isNetworkError(e)) {
+        write(PENDING_KEY, { ...read(PENDING_KEY), [id]: st })
+        setStatus('offline')
+        return
+      }
+      // recusado pelo banco (ex.: limite de taxa): desfaz a escolha e relê os totais
+      setMine((m) => {
+        const r = { ...m }
+        if (prev) r[id] = prev
+        else delete r[id]
+        return r
+      })
+      fetchTallies().then(setTallies, () => {})
     }
   }
 
