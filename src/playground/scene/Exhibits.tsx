@@ -453,9 +453,13 @@ export default function Exhibits() {
     const r = root.current
     // compile() percorre só objetos visíveis: liga, dispara (a travessia é síncrona) e desliga
     r.visible = true
-    const compiled = gl.compileAsync(r, camera, scene)
+    const mats = gl.compile(r, camera, scene)
     r.visible = false
     const done = () => { if (alive) ready.current = true }
+    // espera própria em vez de gl.compileAsync: a dele lança num timer (impossível de capturar) se um programa
+    // for liberado antes de ficar pronto
+    const isReady = (m: THREE.Material) => (gl.properties.get(m) as { currentProgram?: { isReady(): boolean } }).currentProgram?.isReady() ?? true
+    const compiled = new Promise<void>((res) => { const poll = () => (!alive || [...mats].every(isReady) ? res() : setTimeout(poll, 10)); poll() })
     compiled.then(() => {
       if (!alive || gl.extensions.has('KHR_parallel_shader_compile')) return done()
       // sem compilação paralela, a ligação dos programas (e o envio da geometria) só acontece no 1º desenho:
