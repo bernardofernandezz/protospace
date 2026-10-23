@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
 import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
@@ -11,6 +11,8 @@ import { glowTexture, glowingPhysical } from '../playground/scene/materials'
 import { GROOVE, RISE, TWIST, smooth } from '../playground/scene/timeline'
 
 const N = 64
+/** Telas de toque: resolução de render menor (carrega mais rápido, poupa bateria). */
+const COARSE = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
 const R = 1.3
 const SEQ = 'ATGGCTAGCAAGGTCTGACCATGTCGACGTTCCAGTGGCTAACGATCCTGCAGTTCGAGCCAGGAT'
 const COMP: Record<string, string> = { A: 'T', T: 'A', C: 'G', G: 'C' }
@@ -110,10 +112,31 @@ function Particles({ still }: { still: boolean }) {
   )
 }
 
+/** Enquadramento responsivo: à direita no desktop; menor e mais ao fundo em telas retrato. */
+function Placement({ children }: { children: React.ReactNode }) {
+  const aspect = useThree((s) => s.size.width / s.size.height)
+  const portrait = aspect < 1
+  return (
+    <group position={portrait ? [1.8, -3.2, -5] : [3.4, 0, 0]} scale={portrait ? 0.8 : 1}>
+      {children}
+    </group>
+  )
+}
+
+/** Avisa "pronto" só depois de alguns quadros realmente desenhados (shaders compilados, ambiente gerado). */
+function ReadySignal({ onReady }: { onReady?: () => void }) {
+  const frames = useRef(0)
+  useFrame(() => {
+    frames.current += 1
+    if (frames.current === 4) onReady?.()
+  })
+  return null
+}
+
 export default function HeroHelix({ active, still, onReady }: { active: boolean; still: boolean; onReady?: () => void }) {
   return (
-    <Canvas frameloop={active ? 'always' : 'never'} camera={{ position: [0, 0, 16], fov: 45 }} dpr={[1, 1.75]} gl={{ antialias: false, stencil: false }} aria-hidden="true"
-      onCreated={() => requestAnimationFrame(() => onReady?.())}>
+    <Canvas frameloop={active ? 'always' : 'never'} camera={{ position: [0, 0, 16], fov: 45 }} dpr={COARSE ? [1, 1.25] : [1, 1.75]} gl={{ antialias: false, stencil: false }} aria-hidden="true">
+      <ReadySignal onReady={onReady} />
       <ambientLight intensity={0.4} />
       <directionalLight position={[6, 8, 8]} intensity={2} color={'#d6f4ff'} />
       <pointLight position={[-8, -4, 2]} intensity={90} color={'#c46bff'} />
@@ -122,9 +145,9 @@ export default function HeroHelix({ active, still, onReady }: { active: boolean;
         <Lightformer form="ring" intensity={3} color="#ff4fa3" position={[-6, 2, 5]} scale={4} />
         <Lightformer form="rect" intensity={1.6} color="#b06bff" position={[9, -2, 2]} rotation-y={-Math.PI / 2} scale={[10, 3, 1]} />
       </Environment>
-      <group position={[3.4, 0, 0]}>
+      <Placement>
         <Helix still={still} />
-      </group>
+      </Placement>
       <Particles still={still} />
       <EffectComposer multisampling={0} enableNormalPass={false}>
         <Bloom mipmapBlur intensity={1} luminanceThreshold={0.55} radius={0.75} />

@@ -68,7 +68,7 @@ export default function Nav() {
         <nav className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-5 md:px-10" aria-label={t('Seções', 'Sections')}>
           <a href="#inicio" className="flex shrink-0 items-center gap-2 font-display font-semibold tracking-tight">
             <svg viewBox="0 0 32 32" className="h-6 w-6" aria-hidden="true"><path d="M9 2c0 9 14 10 14 18s-14 9-14 10M23 2c0 9-14 10-14 18s14 9 14 10" stroke="#3ef0d0" strokeWidth="2.5" fill="none" /></svg>
-            Proto<span className="text-dna">space</span>
+            <span>Proto<span className="text-dna">space</span></span>
           </a>
 
           <ul className="hidden items-center gap-1 lg:flex">

@@ -22,3 +22,20 @@ export function hasWebGL() {
     return false
   }
 }
+
+/**
+ * true quando o WebGL roda por software (SwiftShader, llvmpipe…): sem GPU de verdade,
+ * animação 3D contínua trava a página — melhor não carregar efeitos decorativos.
+ */
+export function isSoftwareGL() {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl')
+    if (!gl) return false
+    const ext = gl.getExtension('WEBGL_debug_renderer_info')
+    const renderer = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER))
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer)
+  } catch {
+    return false
+  }
+}
