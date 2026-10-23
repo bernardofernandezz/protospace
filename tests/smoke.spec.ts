@@ -68,6 +68,8 @@ test('sem WebGL, o playground continua funcional', async ({ page }) => {
 })
 
 test('dilemas: votação compartilhada mostra resultado só depois do voto', async ({ page }) => {
+  // sem rolagem suave: o Lenis pode sobrescrever a rolagem programática do teste (falha intermitente)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   const rows = (d: string, pro: number, con: number, depends: number) => [
     { dilemma_id: d, stance: 'pro', votes: pro }, { dilemma_id: d, stance: 'con', votes: con }, { dilemma_id: d, stance: 'depends', votes: depends },
   ]
