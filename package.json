@@ -12,7 +12,7 @@
     "typecheck": "tsc -b",
     "format": "prettier --write .",
     "test:e2e": "playwright test",
-    "og": "node scripts/og.ts"
+    "og": "node scripts/og.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.1.0",

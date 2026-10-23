@@ -96,7 +96,7 @@ export const ETHICS: L<EthicsContent> = {
         title: 'Governança e o caso He Jiankui',
         summary: 'O que 2018 ensinou sobre fiscalização, transparência e limites.',
         details: [
-          'Em 2018, o pesquisador He Jiankui anunciou o nascimento de gêmeas a partir de embriões editados no gene CCR5. Não havia necessidade médica, o consentimento foi questionável e a edição foi imprecisa. Ele foi condenado à prisão na China.',
+          'Em 2018, o pesquisador He Jiankui anunciou o nascimento de gêmeas a partir de embriões editados no gene CCR5. Não havia necessidade médica, o consentimento foi questionável e a edição foi imprecisa. Ele foi condenado a três anos de prisão na China e solto em 2022.',
           'O caso acelerou propostas de governança: registro público de pesquisas com edição humana, canais para denúncias e um consenso amplo de que a edição germinativa clínica não é aceitável hoje.',
         ],
         notes: ['OMS (2021): recomendações de governança e registro de ensaios.'],
@@ -235,7 +235,7 @@ export const ETHICS: L<EthicsContent> = {
         title: 'Governance and the He Jiankui case',
         summary: 'What 2018 taught us about oversight, transparency and limits.',
         details: [
-          'In 2018, researcher He Jiankui announced the birth of twin girls from embryos edited at the CCR5 gene. There was no medical need, consent was questionable and the edit was imprecise. He was sentenced to prison in China.',
+          'In 2018, researcher He Jiankui announced the birth of twin girls from embryos edited at the CCR5 gene. There was no medical need, consent was questionable and the edit was imprecise. He was sentenced to three years in prison in China and released in 2022.',
           'The case accelerated governance proposals: public registries of human genome-editing research, whistle-blowing channels and a broad consensus that clinical germline editing is not acceptable today.',
         ],
         notes: ['WHO (2021): governance recommendations and trial registry.'],

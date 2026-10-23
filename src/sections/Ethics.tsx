@@ -174,7 +174,7 @@ export default function Ethics() {
           <h3 className="text-3xl font-semibold md:text-4xl">{t('Dilemas', 'Dilemmas')}</h3>
           <p className="flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 text-sm text-mist ring-1 ring-white/10">
             <i className={`h-2 w-2 rounded-full ${status === 'live' ? 'animate-pulse bg-bio' : status === 'offline' ? 'bg-rna' : 'bg-mist/50'}`} />
-            {t('Votação aberta a todos os visitantes · resultados ao vivo', 'Open to every visitor · live results')}
+            {t('Votação aberta a todos os visitantes', 'Open to every visitor')} · {status === 'live' ? t('resultados ao vivo', 'live results') : status === 'offline' ? t('sem conexão', 'offline') : t('conectando…', 'connecting…')}
           </p>
         </div>
         <div ref={area} className="space-y-6">
