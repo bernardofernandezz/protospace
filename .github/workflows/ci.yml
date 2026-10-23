@@ -26,6 +26,12 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      # gate de desempenho no perfil celular (metas em lighthouserc.json)
+      - run: npx -y @lhci/cli@0.15.1 autorun
       - uses: actions/upload-artifact@v4
         if: failure()
-        with: { name: playwright-report, path: playwright-report }
+        with:
+          name: reports
+          path: |
+            playwright-report
+            .lighthouseci

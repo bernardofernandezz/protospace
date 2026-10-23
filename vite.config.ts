@@ -59,6 +59,8 @@ export default defineConfig({
     // offline-first: o site precisa abrir no seminário mesmo sem Wi-Fi
     VitePWA({
       registerType: 'autoUpdate',
+      // o registro do service worker não precisa bloquear a primeira pintura
+      injectRegister: 'script-defer',
       includeAssets: ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
       manifest: false,
       workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'], maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
