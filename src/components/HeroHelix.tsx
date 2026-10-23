@@ -1,44 +1,90 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Bloom, EffectComposer } from '@react-three/postprocessing'
+import { Environment, Lightformer } from '@react-three/drei'
+import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
 import * as THREE from 'three'
-import { BASE_COLOR } from '../playground/colors'
+import { RoundedBoxGeometry } from 'three-stdlib'
+import { BASE_COLOR, PALETTE } from '../playground/colors'
+import { Tube } from '../playground/scene/tube'
+import { glowTexture, glowingPhysical } from '../playground/scene/materials'
+import { GROOVE, RISE, TWIST, smooth } from '../playground/scene/timeline'
 
-const N = 72
-const BASES = 'ACGT'
+const N = 64
+const R = 1.3
+const SEQ = 'ATGGCTAGCAAGGTCTGACCATGTCGACGTTCCAGTGGCTAACGATCCTGCAGTTCGAGCCAGGAT'
+const COMP: Record<string, string> = { A: 'T', T: 'A', C: 'G', G: 'C' }
+
+/** Lê o progresso de rolagem do hero (0 no topo, 1 quando ele sai da tela). */
+const heroScroll = () => Math.min(1, Math.max(0, scrollY / Math.max(1, innerHeight)))
 
 function Helix({ still }: { still: boolean }) {
   const group = useRef<THREE.Group>(null!)
-  const { bones, rungs } = useMemo(() => {
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color()
-    const sphere = new THREE.SphereGeometry(0.16, 14, 10)
-    const cyl = new THREE.CylinderGeometry(0.05, 0.05, 1, 6)
-    const bones = new THREE.InstancedMesh(sphere, new THREE.MeshStandardMaterial({ roughness: 0.3, emissive: '#0d4a52' }), N * 2)
-    const rungs = new THREE.InstancedMesh(cyl, new THREE.MeshBasicMaterial({ toneMapped: false }), N)
-    for (let i = 0; i < N; i++) {
-      const y = (i - N / 2) * 0.34
-      const th = i * ((2 * Math.PI) / 10.5)
-      const a = new THREE.Vector3(Math.cos(th) * 1.3, y, Math.sin(th) * 1.3)
-      const b = new THREE.Vector3(-a.x, y, -a.z)
-      bones.setMatrixAt(i, m.makeTranslation(a)); bones.setColorAt(i, c.set('#3ef0d0'))
-      bones.setMatrixAt(N + i, m.makeTranslation(b)); bones.setColorAt(N + i, c.set('#2a9df4'))
-      q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize())
-      rungs.setMatrixAt(i, m.compose(new THREE.Vector3(0, y, 0), q, new THREE.Vector3(1, 2.6, 1)))
-      rungs.setColorAt(i, c.set(BASE_COLOR[BASES[(i * 7 + (i >> 2)) % 4]]))
-    }
-    return { bones, rungs }
-  }, [])
+  const plates = useRef<THREE.InstancedMesh>(null!)
+  const phos = useRef<THREE.InstancedMesh>(null!)
+  const tubes = useMemo(() => ({ a: new Tube(N, 4, 12), b: new Tube(N, 4, 12) }), [])
+  useEffect(() => () => { tubes.a.dispose(); tubes.b.dispose() }, [tubes])
+  const mats = useMemo(() => ({
+    bb: glowingPhysical({ vertexColors: true, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.15, glow: 0.4 }),
+    plate: glowingPhysical({ roughness: 0.35, clearcoat: 0.5, glow: 0.42 }),
+    phos: glowingPhysical({ roughness: 0.2, clearcoat: 1, glow: 0.3 }),
+  }), [])
+  const geo = useMemo(() => ({ plate: new RoundedBoxGeometry(0.13, 1, 0.36, 2, 0.04), phos: new THREE.SphereGeometry(0.17, 16, 12) }), [])
+  const pts = useMemo(() => ({ a: Array.from({ length: N }, () => new THREE.Vector3()), b: Array.from({ length: N }, () => new THREE.Vector3()) }), [])
+  const state = useRef({ u: -1 })
+  const c1 = useMemo(() => new THREE.Color(PALETTE.strand1), [])
+  const c2 = useMemo(() => new THREE.Color(PALETTE.strand2), [])
+
   useFrame(({ pointer, clock }, dt) => {
     const g = group.current
-    if (!still) g.rotation.y += dt * 0.25
-    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, -pointer.y * 0.35, 0.05)
-    g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, 0.55 - pointer.x * 0.3, 0.05)
+    if (!still) g.rotation.y += dt * 0.22
+    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, -pointer.y * 0.3, 0.05)
+    g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, 0.5 - pointer.x * 0.25, 0.05)
     g.position.y = still ? 0 : Math.sin(clock.elapsedTime * 0.6) * 0.15
+
+    // ao rolar, a dupla-fita "abre o zíper" de cima para baixo
+    const target = still ? 0 : heroScroll()
+    const s = state.current
+    const u = s.u < 0 ? target : THREE.MathUtils.lerp(s.u, target, 0.12)
+    if (Math.abs(u - s.u) < 1e-4) return
+    s.u = u
+    const m = new THREE.Matrix4(), y = new THREE.Vector3(), x = new THREE.Vector3(0, 1, 0), z = new THREE.Vector3(), mid = new THREE.Vector3(), col = new THREE.Color()
+    for (let i = 0; i < N; i++) {
+      const open = smooth(0, 1, u * 2.2 - (1 - i / N) * 1.1)
+      const yy = (i - N / 2) * RISE * 1.12
+      const phi = i * TWIST
+      const r = R * (1 + 1.4 * open)
+      pts.a[i].set(Math.cos(phi) * r, yy, Math.sin(phi) * r)
+      pts.b[i].set(Math.cos(phi + GROOVE) * r, yy, Math.sin(phi + GROOVE) * r)
+      const b1 = SEQ[i % SEQ.length]
+      for (const [k, from, to, base, f] of [[i, pts.a[i], pts.b[i], b1, 0.5], [N + i, pts.b[i], pts.a[i], COMP[b1], 0.5]] as const) {
+        y.subVectors(to, from)
+        const len = (y.length() * f - 0.04) * (1 - open * 0.85)
+        y.normalize()
+        z.crossVectors(x, y)
+        mid.copy(from).addScaledVector(y, len / 2)
+        m.makeBasis(x, y.clone().multiplyScalar(Math.max(0.01, len)), z).setPosition(mid)
+        plates.current.setMatrixAt(k, m)
+        plates.current.setColorAt(k, col.set(BASE_COLOR[base]).multiplyScalar(1 + open * 0.8))
+      }
+      phos.current.setMatrixAt(i, m.makeTranslation(pts.a[i]))
+      phos.current.setMatrixAt(N + i, m.makeTranslation(pts.b[i]))
+      phos.current.setColorAt(i, c1)
+      phos.current.setColorAt(N + i, c2)
+    }
+    tubes.a.update(pts.a, N, () => 0.12, (_, o) => o.copy(c1))
+    tubes.b.update(pts.b, N, () => 0.12, (_, o) => o.copy(c2))
+    for (const im of [plates.current, phos.current]) {
+      im.instanceMatrix.needsUpdate = true
+      if (im.instanceColor) im.instanceColor.needsUpdate = true
+    }
   })
   return (
-    <group ref={group} rotation={[0, 0, 0.55]}>
-      <primitive object={bones} />
-      <primitive object={rungs} />
+    <group ref={group} rotation={[0, 0, 0.5]}>
+      <mesh geometry={tubes.a.geometry} material={mats.bb} frustumCulled={false} />
+      <mesh geometry={tubes.b.geometry} material={mats.bb} frustumCulled={false} />
+      <instancedMesh ref={plates} args={[geo.plate, mats.plate, N * 2]} frustumCulled={false} />
+      <instancedMesh ref={phos} args={[geo.phos, mats.phos, N * 2]} frustumCulled={false} />
     </group>
   )
 }
@@ -46,8 +92,10 @@ function Helix({ still }: { still: boolean }) {
 function Particles({ still }: { still: boolean }) {
   const ref = useRef<THREE.Points>(null!)
   const geo = useMemo(() => {
-    const pos = new Float32Array(1400 * 3)
-    for (let i = 0; i < pos.length; i++) pos[i] = (Math.random() - 0.5) * (i % 3 === 2 ? 30 : 50)
+    let s = 9
+    const r = () => ((s = (s * 16807) % 2147483647) / 2147483647)
+    const pos = new Float32Array(1200 * 3)
+    for (let i = 0; i < pos.length; i++) pos[i] = (r() - 0.5) * (i % 3 === 2 ? 30 : 50)
     return new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3))
   }, [])
   useFrame(({ pointer }, dt) => {
@@ -57,23 +105,31 @@ function Particles({ still }: { still: boolean }) {
   })
   return (
     <points ref={ref} geometry={geo}>
-      <pointsMaterial size={0.06} color={'#9ff7ff'} transparent opacity={0.55} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={glowTexture()} size={0.18} color={'#9ff7ff'} transparent opacity={0.6} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   )
 }
 
-export default function HeroHelix({ active, still }: { active: boolean; still: boolean }) {
+export default function HeroHelix({ active, still, onReady }: { active: boolean; still: boolean; onReady?: () => void }) {
   return (
-    <Canvas frameloop={active ? 'always' : 'never'} camera={{ position: [0, 0, 16], fov: 45 }} dpr={[1, 1.5]} aria-hidden="true">
-      <ambientLight intensity={0.5} />
-      <pointLight position={[6, 6, 8]} intensity={140} color={'#9feaff'} />
+    <Canvas frameloop={active ? 'always' : 'never'} camera={{ position: [0, 0, 16], fov: 45 }} dpr={[1, 1.75]} gl={{ antialias: false, stencil: false }} aria-hidden="true"
+      onCreated={() => requestAnimationFrame(() => onReady?.())}>
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[6, 8, 8]} intensity={2} color={'#d6f4ff'} />
       <pointLight position={[-8, -4, 2]} intensity={90} color={'#c46bff'} />
-      <group position={[3.2, 0, 0]}>
+      <Environment resolution={128} frames={1}>
+        <Lightformer form="rect" intensity={2.4} color="#9feaff" position={[0, 6, -8]} scale={[12, 5, 1]} />
+        <Lightformer form="ring" intensity={3} color="#ff4fa3" position={[-6, 2, 5]} scale={4} />
+        <Lightformer form="rect" intensity={1.6} color="#b06bff" position={[9, -2, 2]} rotation-y={-Math.PI / 2} scale={[10, 3, 1]} />
+      </Environment>
+      <group position={[3.4, 0, 0]}>
         <Helix still={still} />
       </group>
       <Particles still={still} />
-      <EffectComposer multisampling={0}>
-        <Bloom mipmapBlur intensity={0.9} luminanceThreshold={0.5} />
+      <EffectComposer multisampling={0} enableNormalPass={false}>
+        <Bloom mipmapBlur intensity={1} luminanceThreshold={0.55} radius={0.75} />
+        <Vignette offset={0.3} darkness={0.6} />
+        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       </EffectComposer>
     </Canvas>
   )
