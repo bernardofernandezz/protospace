@@ -1,5 +1,6 @@
 import SectionHeader from '../components/SectionHeader'
 import { useT, type L } from '../i18n'
+import { prefersReducedMotion } from '../lib/hooks'
 
 type Event = { year: string; title: string; body: string; accent?: boolean }
 
@@ -47,6 +48,8 @@ const STEPS: L<[string, string, string][]> = {
 function CrisprArray() {
   const t = useT()
   const spacerColors = ['#3ef0d0', '#ffb547', '#ff4fa3', '#7dff9b', '#4cc9ff']
+  // animação SMIL não obedece ao CSS de "reduzir movimento"
+  const still = prefersReducedMotion()
   return (
     <figure className="glass rounded-3xl p-6 md:p-8" data-reveal>
       <svg viewBox="0 0 640 170" className="w-full" role="img" aria-labelledby="arr-t arr-d">
@@ -60,7 +63,7 @@ function CrisprArray() {
             <g key={i}>
               <polygon points={`${x},85 ${x + 14},70 ${x + 28},85 ${x + 14},100`} fill="#0f1b28" stroke="#a9b8c9" strokeOpacity=".6" />
               <rect x={x + 34} y="72" width="66" height="26" rx="5" fill={c} fillOpacity=".22" stroke={c}>
-                <animate attributeName="fill-opacity" values=".1;.45;.1" dur="3s" begin={`${i * 0.4}s`} repeatCount="indefinite" />
+                {!still && <animate attributeName="fill-opacity" values=".1;.45;.1" dur="3s" begin={`${i * 0.4}s`} repeatCount="indefinite" />}
               </rect>
               <text x={x + 67} y="90" textAnchor="middle" fill={c} fontSize="11" fontFamily="JetBrains Mono Variable">S{i + 1}</text>
             </g>

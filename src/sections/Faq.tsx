@@ -19,7 +19,7 @@ export default function Faq() {
         <nav className="flex gap-3 overflow-x-auto pb-2 lg:sticky lg:top-24 lg:flex-col lg:self-start lg:overflow-visible lg:pb-0" aria-label={t('Categorias de perguntas', 'Question categories')}>
           {faq.map((x, i) => (
             <button key={x.id} type="button" onClick={() => { setGroup(i); setOpen(x.items[0].id) }}
-              aria-current={group === i ? 'true' : undefined}
+              aria-pressed={group === i}
               className={`glass shrink-0 rounded-2xl p-5 text-left transition lg:w-full ${group === i ? 'ring-1' : 'opacity-60 hover:opacity-100'}`}
               style={{ ['--tw-ring-color' as string]: x.color }}>
               <span className="block font-display text-lg font-semibold" style={{ color: group === i ? x.color : undefined }}>{x.title}</span>

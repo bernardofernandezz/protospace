@@ -33,6 +33,8 @@
   }
   ::selection { background: rgba(62, 240, 208, 0.35); }
   :focus-visible { outline: 2px solid #3ef0d0; outline-offset: 3px; border-radius: 6px; }
+  /* destinos de âncora recebem foco só para a navegação por teclado continuar dali */
+  [data-anchor]:focus { outline: none; }
   h1, h2, h3, h4 { @apply font-display; }
 }
 
@@ -73,7 +75,7 @@
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .grain { animation: none; }
-  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
 .stage:fullscreen, .stage:fullscreen * { cursor: auto !important; }
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
 import { useT, type L } from '../i18n'
 
@@ -99,6 +99,7 @@ export default function Evolution() {
   const tr = useT()
   const tools = tr.pick(TOOLS)
   const [sel, setSel] = useState(0)
+  const tabs = useRef<(HTMLButtonElement | null)[]>([])
   const t = tools[sel]
   return (
     <section id="evolucao" className="section">
@@ -110,7 +111,16 @@ export default function Evolution() {
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]" data-reveal>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-1" role="tablist" aria-label={tr('Ferramentas', 'Tools')}>
           {tools.map((x, i) => (
-            <button key={x.k} type="button" role="tab" aria-selected={sel === i} onClick={() => setSel(i)}
+            <button key={x.k} ref={(el) => { tabs.current[i] = el }} type="button" role="tab" id={`tool-tab-${x.k}`} aria-controls="tool-panel"
+              aria-selected={sel === i} tabIndex={sel === i ? 0 : -1} onClick={() => setSel(i)}
+              onKeyDown={(e) => {
+                const d = ({ ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 } as Record<string, number>)[e.key]
+                if (!d) return
+                e.preventDefault()
+                const n = (i + d + tools.length) % tools.length
+                setSel(n)
+                tabs.current[n]?.focus()
+              }}
               className={`glass flex items-center justify-between rounded-2xl px-5 py-4 text-left transition ${sel === i ? 'ring-1' : 'opacity-70 hover:opacity-100'}`}
               style={{ ['--tw-ring-color' as string]: x.color }}>
               <span><span className="block font-display text-lg font-semibold">{x.name}</span><span className="font-mono text-xs text-mist">{x.year}</span></span>
@@ -119,7 +129,7 @@ export default function Evolution() {
           ))}
         </div>
 
-        <div key={t.k} role="tabpanel" className="glass relative overflow-hidden rounded-3xl p-8 md:p-10">
+        <div key={t.k} role="tabpanel" id="tool-panel" aria-labelledby={`tool-tab-${t.k}`} tabIndex={0} className="glass relative overflow-hidden rounded-3xl p-8 md:p-10">
           <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full blur-3xl" style={{ background: t.color, opacity: 0.18 }} />
           <h3 className="text-3xl font-semibold md:text-4xl" style={{ color: t.color }}>{t.name}</h3>
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-white/90">{t.what}</p>

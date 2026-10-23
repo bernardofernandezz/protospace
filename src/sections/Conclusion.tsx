@@ -42,7 +42,8 @@ export default function Conclusion() {
                       <span className="mt-1 block text-sm text-mist">{r.authors} · <em>{r.source}</em></span>
                     </span>
                     {r.link && (
-                      <a href={r.link} target="_blank" rel="noreferrer noopener" className="shrink-0 text-sm text-dna underline underline-offset-4 hover:text-bio">
+                      <a href={r.link} target="_blank" rel="noreferrer noopener"
+                        aria-label={`${r.link.includes('doi.org') ? 'DOI' : t('acessar', 'open')}: ${r.title} (${t('abre em nova aba', 'opens in a new tab')})`} className="shrink-0 text-sm text-dna underline underline-offset-4 hover:text-bio">
                         {r.link.includes('doi.org') ? 'DOI' : t('acessar', 'open')} <span aria-hidden="true">↗</span>
                       </a>
                     )}

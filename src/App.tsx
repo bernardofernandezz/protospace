@@ -52,6 +52,20 @@ export default function App() {
     return () => clearTimeout(id)
   }, [])
 
+  // o foco acompanha a âncora clicada (o Lenis rola, mas não move o foco; ex.: "pular para o conteúdo").
+  // setTimeout: espera a gaveta do menu fechar e tirar o `inert` do <main>
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const href = (e.target as Element).closest?.('a[href^="#"]')?.getAttribute('href')
+      const el = href && href.length > 1 ? document.getElementById(href.slice(1)) : null
+      if (!el) return
+      if (!el.hasAttribute('tabindex')) { el.setAttribute('tabindex', '-1'); el.dataset.anchor = '' }
+      setTimeout(() => el.focus({ preventScroll: true }))
+    }
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [])
+
   // rolagem suave sincronizada com o ScrollTrigger (desligada com "reduzir movimento")
   useEffect(() => {
     if (prefersReducedMotion()) return
