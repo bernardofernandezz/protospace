@@ -100,16 +100,16 @@ export const FAQ: L<FaqGroup[]> = {
           'Um roteiro que funciona: rodar o modo cinema com o guia perfeito, mostrar o resultado, depois voltar à etapa do guia, clicar em duas bases da região seed para criar mismatches e repetir. O R-loop que colapsa, a queda da eficiência e a subida dos off-targets aparecem na mesma tela.',
         ] },
         { id: 'a2', q: 'Preciso de internet durante o seminário?', a: [
-          'Não, depois da primeira visita. O site é instalável e funciona offline: conteúdo, geometrias 3D, fontes e ícones ficam em cache no navegador. Não há backend; as métricas de acesso anônimas da hospedagem simplesmente não são enviadas quando você está sem rede.',
+          'Não, depois da primeira visita. O site é instalável e funciona offline: conteúdo, geometrias 3D, fontes e ícones ficam em cache no navegador. Sem rede, só a votação dos dilemas fica em espera: seu voto é guardado e enviado quando a conexão voltar.',
           'Ainda assim, vale abrir o site e rolar até o playground alguns minutos antes de começar, para que a cena 3D já esteja carregada.',
         ] },
         { id: 'a3', q: 'E se o computador da sala não rodar o 3D?', a: [
           'A página detecta a ausência de WebGL (ou a perda do contexto gráfico) e substitui a cena por uma ilustração estática, mantendo todos os painéis funcionando: guia, parâmetros, etapas, diff da sequência e análise.',
           'Em máquinas lentas, o site reduz sozinho a qualidade gráfica (alta → média → baixa: resolução, sombreamento, profundidade de campo e partículas). Também dá para escolher o nível manualmente em Parâmetros. A cena pausa quando sai da tela, para não consumir bateria à toa.',
         ] },
-        { id: 'a4', q: 'Os votos dos dilemas e o checklist são compartilhados entre os alunos?', a: [
-          'Não. Tudo fica salvo apenas no navegador de cada pessoa, sem servidor e sem coleta de dados pessoais. Dois alunos no mesmo celular veriam os mesmos votos; em aparelhos diferentes, contagens independentes.',
-          'Para uma votação coletiva no telão, o modo plateia faz cada clique somar um voto. Assim dá para contar as mãos levantadas e registrar o resultado ali mesmo.',
+        { id: 'a4', q: 'Os votos dos dilemas são compartilhados?', a: [
+          'Sim. A votação é aberta a todos os visitantes: cada navegador tem um voto por dilema (dá para mudar de ideia) e os resultados aparecem ao vivo depois que você escolhe sua posição — ótimo para a plateia votar pelo celular durante a apresentação.',
+          'Os votos são anônimos: o site guarda só um identificador aleatório do navegador, sem nome, e-mail ou login. Já o checklist de boas práticas fica salvo apenas no seu navegador.',
         ] },
         { id: 'a5', q: 'Posso compartilhar um experimento específico?', a: [
           'Sim. O botão de link no playground copia uma URL com o locus, o sítio, o guia (incluindo mismatches), o tipo de Cas, a entrega, o reparo e a semente do indel. Quem abrir o link vê exatamente o mesmo experimento. O botão de câmera salva uma imagem PNG da cena.',
@@ -195,16 +195,16 @@ export const FAQ: L<FaqGroup[]> = {
           'A script that works: run cinema mode with the perfect guide, show the outcome, then go back to the guide step, click two seed-region bases to create mismatches and run it again. The collapsing R-loop, the drop in efficiency and the rise in off-targets all show up on the same screen.',
         ] },
         { id: 'a2', q: 'Do I need internet during the seminar?', a: [
-          'Not after the first visit. The site is installable and works offline: content, 3D geometry, fonts and icons are cached in the browser. There is no backend; the host’s anonymous visit metrics are simply not sent while you are offline.',
+          'Not after the first visit. The site is installable and works offline: content, 3D geometry, fonts and icons are cached in the browser. Offline, only dilemma voting waits: your vote is kept and sent when the connection returns.',
           'Still, it is worth opening the site and scrolling to the playground a few minutes before you start so the 3D scene is already loaded.',
         ] },
         { id: 'a3', q: 'What if the room’s computer cannot run the 3D?', a: [
           'The page detects missing WebGL (or a lost graphics context) and swaps the scene for a static illustration, keeping every panel working: guide, parameters, steps, sequence diff and analysis.',
           'On slow machines the site lowers graphics quality on its own (high → medium → low: resolution, shading, depth of field and particles). You can also pick the level manually under Parameters. The scene pauses when off screen so it does not drain the battery.',
         ] },
-        { id: 'a4', q: 'Are dilemma votes and the checklist shared between students?', a: [
-          'No. Everything is stored only in each person’s browser, with no server and no personal data collection. Two students on the same phone see the same votes; on different devices, the counts are independent.',
-          'For a group vote on the big screen, audience mode makes every click add a vote. That way you can count raised hands and record the result right there.',
+        { id: 'a4', q: 'Are dilemma votes shared?', a: [
+          'Yes. Voting is open to every visitor: each browser gets one vote per dilemma (you can change your mind) and results appear live once you pick a position — great for letting the audience vote from their phones during a talk.',
+          'Votes are anonymous: the site only stores a random browser identifier, with no name, email or login. The best-practice checklist, on the other hand, stays in your browser only.',
         ] },
         { id: 'a5', q: 'Can I share a specific experiment?', a: [
           'Yes. The link button in the playground copies a URL with the locus, site, guide (mismatches included), Cas type, delivery, repair and indel seed. Anyone opening it sees exactly the same experiment. The camera button saves a PNG of the scene.',

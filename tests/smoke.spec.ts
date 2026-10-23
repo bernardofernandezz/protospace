@@ -66,3 +66,38 @@ test('sem WebGL, o playground continua funcional', async ({ page }) => {
   await expect(page.getByText('WebGL indisponível neste navegador')).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Parâmetros' })).toBeVisible()
 })
+
+test('dilemas: votação compartilhada mostra resultado só depois do voto', async ({ page }) => {
+  const rows = (d: string, pro: number, con: number, depends: number) => [
+    { dilemma_id: d, stance: 'pro', votes: pro }, { dilemma_id: d, stance: 'con', votes: con }, { dilemma_id: d, stance: 'depends', votes: depends },
+  ]
+  // Supabase simulado: o teste nunca grava votos no banco real
+  await page.route('**/rest/v1/dilemma_tallies*', (r) => r.fulfill({ json: [...rows('embriao', 3, 1, 0), ...rows('gene-drive', 0, 0, 0), ...rows('sus', 2, 2, 1)] }))
+  let sent: unknown
+  await page.route('**/rest/v1/rpc/cast_vote', (r) => { sent = r.request().postDataJSON(); return r.fulfill({ json: rows('embriao', 4, 1, 0) }) })
+  await page.routeWebSocket(/supabase\.co/, () => { /* sem tempo real no teste */ })
+
+  await page.goto('/?lang=pt#bioetica')
+  const card = page.locator('article', { hasText: 'Editar embriões' })
+  await card.scrollIntoViewIfNeeded()
+  await expect(card.getByText('4 pessoas votaram ·')).toBeVisible()
+  await expect(card.getByText('80%')).toHaveCount(0)
+
+  await card.getByRole('button', { name: 'A favor' }).click()
+  await expect(card.getByText('· 5 pessoas votaram')).toBeVisible()
+  await expect(card.getByText('80%')).toBeVisible()
+  await expect(card.getByRole('button', { name: 'A favor' })).toHaveAttribute('aria-pressed', 'true')
+  expect(sent).toMatchObject({ p_dilemma: 'embriao', p_stance: 'pro' })
+})
+
+test('cabeçalhos de segurança de produção estão presentes', async ({ request }) => {
+  const res = await request.get('/')
+  const h = res.headers()
+  expect(h['content-security-policy']).toContain("default-src 'self'")
+  expect(h['content-security-policy']).toContain("object-src 'none'")
+  expect(h['content-security-policy']).toContain("frame-ancestors 'none'")
+  expect(h['x-content-type-options']).toBe('nosniff')
+  expect(h['x-frame-options']).toBe('DENY')
+  expect(h['strict-transport-security']).toContain('max-age=')
+  expect(h['cross-origin-opener-policy']).toBe('same-origin')
+})
