@@ -48,7 +48,7 @@ test('playground percorre as 6 etapas e mostra o resultado', async ({ page }) =>
   expect(errors, errors.join('\n')).toEqual([])
 })
 
-test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page }) => {
+test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page, isMobile }) => {
   const errors = trackErrors(page)
   await page.goto('/?lang=pt#playground')
   await page.locator('.stage').scrollIntoViewIfNeeded()
@@ -61,6 +61,12 @@ test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page }) =>
   await expect(snd).toHaveAttribute('aria-pressed', 'false')
   await snd.click()
   await expect(snd).toHaveAttribute('aria-pressed', 'true')
+  if (isMobile) {
+    // no toque o palco cobre a tela inteira e o "voar até" fica atrás do botão Mapa
+    const vp = page.viewportSize()!
+    expect(await page.locator('.stage').boundingBox()).toEqual({ x: 0, y: 0, width: vp.width, height: vp.height })
+    await page.getByRole('button', { name: 'Mapa' }).click()
+  }
   const fly = page.getByRole('group', { name: 'Voar até' })
   await fly.getByRole('button', { name: 'Corte' }).click()
   // voo guiado; com WebGL por software (CI) o quadro é lento

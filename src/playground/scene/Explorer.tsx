@@ -195,7 +195,7 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     }
     let impact = Math.max(pushOut(body, L.center, L.n, DNA_R), pushOut(body, OFF_POS, 2, 2.6))
     for (const s of SOLID) impact = Math.max(impact, pushOut(body, [s.pos], 1, s.solid + PROBE_R))
-    if (impact > 1.5) sound.bump(impact)
+    if (impact > 1.5) { sound.bump(impact); navigator.vibrate?.(Math.min(40, impact * 6)) }
     sound.swim(body.vel.length() / MAX_SPEED)
     // borda do mundo: um "aquário" esférico, desliza ao longo da parede
     if (body.pos.length() > WORLD_R) { body.pos.setLength(WORLD_R); body.vel.multiplyScalar(0.5) }
@@ -234,14 +234,16 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     if (next !== cur) st.set({ zone: next })
   })
 
+  const ship = (
+    <group ref={probe}>
+      <mesh material={mat.shell} scale={PROBE_R}><icosahedronGeometry args={[1, 8]} /></mesh>
+      <mesh material={mat.core} scale={PROBE_R * 0.35}><icosahedronGeometry args={[1, 2]} /></mesh>
+    </group>
+  )
   return (
     <>
-      <Trail width={1.4} length={5} color={PALETTE.strand1} attenuation={(t) => t * t}>
-        <group ref={probe}>
-          <mesh material={mat.shell} scale={PROBE_R}><icosahedronGeometry args={[1, 8]} /></mesh>
-          <mesh material={mat.core} scale={PROBE_R * 0.35}><icosahedronGeometry args={[1, 2]} /></mesh>
-        </group>
-      </Trail>
+      {/* o rastro custa um desenho extra por quadro: fica de fora na qualidade baixa */}
+      {quality === 'low' ? ship : <Trail width={1.4} length={5} color={PALETTE.strand1} attenuation={(t) => t * t}>{ship}</Trail>}
       <instancedMesh ref={inst} args={[geo, mat.dot, floaters.length]} frustumCulled={false} />
     </>
   )

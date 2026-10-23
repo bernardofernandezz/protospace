@@ -334,18 +334,44 @@ function Joystick() {
   )
 }
 
-/** HUD do modo Explorar: cartão da zona atual, "voar até" por região (caminho por teclado/leitor de tela) e dicas. */
+/** Subir, descer e turbo no polegar direito (o joystick cuida do plano). Segurar = ativo. */
+function TouchKeys() {
+  const hold = (on: () => void, off: () => void) => ({
+    onPointerDown: (e: React.PointerEvent) => { e.currentTarget.setPointerCapture(e.pointerId); useSim.getState().set({ flyTo: null }); on() },
+    onPointerUp: off,
+    onPointerCancel: off,
+  })
+  const key = 'glass grid h-14 w-14 touch-none select-none place-items-center rounded-full text-lg text-white active:bg-dna/30'
+  return (
+    <div aria-hidden="true" className="absolute bottom-20 right-4 hidden flex-col gap-2 pointer-coarse:flex">
+      <div className={key} {...hold(() => { input.y = 1 }, () => { input.y = 0 })}>▲</div>
+      <div className={`${key} text-xs font-semibold tracking-wider text-rna`} {...hold(() => { input.boost = true }, () => { input.boost = false })}>TURBO</div>
+      <div className={key} {...hold(() => { input.y = -1 }, () => { input.y = 0 })}>▼</div>
+    </div>
+  )
+}
+
+const COARSE = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
+
+/**
+ * HUD do modo Explorar: cartão da zona atual, "voar até" por região (caminho por teclado/leitor de tela) e dicas.
+ * No toque o cartão começa recolhido e o "voar até" vira uma folha aberta pelo botão Mapa.
+ */
 function ExplorePanel() {
   const t = useT()
   const zone = useSim((s) => s.zone)
   const seen = useSim((s) => s.seen)
+  const [map, setMap] = useState(false)
   const e = zone ? EXHIBIT[zone] : undefined
   return (
     <>
       {e && (
-        <div key={e.id} className="glass caption-in absolute left-3 top-14 max-h-[calc(100%-10rem)] w-[min(20rem,calc(100%-13rem))] overflow-auto rounded-2xl p-4 md:left-5" role="status">
-          <div className="hud-label">{t.pick(REGIONS[e.region])}</div>
-          <div className="font-display text-lg leading-tight text-white">{t.pick(e.title)}</div>
+        <div key={e.id} className="glass caption-in absolute left-3 top-14 max-h-[calc(100%-10rem)] w-[min(20rem,calc(100%-13rem))] overflow-auto rounded-2xl p-4 md:left-5 pointer-coarse:right-16 pointer-coarse:top-3 pointer-coarse:max-h-[45%] pointer-coarse:w-auto pointer-coarse:p-3" role="status">
+          <details open={!COARSE} className="group">
+          <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+            <div className="hud-label">{t.pick(REGIONS[e.region])}</div>
+            <div className="flex items-start justify-between gap-2 font-display text-lg leading-tight text-white">{t.pick(e.title)}<span aria-hidden="true" className="text-sm text-mist transition group-open:rotate-180">▾</span></div>
+          </summary>
           <p className="mt-1.5 text-xs leading-relaxed text-mist">{t.pick(e.body)}</p>
           <p className="mt-2 rounded-lg bg-white/5 p-2 text-[11px] leading-relaxed text-white/85"><b className="text-rna">{t('Você sabia?', 'Did you know?')}</b> {t.pick(e.fact)}</p>
           {e.steps && (
@@ -357,17 +383,22 @@ function ExplorePanel() {
               ))}
             </div>
           )}
+          </details>
         </div>
       )}
-      <div className="glass absolute right-3 top-14 max-h-[calc(100%-10rem)] w-44 overflow-auto rounded-2xl p-2 text-xs md:right-5">
+      <button type="button" aria-expanded={map} onClick={() => setMap(!map)}
+        className={`glass absolute right-3 top-3 hidden h-11 min-w-11 place-items-center rounded-xl px-2 text-xs pointer-coarse:grid ${map ? 'text-dna ring-1 ring-dna/60' : 'text-white'}`}>
+        {map ? '✕' : t('Mapa', 'Map')}
+      </button>
+      <div className={`glass absolute right-3 top-14 max-h-[calc(100%-10rem)] w-44 overflow-auto rounded-2xl p-2 text-xs md:right-5 ${map ? 'map-open pointer-coarse:inset-x-3 pointer-coarse:bottom-20 pointer-coarse:z-10 pointer-coarse:max-h-none pointer-coarse:w-auto pointer-coarse:bg-ink/95 pointer-coarse:p-3' : 'pointer-coarse:hidden'}`}>
         <div className="hud-label px-1">{t('Voar até', 'Fly to')} · <span className="text-dna">{seen.length}/{EXHIBITS.length}</span></div>
         <div role="group" aria-label={t('Voar até', 'Fly to')} className="mt-1 space-y-2">
           {(Object.keys(REGIONS) as Region[]).map((r) => (
             <div key={r}>
               <div className="px-1 text-[10px] uppercase tracking-wider text-mist/60">{t.pick(REGIONS[r])}</div>
               {EXHIBITS.filter((x) => x.region === r).map((x) => (
-                <button key={x.id} type="button" aria-pressed={zone === x.id} onClick={() => useSim.getState().set({ flyTo: x.id })}
-                  className={`flex w-full items-center justify-between rounded-lg px-2 py-1 text-left transition ${zone === x.id ? 'bg-dna/15 text-white ring-1 ring-dna/60' : 'text-mist hover:bg-white/5 hover:text-white'}`}>
+                <button key={x.id} type="button" aria-pressed={zone === x.id} onClick={() => { useSim.getState().set({ flyTo: x.id }); setMap(false) }}
+                  className={`flex w-full items-center justify-between rounded-lg px-2 py-1 text-left transition pointer-coarse:py-2.5 pointer-coarse:text-sm ${zone === x.id ? 'bg-dna/15 text-white ring-1 ring-dna/60' : 'text-mist hover:bg-white/5 hover:text-white'}`}>
                   {t.pick(x.short)}
                   {seen.includes(x.id) && <><span aria-hidden="true" className="text-dna">✓</span><span className="sr-only">, {t('visitado', 'visited')}</span></>}
                 </button>
@@ -380,6 +411,7 @@ function ExplorePanel() {
         WASD {t('nadar', 'swim')} · Q/E {t('descer/subir', 'down/up')} · Shift turbo · {t('arraste para olhar', 'drag to look')} · X {t('sair', 'exit')}
       </p>
       <Joystick />
+      <TouchKeys />
     </>
   )
 }
@@ -513,6 +545,13 @@ export default function Playground() {
 
   // som só no modo Explorar, com a preferência ligada e o playground à vista
   useEffect(() => { sound.setOn(sim.explore && sim.sound && (inView || sim.presentation)) }, [sim.explore, sim.sound, inView, sim.presentation])
+  // no toque, o Explorar cobre a tela (index.css): a página por trás não rola
+  useEffect(() => {
+    if (!sim.explore || !matchMedia('(pointer: coarse)').matches) return
+    const html = document.documentElement
+    html.style.overflow = 'hidden'
+    return () => { html.style.overflow = '' }
+  }, [sim.explore])
   useEffect(() => () => sound.setOn(false), [])
 
   // modo Explorar: cada zona visitada pela primeira vez conta como descoberta (guardada neste navegador)
@@ -572,7 +611,7 @@ export default function Playground() {
 
   return (
     <div ref={wrap} className="relative">
-      <div ref={stage} data-lenis-prevent className={`stage relative overflow-hidden rounded-3xl border border-white/10 bg-ink shadow-[0_40px_120px_-40px_rgba(62,240,208,0.25)] ${big ? 'h-[88vh]' : 'h-[74vh] min-h-[540px]'}`}>
+      <div ref={stage} data-lenis-prevent className={`stage relative overflow-hidden rounded-3xl border border-white/10 bg-ink shadow-[0_40px_120px_-40px_rgba(62,240,208,0.25)] ${big ? 'h-[88vh]' : 'h-[74vh] min-h-[540px]'} ${sim.explore ? 'exploring' : ''}`}>
         {webgl && !lost ? (armed &&
           <SceneBoundary fallback={<Fallback reason="lost" />}>
             <Suspense fallback={<div className="grid h-full place-items-center text-mist"><span className="animate-pulse">{t('Carregando cena 3D…', 'Loading 3D scene…')}</span></div>}>
@@ -582,7 +621,7 @@ export default function Playground() {
         ) : <Fallback reason={lost ? 'lost' : 'nogl'} />}
 
         {/* indicador de etapas */}
-        <ol className="absolute left-3 right-3 top-3 flex flex-wrap gap-1.5 md:left-5 md:top-5" aria-label={t('Etapas do experimento', 'Experiment steps')}>
+        <ol className="explore-hide absolute left-3 right-3 top-3 flex flex-wrap gap-1.5 md:left-5 md:top-5" aria-label={t('Etapas do experimento', 'Experiment steps')}>
           {steps.map((name, i) => (
             <li key={name}>
               <button type="button" onClick={() => st.goto(i)} aria-current={i === sim.step ? 'step' : undefined}
@@ -595,30 +634,30 @@ export default function Playground() {
         </ol>
 
         {/* legenda / narração */}
-        <div className={`pointer-events-none absolute left-1/2 w-[min(92%,920px)] -translate-x-1/2 text-center ${big ? 'bottom-24' : 'bottom-20'}`} aria-live="polite">
+        <div className={`explore-hide pointer-events-none absolute left-1/2 w-[min(92%,920px)] -translate-x-1/2 text-center ${big ? 'bottom-24' : 'bottom-20'}`} aria-live="polite">
           {showCaption && <p key={caption} className={`caption-in inline rounded-xl bg-black/60 box-decoration-clone px-3 py-1 leading-relaxed text-white backdrop-blur-sm ${big ? 'text-xl md:text-2xl' : 'text-sm md:text-base'}`}>{caption}</p>}
         </div>
 
         {/* HUD de controle */}
         <div className="glass absolute bottom-3 left-1/2 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-2xl p-1.5" role="toolbar" aria-label={t('Controles da simulação', 'Simulation controls')}>
-          <button type="button" className="hud-btn" onClick={() => st.goto(sim.step - 1)} aria-label={t('Etapa anterior', 'Previous step')} title={`${t('Etapa anterior', 'Previous step')} (←)`}><Icon d={ICONS.prev} /></button>
-          <button type="button" className="hud-btn w-12 text-dna" onClick={togglePlay} aria-label={sim.playing ? t('Pausar', 'Pause') : t('Reproduzir', 'Play')} title={`Play/${t('pausa', 'pause')} (${t('espaço', 'space')})`}><Icon d={sim.playing ? ICONS.pause : ICONS.play} /></button>
-          <button type="button" className="hud-btn" onClick={() => st.goto(sim.step + 1)} aria-label={t('Próxima etapa', 'Next step')} title={`${t('Próxima etapa', 'Next step')} (→)`}><Icon d={ICONS.next} /></button>
-          <span className="mx-1 h-6 w-px shrink-0 bg-white/15" />
-          <button type="button" className={`hud-btn gap-1.5 ${sim.cinema ? 'text-rna' : ''}`} aria-pressed={sim.cinema} onClick={cinema} title={`${t('Modo cinema: toca as 6 etapas', 'Cinema mode: plays all 6 steps')} (M)`}><Stroke d={ICONS.film} /><span className="hidden sm:inline">{t('Cinema', 'Cinema')}</span></button>
-          {webgl && !lost && <button type="button" className={`hud-btn gap-1.5 ${sim.explore ? 'text-dna' : ''}`} aria-pressed={sim.explore} onClick={() => { sound.unlock(); st.setExplore(!sim.explore) }} title={`${t('Explorar o núcleo livremente', 'Explore the nucleus freely')} (X)`}><Stroke d={ICONS.explore} /><span className="hidden sm:inline">{t('Explorar', 'Explore')}</span></button>}
+          <button type="button" className="explore-hide hud-btn" onClick={() => st.goto(sim.step - 1)} aria-label={t('Etapa anterior', 'Previous step')} title={`${t('Etapa anterior', 'Previous step')} (←)`}><Icon d={ICONS.prev} /></button>
+          <button type="button" className="explore-hide hud-btn w-12 text-dna" onClick={togglePlay} aria-label={sim.playing ? t('Pausar', 'Pause') : t('Reproduzir', 'Play')} title={`Play/${t('pausa', 'pause')} (${t('espaço', 'space')})`}><Icon d={sim.playing ? ICONS.pause : ICONS.play} /></button>
+          <button type="button" className="explore-hide hud-btn" onClick={() => st.goto(sim.step + 1)} aria-label={t('Próxima etapa', 'Next step')} title={`${t('Próxima etapa', 'Next step')} (→)`}><Icon d={ICONS.next} /></button>
+          <span className="explore-hide mx-1 h-6 w-px shrink-0 bg-white/15" />
+          <button type="button" className={`explore-hide hud-btn gap-1.5 ${sim.cinema ? 'text-rna' : ''}`} aria-pressed={sim.cinema} onClick={cinema} title={`${t('Modo cinema: toca as 6 etapas', 'Cinema mode: plays all 6 steps')} (M)`}><Stroke d={ICONS.film} /><span className="hidden sm:inline">{t('Cinema', 'Cinema')}</span></button>
+          {webgl && !lost && <button type="button" className={`hud-btn gap-1.5 ${sim.explore ? 'text-dna' : ''}`} aria-pressed={sim.explore} onClick={() => { sound.unlock(); st.setExplore(!sim.explore) }} title={`${t('Explorar o núcleo livremente', 'Explore the nucleus freely')} (X)`}><Stroke d={ICONS.explore} /><span className="hidden sm:inline">{t('Explorar', 'Explore')}</span>{sim.explore && <span aria-hidden="true">✕</span>}</button>}
           {sim.explore && <button type="button" className="hud-btn" aria-pressed={sim.sound} onClick={toggleSound} aria-label={t('Som', 'Sound')} title={sim.sound ? t('Silenciar', 'Mute') : t('Ligar som', 'Unmute')}><Stroke d={sim.sound ? ICONS.soundOn : ICONS.soundOff} /></button>}
-          <button type="button" className="hud-btn" onClick={() => st.reset()} aria-label={t('Resetar experimento', 'Reset experiment')} title={`${t('Resetar experimento', 'Reset experiment')} (R)`}><Icon d={ICONS.reset} /></button>
-          <button type="button" className="hud-btn" onClick={() => st.set({ camTick: st.camTick + 1 })} aria-label={t('Recentralizar câmera', 'Recenter camera')} title={`${t('Recentralizar câmera', 'Recenter camera')} (C)`}><Stroke d={ICONS.cam} /></button>
-          <button type="button" className={`hud-btn gap-1.5 ${big ? 'text-rna' : ''}`} aria-pressed={big} onClick={() => st.set({ presentation: !big })} title={`${t('Modo apresentação', 'Presentation mode')} (P)`}><Stroke d={ICONS.screen} /><span className="hidden lg:inline">{t('Apresentação', 'Present')}</span></button>
-          <button type="button" className="hud-btn" onClick={copyLink} aria-label={t('Copiar link do experimento', 'Copy experiment link')} title={t('Copiar link do experimento', 'Copy experiment link')}><Stroke d={ICONS.link} /></button>
-          {webgl && !lost && <button type="button" className="hud-btn" onClick={capture} aria-label={t('Salvar imagem da cena', 'Save scene image')} title={t('Salvar imagem da cena (PNG)', 'Save scene image (PNG)')}><Stroke d={ICONS.shot} /></button>}
-          <button type="button" className="hud-btn" onClick={fullscreen} title={`${t('Tela cheia', 'Fullscreen')} (F)`} aria-label={t('Tela cheia', 'Fullscreen')}><Icon d={ICONS.full} /></button>
+          <button type="button" className="explore-hide hud-btn" onClick={() => st.reset()} aria-label={t('Resetar experimento', 'Reset experiment')} title={`${t('Resetar experimento', 'Reset experiment')} (R)`}><Icon d={ICONS.reset} /></button>
+          <button type="button" className="explore-hide hud-btn" onClick={() => st.set({ camTick: st.camTick + 1 })} aria-label={t('Recentralizar câmera', 'Recenter camera')} title={`${t('Recentralizar câmera', 'Recenter camera')} (C)`}><Stroke d={ICONS.cam} /></button>
+          <button type="button" className={`explore-hide hud-btn gap-1.5 ${big ? 'text-rna' : ''}`} aria-pressed={big} onClick={() => st.set({ presentation: !big })} title={`${t('Modo apresentação', 'Presentation mode')} (P)`}><Stroke d={ICONS.screen} /><span className="hidden lg:inline">{t('Apresentação', 'Present')}</span></button>
+          <button type="button" className="explore-hide hud-btn" onClick={copyLink} aria-label={t('Copiar link do experimento', 'Copy experiment link')} title={t('Copiar link do experimento', 'Copy experiment link')}><Stroke d={ICONS.link} /></button>
+          {webgl && !lost && <button type="button" className="explore-hide hud-btn" onClick={capture} aria-label={t('Salvar imagem da cena', 'Save scene image')} title={t('Salvar imagem da cena (PNG)', 'Save scene image (PNG)')}><Stroke d={ICONS.shot} /></button>}
+          <button type="button" className="explore-hide hud-btn" onClick={fullscreen} title={`${t('Tela cheia', 'Fullscreen')} (F)`} aria-label={t('Tela cheia', 'Fullscreen')}><Icon d={ICONS.full} /></button>
         </div>
 
         {sim.explore && <ExplorePanel />}
 
-        {toast && <p className="glass absolute left-1/2 top-16 -translate-x-1/2 rounded-full px-4 py-1.5 text-sm text-white" role="status">{toast}</p>}
+        {toast && <p className="glass absolute left-1/2 top-16 z-20 -translate-x-1/2 whitespace-nowrap rounded-full pointer-coarse:top-24 px-4 py-1.5 text-sm text-white" role="status">{toast}</p>}
         <p className="absolute bottom-3 right-4 hidden max-w-[220px] text-right text-[10px] leading-tight text-mist/60 xl:block">{t('Simulação didática simplificada; não representa um protocolo experimental real.', 'Simplified teaching simulation; not a real experimental protocol.')}</p>
         {big && !sim.explore && <p className="absolute right-4 top-14 hidden text-[11px] text-mist/70 md:block">← → {t('etapas', 'steps')} · {t('espaço', 'space')} play · M {t('cinema', 'cinema')} · R reset · C {t('câmera', 'camera')} · F {t('tela cheia', 'fullscreen')} · P {t('sair', 'exit')}</p>}
         {big && !sim.explore && <Qr />}

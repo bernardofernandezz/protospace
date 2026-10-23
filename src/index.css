@@ -57,6 +57,21 @@
 
 .stage:fullscreen { height: 100vh; border-radius: 0; }
 
+/* Explorar no toque: palco em tela cheia (o iPhone não tem Fullscreen API para elementos), fora das áreas
+   seguras (a sombra pinta o entorno), e HUD enxuto */
+@media (pointer: coarse) {
+  .stage.exploring {
+    position: fixed; z-index: 85; height: auto; min-height: 0; border: 0; border-radius: 0;
+    inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    box-shadow: 0 0 0 100vmax var(--color-ink);
+  }
+  .stage.exploring .explore-hide { display: none; }
+  /* content-visibility (abaixo) contém a pintura da seção e prenderia o palco fixo dentro dela */
+  #playground:has(.stage.exploring) { content-visibility: visible; }
+  /* rótulos 3D (drei <Html>) têm z-index enorme: somem enquanto o Mapa cobre a cena */
+  .stage:has(.map-open) .label3d { visibility: hidden; }
+}
+
 /* grão de filme procedural */
 .grain {
   pointer-events: none; position: fixed; inset: -50%; z-index: 70; opacity: 0.06;
