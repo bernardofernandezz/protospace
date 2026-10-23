@@ -104,6 +104,30 @@ test('dilemas: votação compartilhada mostra resultado só depois do voto', asy
   expect(sent).toMatchObject({ p_dilemma: 'embriao', p_stance: 'pro' })
 })
 
+test('dilemas: voto recusado pelo banco é desfeito; falha de rede fica na fila', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  const rows = ['embriao', 'gene-drive', 'sus'].flatMap((d) => ['pro', 'con', 'depends'].map((stance) => ({ dilemma_id: d, stance, votes: 1 })))
+  await page.route('**/rest/v1/dilemma_tallies*', (r) => r.fulfill({ json: rows }))
+  let rejected = true
+  await page.route('**/rest/v1/rpc/cast_vote', (r) => rejected
+    ? r.fulfill({ status: 400, json: { code: 'P0001', message: 'rate limit', details: null, hint: null } })
+    : r.abort('internetdisconnected'))
+  await page.routeWebSocket(/supabase\.co/, () => { /* sem tempo real no teste */ })
+
+  await page.goto('/?lang=pt#bioetica')
+  const card = page.locator('article', { hasText: 'Editar embriões' })
+  await card.scrollIntoViewIfNeeded()
+  const pro = card.getByRole('button', { name: 'A favor' })
+
+  await pro.click()
+  await expect(pro).toHaveAttribute('aria-pressed', 'false')
+
+  rejected = false
+  await pro.click()
+  await expect(card.getByText(/sem conexão/)).toBeVisible()
+  expect(await page.evaluate(() => localStorage.getItem('protospace-pending-votes'))).toContain('"embriao":"pro"')
+})
+
 test('cabeçalhos de segurança de produção estão presentes', async ({ request }) => {
   const res = await request.get('/')
   const h = res.headers()
