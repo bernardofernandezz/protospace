@@ -9,7 +9,8 @@ export type L<T = string> = Record<Lang, T>
 
 const KEY = 'crispr-lang'
 
-/** Ordem: ?lang= na URL → caminho /en/ (link do LinkedIn) → escolha salva → idioma do navegador. */
+/** Ordem: ?lang= na URL → caminho /en/ → escolha salva → português.
+ * Sem palpite pelo idioma do navegador: `/` é a versão PT declarada no hreflang (inclusive para buscadores). */
 function detect(): Lang {
   try {
     const q = new URLSearchParams(location.search).get('lang')
@@ -18,7 +19,7 @@ function detect(): Lang {
     const saved = localStorage.getItem(KEY)
     if (saved === 'pt' || saved === 'en') return saved
   } catch { /* armazenamento indisponível */ }
-  return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('pt') ? 'pt' : 'en'
+  return 'pt'
 }
 
 const META: L<{ title: string; description: string }> = {
@@ -43,8 +44,10 @@ export const useLang = create<{ lang: Lang; setLang: (l: Lang) => void }>((set) 
   lang: detect(),
   setLang: (lang) => {
     try { localStorage.setItem(KEY, lang) } catch { /* armazenamento indisponível */ }
+    // URL canônica do idioma (/ ou /en/), mantendo os demais parâmetros e o #hash
     const url = new URL(location.href)
-    url.searchParams.set('lang', lang)
+    url.searchParams.delete('lang')
+    url.pathname = lang === 'en' ? '/en/' : '/'
     history.replaceState(history.state, '', url)
     apply(lang)
     set({ lang })
