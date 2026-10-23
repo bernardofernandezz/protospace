@@ -6,6 +6,7 @@ import {
   MAX_LOCUS, netLength, nhejOps, offTargetSites, type CasType, type Delivery, type Op, type Repair,
 } from '../lib/dna'
 import { useLang, type L } from '../i18n'
+import { EXHIBIT } from '../content/exhibits'
 
 export const STEPS: L<string[]> = {
   pt: ['Design do guia', 'Entrega', 'Busca e reconhecimento', 'Clivagem', 'Reparo', 'Resultado'],
@@ -19,9 +20,8 @@ export type Quality = 'low' | 'medium' | 'high'
 
 export interface Tip { title: string; body: string; x: number; y: number }
 
-/** Zonas do modo Explorar e as etapas que cada uma demonstra. */
-export type ZoneId = 'guide' | 'pam' | 'decoy' | 'cas9' | 'cut' | 'off0' | 'off1'
-export const ZONE_STEPS: Record<ZoneId, number[]> = { guide: [0], pam: [2], decoy: [2], cas9: [2], cut: [3, 4], off0: [5], off1: [5] }
+/** Id de uma exposição do modo Explorar (src/content/exhibits.ts). */
+export type ZoneId = string
 
 interface SimState {
   locus: string
@@ -49,12 +49,20 @@ interface SimState {
   zone: ZoneId | null
   /** Pedido de voo até uma zona (consumido pelo Explorer). */
   flyTo: ZoneId | null
+  /** Zonas já visitadas (persistidas por navegador). */
+  seen: string[]
   set: (p: Partial<SimState>) => void
   setLocus: (s: string) => void
   select: (i: number) => void
   goto: (step: number) => void
   reset: () => void
   setExplore: (on: boolean) => void
+}
+
+export const SEEN_KEY = 'protospace.seen'
+function loadSeen(): string[] {
+  try { const v = JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x in EXHIBIT) : [] }
+  catch { return [] }
 }
 
 const isCoarse = () => typeof matchMedia !== 'undefined' && (matchMedia('(pointer: coarse)').matches || innerWidth < 768)
@@ -114,6 +122,7 @@ export const useSim = create<SimState>((set, get) => ({
   explore: false,
   zone: null,
   flyTo: null,
+  seen: loadSeen(),
   set: (p) => set(p),
   setLocus: (locus) => {
     const c = findCandidates(locus)

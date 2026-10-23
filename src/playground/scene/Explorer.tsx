@@ -2,24 +2,31 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Trail } from '@react-three/drei'
 import * as THREE from 'three'
+import { EXHIBITS, type Vec3 } from '../../content/exhibits'
 import { BASE_COLOR, PALETTE } from '../colors'
 import { useSim, type Quality, type ZoneId } from '../store'
 import { organicMaterial, tickOrganic } from './materials'
 import { integrate, pushOut, stepFloater, type Body, type Floater } from './physics'
 import { input } from './shared'
+import Exhibits from './Exhibits'
 import { casPose, centerAt, focus, frame, normalAt, type Ready } from './timeline'
 
 const PROBE_R = 0.45
 const DNA_R = 1.0 + PROBE_R + 0.25 // raio da hélice + sonda + folga
 const OFF_POS = [new THREE.Vector3(-12, 8, -16), new THREE.Vector3(12, 8, -16)] // mesmas posições do Nucleoplasm
 const ZONE_R = 4.5
-const FLOATERS: Record<Quality, number> = { low: 120, medium: 200, high: 300 }
+const WORLD_R = 95
+const STATIC = EXHIBITS.filter((e) => e.pos).map((e) => ({ id: e.id, pos: new THREE.Vector3(...(e.pos as Vec3)), size: e.size ?? 2, solid: e.solid ?? 0 }))
+const SOLID = STATIC.filter((s) => s.solid > 0)
+/** Alcance da zona: exposições grandes "começam" mais longe. */
+const reach = (id: ZoneId) => (STATIC.find((s) => s.id === id)?.size ?? 0) + ZONE_R
+const FLOATERS: Record<Quality, number> = { low: 150, medium: 260, high: 400 }
 const KEYS: Record<string, [axis: 'x' | 'y' | 'z', dir: number]> = {
   w: ['z', 1], s: ['z', -1], a: ['x', -1], d: ['x', 1], e: ['y', 1], q: ['y', -1],
 }
 
 const rand = (seed: number) => { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647) }
-const _n = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3(), _t = new THREE.Vector3(), _m = new THREE.Matrix4()
+const _a = new THREE.Vector3(), _n = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3(), _t = new THREE.Vector3(), _m = new THREE.Matrix4()
 
 /** Posição de cada zona neste quadro (tudo se move com a timeline). */
 function zonePositions(d: Ready, out: Map<ZoneId, THREE.Vector3>) {
@@ -39,6 +46,7 @@ function zonePositions(d: Ready, out: Map<ZoneId, THREE.Vector3>) {
   else out.delete('decoy')
   at('off0').copy(OFF_POS[0])
   at('off1').copy(OFF_POS[1])
+  for (const s of STATIC) at(s.id).copy(s.pos)
   return out
 }
 
@@ -61,7 +69,7 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     return Array.from({ length: count }, () => {
       const home = new THREE.Vector3()
       // espalha em volta do locus, fora do tubo do DNA
-      do home.set((r() - 0.5) * 70, (r() - 0.5) * 30 + 2, (r() - 0.5) * 40 - 5)
+      do home.set((r() - 0.5) * 150, (r() - 0.5) * 55 + 2, (r() - 0.5) * 80)
       while (Math.hypot(home.y, home.z) < 3)
       return { home, pos: home.clone(), vel: new THREE.Vector3() }
     })
@@ -154,12 +162,18 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
 
     if (st.flyTo && !zones.has(st.flyTo)) st.set({ flyTo: null })
     else if (st.flyTo) {
-      // voo guiado até a zona: para um pouco à frente, olhando para ela
-      _t.copy(zones.get(st.flyTo)!).add(_n.set(0, 1, 3.5))
+      // voo guiado: chega pelo lado do centro do núcleo (no locus, pela frente) e encara a zona
+      const zp = zones.get(st.flyTo)!
+      if (zp.length() > 15) _a.copy(zp).normalize()
+      else _a.set(0, 0, -1)
+      _t.copy(zp).addScaledVector(_a, 1 - reach(st.flyTo))
+      _t.y += 1
       body.vel.set(0, 0, 0)
       body.pos.lerp(_t, 1 - Math.exp(-dt * 3))
-      look.current.yaw *= Math.exp(-dt * 4)
-      look.current.pitch += (-0.2 - look.current.pitch) * (1 - Math.exp(-dt * 4))
+      const k = 1 - Math.exp(-dt * 4)
+      const dy = Math.atan2(_a.x, -_a.z) - look.current.yaw
+      look.current.yaw += Math.atan2(Math.sin(dy), Math.cos(dy)) * k
+      look.current.pitch += (Math.asin(THREE.MathUtils.clamp(_a.y, -1, 1)) - 0.1 - look.current.pitch) * k
       if (body.pos.distanceTo(_t) < 0.3) st.set({ flyTo: null, zone: st.flyTo })
     } else {
       _t.set(0, input.y, 0).addScaledVector(_f, input.z).addScaledVector(_r, input.x)
@@ -168,6 +182,9 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     }
     pushOut(body, L.center, L.n, DNA_R)
     pushOut(body, OFF_POS, 2, 2.6)
+    for (const s of SOLID) pushOut(body, [s.pos], 1, s.solid + PROBE_R)
+    // borda do mundo: um "aquário" esférico, desliza ao longo da parede
+    if (body.pos.length() > WORLD_R) { body.pos.setLength(WORLD_R); body.vel.multiplyScalar(0.5) }
 
     // sonda: inclina na direção do movimento
     const g = probe.current
@@ -192,12 +209,13 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     // zona mais próxima, com histerese para o cartão não piscar na borda
     let best: ZoneId | null = null
     let bestD = Infinity
-    for (const [id, p] of zones) { const dd = p.distanceTo(body.pos); if (dd < bestD) { bestD = dd; best = id } }
+    // distância "normalizada" pelo alcance: exposições grandes não perdem para zonas pequenas vizinhas
+    for (const [id, p] of zones) { const dd = p.distanceTo(body.pos) - reach(id); if (dd < bestD) { bestD = dd; best = id } }
     const cur = st.zone
-    const curD = cur && zones.has(cur) ? zones.get(cur)!.distanceTo(body.pos) : Infinity
+    const curD = cur && zones.has(cur) ? zones.get(cur)!.distanceTo(body.pos) - reach(cur) : Infinity
     let next = cur
-    if (curD > ZONE_R * 1.3) next = null
-    if (best && bestD < ZONE_R && (next === null || bestD < curD - 1)) next = best
+    if (curD > ZONE_R * 0.3) next = null
+    if (best && bestD < 0 && (next === null || bestD < curD - 1)) next = best
     if (next !== cur) st.set({ zone: next })
   })
 
@@ -210,6 +228,7 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
           <pointLight intensity={18} distance={9} color={PALETTE.strand1} />
         </group>
       </Trail>
+      <Exhibits />
       <instancedMesh ref={inst} args={[geo, mat.dot, floaters.length]} frustumCulled={false} />
     </>
   )

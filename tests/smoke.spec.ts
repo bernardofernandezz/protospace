@@ -56,7 +56,8 @@ test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page }) =>
   await expect(btn).toHaveAttribute('aria-pressed', 'true')
   const fly = page.getByRole('group', { name: 'Voar até' })
   await fly.getByRole('button', { name: 'Corte' }).click()
-  await expect(page.getByText('Sítio de corte')).toBeVisible({ timeout: 10_000 })
+  // voo guiado; com WebGL por software (CI) o quadro é lento
+  await expect(page.getByText('Sítio de corte')).toBeVisible({ timeout: 30_000 })
   await page.keyboard.press('Escape')
   await expect(btn).toHaveAttribute('aria-pressed', 'false')
   expect(errors, errors.join('\n')).toEqual([])

@@ -3,7 +3,8 @@ import { useShallow } from 'zustand/react/shallow'
 import { CAS, DELIVERY, MAX_LOCUS, clean, diffSegments, isSeed, mismatches, type CasType, type Delivery, type Repair } from '../lib/dna'
 import { hasWebGL, useInView } from '../lib/hooks'
 import { useT, type T } from '../i18n'
-import { STEPS, STEP_COUNT, STEP_SECONDS, ZONE_STEPS, experimentUrl, useDerived, useSim, type Quality, type ZoneId } from './store'
+import { SEEN_KEY, STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
+import { EXHIBIT, EXHIBITS, REGIONS, type Region } from '../content/exhibits'
 import { input } from './scene/shared'
 import { BASE_COLOR } from './colors'
 
@@ -303,32 +304,6 @@ function Tooltip() {
   )
 }
 
-type PtEn = [string, string]
-const ZONE_TEXT: Record<ZoneId, { short: PtEn; title: PtEn; body: PtEn }> = {
-  guide: { short: ['Guia', 'Guide'], title: ['sgRNA e protoespaçador', 'sgRNA & protospacer'], body: [
-    'O espaçador de 20 nt do guia pareia com o protoespaçador, logo a 5′ do PAM. É ele que dá o endereço da edição.',
-    'The guide’s 20-nt spacer pairs with the protospacer, right 5′ of the PAM. It is the address of the edit.'] },
-  pam: { short: ['PAM', 'PAM'], title: ['PAM (NGG)', 'PAM (NGG)'], body: [
-    'Sem PAM não há corte: o domínio PI da Cas9 reconhece o NGG antes de testar o guia — é assim que a bactéria poupa o próprio arranjo CRISPR.',
-    'No PAM, no cut: Cas9’s PI domain reads the NGG before testing the guide — that is how bacteria spare their own CRISPR array.'] },
-  decoy: { short: ['PAM isca', 'Decoy PAM'], title: ['PAM isca', 'Decoy PAM'], body: [
-    'Um NGG sem complementaridade com o guia: a Cas9 para, testa a seed e solta em milissegundos.',
-    'An NGG with no match to the guide: Cas9 stops, tests the seed and lets go within milliseconds.'] },
-  cas9: { short: ['Cas9', 'Cas9'], title: ['Cas9', 'Cas9'], body: [
-    'O lóbulo REC segura o heterodúplex RNA-DNA; HNH e RuvC são as duas tesouras, uma para cada fita.',
-    'The REC lobe holds the RNA-DNA heteroduplex; HNH and RuvC are the two scissors, one per strand.'] },
-  cut: { short: ['Corte', 'Cut'], title: ['Sítio de corte', 'Cut site'], body: [
-    'A 3 pb do PAM, HNH e RuvC deixam extremidades cegas. A partir daqui, quem decide o resultado é o reparo da célula.',
-    '3 bp from the PAM, HNH and RuvC leave blunt ends. From here on, the cell’s repair decides the outcome.'] },
-  off0: { short: ['Off-target 1', 'Off-target 1'], title: ['Sítio off-target', 'Off-target site'], body: [
-    'Sequência parecida com o alvo em outro ponto do genoma. Quanto mais mismatches (sobretudo na seed), menor o risco de corte.',
-    'A target look-alike elsewhere in the genome. The more mismatches (especially in the seed), the lower the cut risk.'] },
-  off1: { short: ['Off-target 2', 'Off-target 2'], title: ['Sítio off-target', 'Off-target site'], body: [
-    'Outro sítio parecido. Compare o halo com o do primeiro: ele cresce com a probabilidade ilustrativa de corte.',
-    'Another look-alike. Compare its halo with the first one: it grows with the illustrative cut probability.'] },
-}
-const ZONE_IDS = Object.keys(ZONE_STEPS) as ZoneId[]
-
 /** Joystick de toque: escreve direto na entrada do Explorer. */
 function Joystick() {
   const base = useRef<HTMLDivElement>(null)
@@ -354,34 +329,47 @@ function Joystick() {
   )
 }
 
-/** HUD do modo Explorar: cartão da zona atual, "voar até" (caminho por teclado/leitor de tela) e dicas. */
+/** HUD do modo Explorar: cartão da zona atual, "voar até" por região (caminho por teclado/leitor de tela) e dicas. */
 function ExplorePanel() {
   const t = useT()
   const zone = useSim((s) => s.zone)
+  const seen = useSim((s) => s.seen)
+  const e = zone ? EXHIBIT[zone] : undefined
   return (
     <>
-      {zone && (
-        <div key={zone} className="glass caption-in absolute left-3 top-14 w-[min(18rem,calc(100%-9rem))] rounded-2xl p-4 md:left-5" role="status">
-          <div className="hud-label">{t('Você está em', 'You are at')}</div>
-          <div className="font-display text-lg text-white">{t(...ZONE_TEXT[zone].title)}</div>
-          <p className="mt-1 text-xs leading-relaxed text-mist">{t(...ZONE_TEXT[zone].body)}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {ZONE_STEPS[zone].map((i) => (
-              <button key={i} type="button" onClick={() => useSim.getState().goto(i)} className="rounded-lg bg-dna/20 px-3 py-1 text-xs text-dna hover:bg-dna/30">
-                ▶ {t('Ver etapa', 'Play step')} {i + 1}
-              </button>
-            ))}
-          </div>
+      {e && (
+        <div key={e.id} className="glass caption-in absolute left-3 top-14 max-h-[calc(100%-10rem)] w-[min(20rem,calc(100%-13rem))] overflow-auto rounded-2xl p-4 md:left-5" role="status">
+          <div className="hud-label">{t.pick(REGIONS[e.region])}</div>
+          <div className="font-display text-lg leading-tight text-white">{t.pick(e.title)}</div>
+          <p className="mt-1.5 text-xs leading-relaxed text-mist">{t.pick(e.body)}</p>
+          <p className="mt-2 rounded-lg bg-white/5 p-2 text-[11px] leading-relaxed text-white/85"><b className="text-rna">{t('Você sabia?', 'Did you know?')}</b> {t.pick(e.fact)}</p>
+          {e.steps && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {e.steps.map((i) => (
+                <button key={i} type="button" onClick={() => useSim.getState().goto(i)} className="rounded-lg bg-dna/20 px-3 py-1 text-xs text-dna hover:bg-dna/30">
+                  ▶ {t('Ver etapa', 'Play step')} {i + 1}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
-      <div role="group" aria-label={t('Voar até', 'Fly to')} className="absolute right-3 top-14 flex flex-col items-end gap-1 md:right-5">
-        <span className="hud-label">{t('Voar até', 'Fly to')}</span>
-        {ZONE_IDS.map((id) => (
-          <button key={id} type="button" aria-pressed={zone === id} onClick={() => useSim.getState().set({ flyTo: id })}
-            className={`glass rounded-full px-3 py-1 text-xs transition ${zone === id ? 'text-white ring-1 ring-dna/70' : 'text-mist hover:text-white'}`}>
-            {t(...ZONE_TEXT[id].short)}
-          </button>
-        ))}
+      <div className="glass absolute right-3 top-14 max-h-[calc(100%-10rem)] w-44 overflow-auto rounded-2xl p-2 text-xs md:right-5">
+        <div className="hud-label px-1">{t('Voar até', 'Fly to')} · <span className="text-dna">{seen.length}/{EXHIBITS.length}</span></div>
+        <div role="group" aria-label={t('Voar até', 'Fly to')} className="mt-1 space-y-2">
+          {(Object.keys(REGIONS) as Region[]).map((r) => (
+            <div key={r}>
+              <div className="px-1 text-[10px] uppercase tracking-wider text-mist/60">{t.pick(REGIONS[r])}</div>
+              {EXHIBITS.filter((x) => x.region === r).map((x) => (
+                <button key={x.id} type="button" aria-pressed={zone === x.id} onClick={() => useSim.getState().set({ flyTo: x.id })}
+                  className={`flex w-full items-center justify-between rounded-lg px-2 py-1 text-left transition ${zone === x.id ? 'bg-dna/15 text-white ring-1 ring-dna/60' : 'text-mist hover:bg-white/5 hover:text-white'}`}>
+                  {t.pick(x.short)}
+                  {seen.includes(x.id) && <><span aria-hidden="true" className="text-dna">✓</span><span className="sr-only">, {t('visitado', 'visited')}</span></>}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
       <p className="pointer-events-none absolute bottom-3 left-4 hidden max-w-[220px] text-[10px] leading-tight text-mist/70 xl:pointer-fine:block">
         WASD {t('nadar', 'swim')} · Q/E {t('descer/subir', 'down/up')} · Shift turbo · {t('arraste para olhar', 'drag to look')} · X {t('sair', 'exit')}
@@ -504,6 +492,16 @@ export default function Playground() {
 
   useEffect(() => { if (sim.step === 5) setTab('resultado') }, [sim.step])
 
+  // modo Explorar: cada zona visitada pela primeira vez conta como descoberta (guardada neste navegador)
+  useEffect(() => useSim.subscribe((s, prev) => {
+    if (!s.zone || s.zone === prev.zone || s.seen.includes(s.zone)) return
+    const seen = [...s.seen, s.zone]
+    s.set({ seen })
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)) } catch { /* sem armazenamento: vale só nesta visita */ }
+    setToast(`✦ ${t('Nova descoberta', 'New discovery')} · ${seen.length}/${EXHIBITS.length}`)
+    setTimeout(() => setToast(''), 2200)
+  }), [t])
+
   // atalhos: ← → etapas, espaço play/pausa, R reset, C câmera, P apresentação, M cinema, F tela cheia, X explorar
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -532,6 +530,9 @@ export default function Playground() {
 
   const st = useSim.getState()
   const caption = narration(t, sim.step, sim.cas, sim.delivery, sim.repair, acts)
+  // no Explorar, a narração das etapas só aparece nas zonas do locus (as outras têm o próprio cartão)
+  const zone = useSim((s) => s.zone)
+  const showCaption = !sim.explore || !!(zone && EXHIBIT[zone].steps)
   const TABS = [['guia', t('Guia', 'Guide')], ['params', t('Parâmetros', 'Parameters')], ['resultado', t('Resultado', 'Outcome')]] as const
   const onTabKey = (e: React.KeyboardEvent, i: number) => {
     const n = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
@@ -569,7 +570,7 @@ export default function Playground() {
 
         {/* legenda / narração */}
         <div className={`pointer-events-none absolute left-1/2 w-[min(92%,920px)] -translate-x-1/2 text-center ${big ? 'bottom-24' : 'bottom-20'}`} aria-live="polite">
-          <p key={caption} className={`caption-in inline rounded-xl bg-black/60 box-decoration-clone px-3 py-1 leading-relaxed text-white backdrop-blur-sm ${big ? 'text-xl md:text-2xl' : 'text-sm md:text-base'}`}>{caption}</p>
+          {showCaption && <p key={caption} className={`caption-in inline rounded-xl bg-black/60 box-decoration-clone px-3 py-1 leading-relaxed text-white backdrop-blur-sm ${big ? 'text-xl md:text-2xl' : 'text-sm md:text-base'}`}>{caption}</p>}
         </div>
 
         {/* HUD de controle */}
