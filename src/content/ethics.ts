@@ -48,8 +48,8 @@ export const ETHICS: L<EthicsContent> = {
         title: 'Somática × germinativa',
         summary: 'A linha que a maior parte das diretrizes trata como fronteira: editar uma pessoa ou editar uma linhagem.',
         details: [
-          'A edição somática altera células do corpo de alguém já nascido — sangue, fígado, olho. O efeito termina com aquela pessoa, e o debate se parece com o de qualquer terapia nova: eficácia, riscos, consentimento.',
-          'A edição germinativa altera embriões, óvulos ou espermatozoides. A mudança passa a todas as células do futuro indivíduo e aos seus descendentes. Por isso pesa mais: os afetados não podem consentir, e um erro se propaga.',
+          'A edição [[somatica|somática]] altera células do corpo de alguém já nascido — sangue, fígado, olho. O efeito termina com aquela pessoa, e o debate se parece com o de qualquer terapia nova: eficácia, riscos, consentimento.',
+          'A edição [[germinativa|germinativa]] altera embriões, óvulos ou espermatozoides. A mudança passa a todas as células do futuro indivíduo e aos seus descendentes. Por isso pesa mais: os afetados não podem consentir, e um erro se propaga.',
         ],
         notes: ['Relatórios de referência: NASEM (2017) e OMS (2021) — ver Referências.'],
       },
@@ -58,8 +58,8 @@ export const ETHICS: L<EthicsContent> = {
         title: 'Segurança e incerteza',
         summary: 'Off-targets, mosaicismo e alterações grandes que métodos simples não detectam.',
         details: [
-          'Mesmo um guia bem desenhado pode cortar sítios parecidos com o alvo. Além disso, a quebra de fita dupla pode causar grandes deleções e rearranjos cromossômicos que um PCR curto não enxerga.',
-          'Em embriões há ainda o mosaicismo: a edição acontece depois da primeira divisão e só parte das células é alterada. Efeitos de longo prazo só se conhecem com acompanhamento de anos — o que exige registros e transparência.',
+          'Mesmo um guia bem desenhado pode cortar trechos parecidos com o alvo, os [[offtarget|off-targets]]. Além disso, a [[dsb|quebra de fita dupla]] pode causar grandes deleções e embaralhar pedaços do cromossomo — alterações que os testes de rotina não enxergam.',
+          'Em embriões há ainda o [[mosaicismo|mosaicismo]]: a edição acontece depois da primeira divisão e só parte das células é alterada. Efeitos de longo prazo só se conhecem com acompanhamento de anos — o que exige registros e transparência.',
         ],
         notes: ['Ex.: Kosicki et al., 2018, sobre grandes deleções após cortes da Cas9.'],
       },
@@ -187,8 +187,8 @@ export const ETHICS: L<EthicsContent> = {
         title: 'Somatic vs germline',
         summary: 'The line most guidelines treat as a boundary: editing a person or editing a lineage.',
         details: [
-          'Somatic editing changes body cells of someone already born — blood, liver, eye. The effect ends with that person, and the debate resembles that of any new therapy: efficacy, risk, consent.',
-          'Germline editing changes embryos, eggs or sperm. The change reaches every cell of the future individual and their descendants. That is why it weighs more: those affected cannot consent, and a mistake propagates.',
+          '[[somatica|Somatic]] editing changes body cells of someone already born — blood, liver, eye. The effect ends with that person, and the debate resembles that of any new therapy: efficacy, risk, consent.',
+          '[[germinativa|Germline]] editing changes embryos, eggs or sperm. The change reaches every cell of the future individual and their descendants. That is why it weighs more: those affected cannot consent, and a mistake propagates.',
         ],
         notes: ['Key reports: NASEM (2017) and WHO (2021) — see References.'],
       },
@@ -198,7 +198,7 @@ export const ETHICS: L<EthicsContent> = {
         summary: 'Off-targets, mosaicism and large changes that simple methods miss.',
         details: [
           'Even a well-designed guide can cut sites that resemble the target. On top of that, a double-strand break can cause large deletions and chromosomal rearrangements that a short PCR cannot see.',
-          'In embryos there is also mosaicism: the edit happens after the first division and only some cells are changed. Long-term effects are only known after years of follow-up — which requires registries and transparency.',
+          'In embryos there is also [[mosaicismo|mosaicism]]: the edit happens after the first division and only some cells are changed. Long-term effects are only known after years of follow-up — which requires registries and transparency.',
         ],
         notes: ['E.g. Kosicki et al., 2018, on large deletions after Cas9 cuts.'],
       },

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
+import { Rich } from '../components/Term'
 import { ETHICS, type Dilemma, type EthicsTopic, type Stance } from '../content/ethics'
 import { useT } from '../i18n'
 import { useInView } from '../lib/hooks'
@@ -32,7 +33,7 @@ function TopicCard({ t, color }: { t: EthicsTopic; color: string }) {
         <span className="mt-4 text-xl text-mist transition group-open:rotate-45" aria-hidden="true">+</span>
       </summary>
       <div className="mt-4 space-y-3 border-t border-white/10 pt-4 leading-relaxed text-mist">
-        {t.details.map((p, i) => <p key={i}>{p}</p>)}
+        {t.details.map((p, i) => <p key={i}><Rich>{p}</Rich></p>)}
         {t.notes?.length ? <ul className="space-y-1 text-xs text-mist/70">{t.notes.map((n, i) => <li key={i}>※ {n}</li>)}</ul> : null}
       </div>
     </details>

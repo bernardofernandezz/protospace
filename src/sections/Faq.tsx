@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
+import { Rich } from '../components/Term'
 import { FAQ, FAQ_HEADER } from '../content/faq'
 import { useT } from '../i18n'
 
@@ -44,7 +45,7 @@ export default function Faq() {
                 </h3>
                 {isOpen && (
                   <div id={`faq-${item.id}`} className="space-y-3 px-5 pb-5 leading-relaxed text-mist">
-                    {item.a.map((p, i) => <p key={i}>{p}</p>)}
+                    {item.a.map((p, i) => <p key={i}><Rich>{p}</Rich></p>)}
                   </div>
                 )}
               </article>
