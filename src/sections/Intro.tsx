@@ -14,7 +14,7 @@ const TIMELINE: L<Event[]> = {
     { year: '2013', title: 'Edição em células humanas', body: 'A ferramenta funciona também em células humanas e de outros mamíferos.' },
     { year: '2018', title: 'O caso He Jiankui', body: 'Anúncio do nascimento de gêmeas a partir de embriões editados. A comunidade científica condenou o caso.' },
     { year: '2020', title: 'Nobel de Química', body: 'Emmanuelle Charpentier e Jennifer Doudna recebem o Nobel de Química “pelo desenvolvimento de um método para edição de genoma”.', accent: true },
-    { year: '2023', title: 'Primeira terapia aprovada', body: 'O Casgevy, primeira terapia com CRISPR, é aprovado para anemia falciforme no Reino Unido (nov/2023) e nos EUA (dez/2023). Em jan/2024, a aprovação nos EUA se estende à beta-talassemia.', accent: true },
+    { year: '2023', title: 'Primeira terapia aprovada', body: 'O Casgevy, primeira terapia com CRISPR, é aprovado no Reino Unido (nov/2023) para anemia falciforme e beta-talassemia. Nos EUA, a aprovação sai em dez/2023 para a falciforme e em jan/2024 para a beta-talassemia.', accent: true },
   ],
   en: [
     { year: '1987', title: 'Mysterious repeats', body: 'Researchers find odd repeats in the DNA of E. coli, separated by stretches that all differ from one another. Nobody knew what they were for.' },
@@ -26,7 +26,7 @@ const TIMELINE: L<Event[]> = {
     { year: '2013', title: 'Editing human cells', body: 'The tool also works in human and other mammalian cells.' },
     { year: '2018', title: 'The He Jiankui case', body: 'The birth of twin girls from edited embryos is announced. The scientific community condemned it.' },
     { year: '2020', title: 'Nobel Prize in Chemistry', body: 'Emmanuelle Charpentier and Jennifer Doudna receive the Nobel Prize in Chemistry “for the development of a method for genome editing”.', accent: true },
-    { year: '2023', title: 'First approved therapy', body: 'Casgevy, the first CRISPR therapy, is approved for sickle cell disease in the UK (Nov 2023) and the US (Dec 2023). In Jan 2024 the US approval extends to beta-thalassaemia.', accent: true },
+    { year: '2023', title: 'First approved therapy', body: 'Casgevy, the first CRISPR therapy, is approved in the UK (Nov 2023) for sickle cell disease and beta-thalassaemia. In the US it is approved for sickle cell disease in Dec 2023 and for beta-thalassaemia in Jan 2024.', accent: true },
   ],
 }
 
