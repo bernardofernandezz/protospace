@@ -1,1 +1,0 @@
-var e={A:`#3ee6a0`,T:`#ff5c8a`,C:`#4cc9ff`,G:`#ffc24b`};export{e as t};
