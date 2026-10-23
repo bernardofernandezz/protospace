@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useT } from '../../i18n'
@@ -42,6 +42,8 @@ export default function Cas9({ d, quality }: { d: Ready; quality: Quality }) {
     deam: organicMaterial({ color: PALETTE.deaminase, rim: '#d8c0ff', opacity: 0.8, amp: 0.15, freq: 2.0, power: 1.6 }),
     scaffold: new THREE.MeshPhysicalMaterial({ color: PALETTE.rna, emissive: PALETTE.rna, emissiveIntensity: 0.45, roughness: 0.35, clearcoat: 0.6 }),
   }), [])
+  useEffect(() => () => { geo.ico.dispose(); geo.scaffold.dispose() }, [geo])
+  useEffect(() => () => { for (const m of Object.values(mat)) m.dispose() }, [mat])
 
   useFrame(({ clock }) => {
     const { v, L } = frame(d)

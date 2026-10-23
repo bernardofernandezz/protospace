@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useT } from '../../i18n'
@@ -40,6 +40,7 @@ function Dust({ count }: { count: number }) {
     for (let i = 0; i < count; i++) pos.set([(r() - 0.5) * 120, (r() - 0.5) * 70, (r() - 0.5) * 90 - 10], i * 3)
     return new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3))
   }, [count])
+  useEffect(() => () => geo.dispose(), [geo])
   useFrame(({ clock }) => {
     ref.current.rotation.y = clock.elapsedTime * 0.006
     ref.current.position.y = Math.sin(clock.elapsedTime * 0.1) * 0.8
@@ -75,6 +76,10 @@ function Chromatin() {
     return { tubes, beads }
   }, [])
   const mat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1f4257', emissive: '#0e2836', emissiveIntensity: 0.6, roughness: 0.7 }), [])
+  useEffect(() => () => {
+    for (const g of tubes) g.dispose()
+    beads.geometry.dispose(); (beads.material as THREE.Material).dispose(); beads.dispose(); mat.dispose()
+  }, [tubes, beads, mat])
   useFrame(() => { ref.current.visible = useSim.getState().step !== 1 })
   return (
     <group ref={ref}>

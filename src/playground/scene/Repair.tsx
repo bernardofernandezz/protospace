@@ -12,6 +12,9 @@ import { Tube } from './tube'
 import { GROOVE, RADIUS, RISE, TWIST, frame, normalAt, tangentAt, type Ready } from './timeline'
 import { TUBE_RES, tip, untip } from './shared'
 
+// fora do componente: um array novo a cada render invalidaria o useMemo do MiniDuplex
+const DONOR_HL: [number, number] = [16, 22]
+
 /** Dupla-hélice estática (molde doador, off-targets): mesma linguagem visual do DNA principal. */
 export function MiniDuplex({ seq, hl, hlColor = '#ffffff', strand = PALETTE.strand1, strand2 = PALETTE.strand2, dim = 1, quality = 'medium' }: {
   seq: string; hl?: [number, number]; hlColor?: string; strand?: string; strand2?: string; dim?: number; quality?: Quality
@@ -48,7 +51,10 @@ export function MiniDuplex({ seq, hl, hlColor = '#ffffff', strand = PALETTE.stra
     const mat = glowingPhysical({ vertexColors: true, roughness: 0.3, clearcoat: 1, glow: 0.35 })
     return { t1, t2, plates, mat }
   }, [seq, hl, hlColor, strand, strand2, dim, sub, radial])
-  useEffect(() => () => { built.t1.dispose(); built.t2.dispose(); built.plates.dispose() }, [built])
+  useEffect(() => () => {
+    built.t1.dispose(); built.t2.dispose(); built.plates.dispose(); built.mat.dispose()
+    built.plates.geometry.dispose(); (built.plates.material as THREE.Material).dispose()
+  }, [built])
   return (
     <group>
       <mesh geometry={built.t1.geometry} material={built.mat} />
@@ -123,7 +129,7 @@ export default function Repair({ d, quality }: { d: Ready; quality: Quality }) {
   return (
     <group ref={root}>
       <group ref={donor} onPointerMove={tipOf(t('Molde doador (HDR)', 'Donor template (HDR)'), t('DNA com braços de homologia flanqueando a edição desejada. Aqui: inserção de GAATTC (EcoRI) e mutação do PAM, para o alelo editado não ser cortado de novo.', 'DNA with homology arms flanking the desired edit. Here: a GAATTC insertion (EcoRI) plus a PAM mutation, so the edited allele is not cut again.'))} onPointerOut={untip}>
-        <MiniDuplex seq={DONOR_SEQ} hl={[16, 22]} strand={PALETTE.donor} strand2={'#3fbf6a'} quality={quality} />
+        <MiniDuplex seq={DONOR_SEQ} hl={DONOR_HL} strand={PALETTE.donor} strand2={'#3fbf6a'} quality={quality} />
       </group>
       {[kuL, kuR].map((r, k) => (
         <group key={k} ref={r} onPointerMove={tipOf('Ku70/Ku80', t('Heterodímero em anel que se encaixa nas pontas da quebra, protege-as e recruta a maquinaria do NHEJ.', 'Ring-shaped heterodimer that threads onto the broken ends, protects them and recruits the NHEJ machinery.'))} onPointerOut={untip}>

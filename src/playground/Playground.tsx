@@ -385,11 +385,13 @@ export default function Playground() {
     flash(t('Imagem salva', 'Image saved'))
   }
 
-  // relógio da simulação: avança o progresso da etapa atual (pausado fora da viewport)
+  // relógio da simulação: avança o progresso da etapa atual (pausado fora da viewport).
+  // Só roda enquanto há algo tocando (play ou modo cinema).
   useEffect(() => {
     let raf = 0
-    let last = performance.now()
+    let last = 0
     let hold = 0
+    const running = (st: ReturnType<typeof useSim.getState>) => st.playing || st.cinema
     const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000)
       last = now
@@ -406,10 +408,16 @@ export default function Playground() {
           else st.set({ cinema: false })
         }
       }
+      raf = running(useSim.getState()) ? requestAnimationFrame(tick) : 0
+    }
+    const sync = (st: ReturnType<typeof useSim.getState>) => {
+      if (!running(st) || raf) return
+      last = performance.now()
       raf = requestAnimationFrame(tick)
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    sync(useSim.getState())
+    const unsub = useSim.subscribe(sync)
+    return () => { unsub(); cancelAnimationFrame(raf) }
   }, [inView])
 
   useEffect(() => { if (sim.step === 5) setTab('resultado') }, [sim.step])
