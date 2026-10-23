@@ -18,6 +18,8 @@ export default defineConfig({
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    // Safari (motor WebKit) como num iPhone: só no CI, porque o WebKit do Playwright não instala em toda distro Linux
+    ...(process.env.CI ? [{ name: 'iphone', use: { ...devices['iPhone 14'], launchOptions: {} } }] : []),
   ],
   webServer: { command: 'node scripts/serve.mjs 4173', url: 'http://localhost:4173', reuseExistingServer: !process.env.CI },
 })
