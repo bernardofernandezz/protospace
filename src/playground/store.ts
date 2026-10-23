@@ -54,6 +54,10 @@ interface SimState {
   seen: string[]
   /** Missões concluídas (persistidas por navegador). */
   missionsDone: string[]
+  /** Missão de coleta: nucleotídeos já tocados (ex.: "AG"). */
+  bases: string
+  /** Missão de carga: a sonda leva o molde de reparo. */
+  cargo: boolean
   /** Som do modo Explorar ligado (preferência por navegador). */
   sound: boolean
   set: (p: Partial<SimState>) => void
@@ -130,6 +134,8 @@ export const useSim = create<SimState>((set, get) => ({
   zone: null,
   flyTo: null,
   seen: load(SEEN_KEY, (x) => x in EXHIBIT),
+  bases: '',
+  cargo: false,
   missionsDone: load(MISSIONS_KEY, (x) => MISSIONS.some((m) => m.id === x)),
   sound: (() => { try { return localStorage.getItem(SOUND_KEY) !== 'off' } catch { return true } })(),
   set: (p) => set(p),

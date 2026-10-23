@@ -62,9 +62,9 @@ test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page, isMo
   await snd.click()
   await expect(snd).toHaveAttribute('aria-pressed', 'true')
   // missão 1: "Ir" voa até o guia e a trilha avança
-  await expect(page.getByText('Missão 1/9')).toBeVisible()
+  await expect(page.getByText('Missão 1/11')).toBeVisible()
   await page.getByRole('button', { name: 'Ir', exact: true }).click()
-  await expect(page.getByText('Missão 2/9')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText('Missão 2/11')).toBeVisible({ timeout: 30_000 })
   if (isMobile) {
     // no toque o palco cobre a tela inteira e o "voar até" fica atrás do botão Mapa
     const vp = page.viewportSize()!
@@ -78,6 +78,20 @@ test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page, isMo
   await page.keyboard.press('Escape')
   await expect(btn).toHaveAttribute('aria-pressed', 'false')
   expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('missões de pilotagem mostram o progresso e podem ser puladas', async ({ page }) => {
+  // trilha já nas missões de coleta (4ª) e de carga (7ª)
+  await page.addInitScript(() => localStorage.setItem('protospace.missions', JSON.stringify(['find-guide', 'find-pam', 'find-decoy'])))
+  await page.goto('/?lang=pt#playground')
+  await page.locator('.stage').scrollIntoViewIfNeeded()
+  await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
+  await page.getByRole('toolbar', { name: 'Controles da simulação' }).getByRole('button', { name: /Explorar/ }).click()
+  await expect(page.getByText('Missão 4/11')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ir', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Pular' }).click()
+  await expect(page.getByText('Missão 5/11')).toBeVisible()
+  expect(await page.evaluate(() => localStorage.getItem('protospace.missions'))).toContain('collect-bases')
 })
 
 test('mismatches na região seed impedem a edição', async ({ page }) => {

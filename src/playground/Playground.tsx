@@ -6,7 +6,7 @@ import { report } from '../lib/monitor'
 import { useT, type T } from '../i18n'
 import { MISSIONS_KEY, SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
 import { EXHIBIT, EXHIBITS, REGIONS, type Region } from '../content/exhibits'
-import { MISSIONS, accomplished, currentMission } from '../content/missions'
+import { BASES, MISSIONS, accomplished, currentMission } from '../content/missions'
 import { input } from './scene/shared'
 import { sound } from './sound'
 import { BASE_COLOR } from './colors'
@@ -354,25 +354,48 @@ function TouchKeys() {
 
 const COARSE = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
 
-/** Missão atual da trilha, com atalho para voar até ela; no fim, a opção de recomeçar. */
+/**
+ * Missão atual da trilha. Visitas têm "Ir" (voo guiado); missões de pilotagem mostram o progresso e têm "Pular",
+ * para quem não pilota (teclado, leitor de tela) seguir a trilha. No fim: compartilhar e recomeçar.
+ */
 function MissionPill() {
   const t = useT()
-  const done = useSim((s) => s.missionsDone)
+  const { done, bases, cargo } = useSim(useShallow((s) => ({ done: s.missionsDone, bases: s.bases, cargo: s.cargo })))
+  const [copied, setCopied] = useState(false)
   const m = currentMission(done)
-  const go = () => {
-    if (m) return useSim.getState().set({ flyTo: m.zone })
-    useSim.getState().set({ missionsDone: [] })
-    try { localStorage.removeItem(MISSIONS_KEY) } catch { /* sem armazenamento */ }
+  const save = (v: string[]) => {
+    useSim.getState().set({ missionsDone: v, bases: '', cargo: false })
+    try { localStorage.setItem(MISSIONS_KEY, JSON.stringify(v)) } catch { /* sem armazenamento: vale só nesta visita */ }
   }
+  const share = async () => {
+    const url = new URL(t.lang === 'en' ? '/en/' : '/', location.origin).toString()
+    const text = t('Completei a trilha do genoma no Protospace 🧬', 'I finished the genome trail on Protospace 🧬')
+    try {
+      if (navigator.share) await navigator.share({ title: 'Protospace', text, url })
+      else { await navigator.clipboard.writeText(`${text} ${url}`); setCopied(true) }
+    } catch { /* compartilhamento cancelado */ }
+  }
+  const btn = 'shrink-0 rounded-lg bg-dna/20 px-2.5 py-1.5 text-xs text-dna hover:bg-dna/30 pointer-coarse:py-2.5'
   return (
     <div className="glass flex items-center gap-3 rounded-2xl px-3 py-2" role="status">
       <div className="min-w-0 flex-1">
-        <div className="hud-label text-rna">{m ? `${t('Missão', 'Mission')} ${done.length + 1}/${MISSIONS.length}` : t('Trilha completa', 'Trail complete')}</div>
-        <p className="text-xs leading-snug text-white">{m ? t.pick(m.goal) : t('Você percorreu do guia à clínica. Explore livremente!', 'You went from the guide to the clinic. Roam freely!')}</p>
+        <div className="hud-label text-rna">{m ? `${t('Missão', 'Mission')} ${done.length + 1}/${MISSIONS.length}` : `🧬 ${t('Explorador do genoma', 'Genome explorer')}`}</div>
+        <p className="text-xs leading-snug text-white">{m ? t.pick(m.goal) : t('Trilha completa, do guia à clínica. Explore livremente!', 'Trail complete, from the guide to the clinic. Roam freely!')}</p>
+        {m?.task === 'collect' && (
+          <div className="mt-1 flex gap-1 font-mono text-[11px]">
+            {BASES.map((b) => <span key={b} className={`rounded px-1.5 ${bases.includes(b) ? 'text-ink' : 'text-white/50 ring-1 ring-white/25'}`} style={bases.includes(b) ? { background: BASE_COLOR[b] } : undefined}>{b}<span className="sr-only">{bases.includes(b) ? ` ${t('coletado', 'collected')}` : ''}</span></span>)}
+          </div>
+        )}
+        {m?.task === 'carry' && <p className="mt-1 text-[11px] text-bio">{cargo ? `✓ ${t('Molde a bordo: agora ao corte', 'Template on board: now to the cut')}` : t('Siga o anel até o molde', 'Follow the ring to the template')}</p>}
       </div>
-      <button type="button" onClick={go} className="shrink-0 rounded-lg bg-dna/20 px-2.5 py-1.5 text-xs text-dna hover:bg-dna/30 pointer-coarse:py-2.5">
-        {m ? t('Ir', 'Go') : t('Recomeçar', 'Restart')}
-      </button>
+      {m && !m.task && <button type="button" onClick={() => useSim.getState().set({ flyTo: m.zone })} className={btn}>{t('Ir', 'Go')}</button>}
+      {m?.task && <button type="button" onClick={() => save([...done, m.id])} className={`${btn} bg-white/10 text-mist`}>{t('Pular', 'Skip')}</button>}
+      {!m && (
+        <div className="flex shrink-0 flex-col gap-1">
+          <button type="button" onClick={share} className={btn}>{copied ? t('Link copiado', 'Link copied') : t('Compartilhar', 'Share')}</button>
+          <button type="button" onClick={() => save([])} className="text-[11px] text-mist hover:text-white">{t('Recomeçar', 'Restart')}</button>
+        </div>
+      )}
     </div>
   )
 }
@@ -389,7 +412,7 @@ function ExplorePanel() {
   const e = zone ? EXHIBIT[zone] : undefined
   return (
     <>
-      <div className="absolute left-3 top-14 flex max-h-[calc(100%-10rem)] w-[min(20rem,calc(100%-13rem))] flex-col gap-2 md:left-5 pointer-coarse:right-16 pointer-coarse:top-3 pointer-coarse:max-h-[55%] pointer-coarse:w-auto">
+      <div className="absolute left-3 top-3 flex max-h-[calc(100%-7rem)] w-[min(20rem,calc(100%-13rem))] flex-col gap-2 md:left-5 pointer-coarse:right-16 pointer-coarse:top-3 pointer-coarse:max-h-[55%] pointer-coarse:w-auto">
       <MissionPill />
       {e && (
         <div key={e.id} className="glass caption-in min-h-0 overflow-auto rounded-2xl p-4 pointer-coarse:p-3" role="status">
@@ -398,6 +421,7 @@ function ExplorePanel() {
             <div className="hud-label">{t.pick(REGIONS[e.region])}</div>
             <div className="flex items-start justify-between gap-2 font-display text-lg leading-tight text-white">{t.pick(e.title)}<span aria-hidden="true" className="text-sm text-mist transition group-open:rotate-180">▾</span></div>
           </summary>
+          {COARSE && <p className="sr-only">{t.pick(e.body)} {t.pick(e.fact)}</p>}
           <p className="mt-1.5 text-xs leading-relaxed text-mist">{t.pick(e.body)}</p>
           <p className="mt-2 rounded-lg bg-white/5 p-2 text-[11px] leading-relaxed text-white/85"><b className="text-rna">{t('Você sabia?', 'Did you know?')}</b> {t.pick(e.fact)}</p>
           {e.steps && (
@@ -417,7 +441,7 @@ function ExplorePanel() {
         className={`glass absolute right-3 top-3 hidden h-11 min-w-11 place-items-center rounded-xl px-2 text-xs pointer-coarse:grid ${map ? 'text-dna ring-1 ring-dna/60' : 'text-white'}`}>
         {map ? '✕' : t('Mapa', 'Map')}
       </button>
-      <div className={`glass absolute right-3 top-14 max-h-[calc(100%-10rem)] w-44 overflow-auto rounded-2xl p-2 text-xs md:right-5 ${map ? 'map-open pointer-coarse:inset-x-3 pointer-coarse:bottom-20 pointer-coarse:z-10 pointer-coarse:max-h-none pointer-coarse:w-auto pointer-coarse:bg-ink/95 pointer-coarse:p-3' : 'pointer-coarse:hidden'}`}>
+      <div className={`glass absolute right-3 top-3 max-h-[calc(100%-7rem)] w-44 overflow-auto rounded-2xl p-2 text-xs md:right-5 ${map ? 'map-open pointer-coarse:top-16 pointer-coarse:inset-x-3 pointer-coarse:bottom-20 pointer-coarse:z-10 pointer-coarse:max-h-none pointer-coarse:w-auto pointer-coarse:bg-ink/95 pointer-coarse:p-3' : 'pointer-coarse:hidden'}`}>
         <div className="hud-label px-1">{t('Voar até', 'Fly to')} · <span className="text-dna">{seen.length}/{EXHIBITS.length}</span></div>
         <div role="group" aria-label={t('Voar até', 'Fly to')} className="mt-1 space-y-2">
           {(Object.keys(REGIONS) as Region[]).map((r) => (
@@ -590,7 +614,7 @@ export default function Playground() {
     const won = !!m && accomplished(m, s)
     if (won) {
       const missionsDone = [...s.missionsDone, m.id]
-      s.set({ missionsDone })
+      s.set({ missionsDone, bases: '', cargo: false })
       save(MISSIONS_KEY, missionsDone)
       sound.chime(true)
       navigator.vibrate?.(30)
@@ -660,7 +684,7 @@ export default function Playground() {
         ) : <Fallback reason={lost ? 'lost' : 'nogl'} />}
 
         {/* indicador de etapas */}
-        <ol className="explore-hide absolute left-3 right-3 top-3 flex flex-wrap gap-1.5 md:left-5 md:top-5" aria-label={t('Etapas do experimento', 'Experiment steps')}>
+        <ol className="explore-off absolute left-3 right-3 top-3 flex flex-wrap gap-1.5 md:left-5 md:top-5" aria-label={t('Etapas do experimento', 'Experiment steps')}>
           {steps.map((name, i) => (
             <li key={name}>
               <button type="button" onClick={() => st.goto(i)} aria-current={i === sim.step ? 'step' : undefined}

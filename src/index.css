@@ -57,6 +57,11 @@
 
 .stage:fullscreen { height: 100vh; border-radius: 0; }
 
+/* no Explorar a câmera passa por cenas claras: o HUD ganha fundo escuro para manter o contraste */
+/* a barra de etapas sai no Explorar (o cartão da zona tem os botões "Ver etapa") */
+.stage.exploring .explore-off { display: none; }
+.stage.exploring .glass { background: rgba(4, 6, 11, 0.72); border-color: rgba(255, 255, 255, 0.28); }
+
 /* Explorar no toque: palco em tela cheia (o iPhone não tem Fullscreen API para elementos), fora das áreas
    seguras (a sombra pinta o entorno), e HUD enxuto */
 @media (pointer: coarse) {
