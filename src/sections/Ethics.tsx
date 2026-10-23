@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
 import { ETHICS, type Dilemma, type EthicsTopic, type Stance } from '../content/ethics'
 import { useT } from '../i18n'
+import { useInView } from '../lib/hooks'
+import { EMPTY, castVote, fetchTallies, subscribeTallies, type Tallies, type Tally } from '../lib/votes'
 
 const ACCENTS = ['#ff4fa3', '#ffb547', '#7dff9b', '#4cc9ff', '#b98cff', '#ff7a59', '#3ef0d0']
 const STANCES: { k: Stance; label: [string, string]; color: string }[] = [
@@ -10,11 +12,13 @@ const STANCES: { k: Stance; label: [string, string]; color: string }[] = [
   { k: 'depends', label: ['Depende', 'It depends'], color: '#ffb547' },
 ]
 
-type Tally = Record<Stance, number>
-interface VoteState { mine: Record<string, Stance>; tally: Record<string, Tally> }
-const KEY = 'crispr-votes'
-const EMPTY: Tally = { pro: 0, con: 0, depends: 0 }
-const load = (): VoteState => { try { return { mine: {}, tally: {}, ...JSON.parse(localStorage.getItem(KEY) ?? '{}') } } catch { return { mine: {}, tally: {} } } }
+type Status = 'loading' | 'live' | 'offline'
+type Mine = Record<string, Stance>
+// meu voto por dilema (para destacar a escolha) e votos que falharam por falta de rede (reenviados depois)
+const MINE_KEY = 'protospace-my-votes'
+const PENDING_KEY = 'protospace-pending-votes'
+const read = (k: string): Mine => { try { return JSON.parse(localStorage.getItem(k) ?? '{}') } catch { return {} } }
+const write = (k: string, v: Mine) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch { /* armazenamento indisponível */ } }
 
 function TopicCard({ t, color }: { t: EthicsTopic; color: string }) {
   return (
@@ -35,12 +39,12 @@ function TopicCard({ t, color }: { t: EthicsTopic; color: string }) {
   )
 }
 
-function DilemmaCard({ d, n, votes, onVote, crowd }: { d: Dilemma; n: number; votes: VoteState; onVote: (id: string, s: Stance) => void; crowd: boolean }) {
+function DilemmaCard({ d, n, mine, tally, status, onVote }: { d: Dilemma; n: number; mine?: Stance; tally: Tally; status: Status; onVote: (id: string, s: Stance) => void }) {
   const t = useT()
-  const mine = votes.mine[d.id]
-  const tally = votes.tally[d.id] ?? EMPTY
   const total = tally.pro + tally.con + tally.depends
-  const revealed = !!mine || total > 0
+  const people = (k: number) => t(k === 1 ? '1 pessoa votou' : `${k} pessoas votaram`, k === 1 ? '1 person voted' : `${k} people voted`)
+  // resultados só depois de escolher: evita que a maioria influencie o voto
+  const revealed = !!mine
   const cols: { k: Stance; title: string; args: string[]; color: string }[] = [
     { k: 'pro', title: t('Argumentos a favor', 'Arguments for'), args: d.pro, color: '#7dff9b' },
     { k: 'con', title: t('Argumentos contra', 'Arguments against'), args: d.con, color: '#ff4fa3' },
@@ -57,10 +61,16 @@ function DilemmaCard({ d, n, votes, onVote, crowd }: { d: Dilemma; n: number; vo
           <button key={s.k} type="button" aria-pressed={mine === s.k} onClick={() => onVote(d.id, s.k)}
             className="rounded-full px-5 py-2.5 font-display text-sm font-semibold transition hover:scale-[1.03]"
             style={mine === s.k ? { background: s.color, color: '#04060b' } : { background: s.color + '1f', color: s.color }}>
-            {t(...s.label)}{crowd && <span className="ml-2 opacity-70">+1</span>}
+            {t(...s.label)}
           </button>
         ))}
       </div>
+      {!revealed && (
+        <p className="mt-3 text-xs text-mist/80">
+          {total > 0 && <b className="text-white">{people(total)} · </b>}
+          {t('Escolha uma posição para ver o resultado da votação.', 'Pick a position to see the poll results.')}
+        </p>
+      )}
 
       {revealed && (
         <>
@@ -73,7 +83,9 @@ function DilemmaCard({ d, n, votes, onVote, crowd }: { d: Dilemma; n: number; vo
               {STANCES.map((s) => (
                 <span key={s.k}><b style={{ color: s.color }}>{total ? Math.round((tally[s.k] / total) * 100) : 0}%</b> {t(...s.label).toLowerCase()} ({tally[s.k]})</span>
               ))}
-              <span className="text-mist/60">· {total} {t(total === 1 ? 'voto' : 'votos', total === 1 ? 'vote' : 'votes')} {t('neste dispositivo', 'on this device')}</span>
+              <span className="font-semibold text-white">· {people(total)}</span>
+              {status === 'live' && <span className="inline-flex items-center gap-1.5 text-bio"><i className="h-1.5 w-1.5 animate-pulse rounded-full bg-bio" />{t('ao vivo', 'live')}</span>}
+              {status === 'offline' && <span className="text-rna">{t('sem conexão — seu voto será enviado quando a rede voltar', 'offline — your vote will be sent when you reconnect')}</span>}
             </div>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -94,18 +106,58 @@ function DilemmaCard({ d, n, votes, onVote, crowd }: { d: Dilemma; n: number; vo
 export default function Ethics() {
   const t = useT()
   const E = t.pick(ETHICS)
-  const [votes, setVotes] = useState<VoteState>(load)
-  const [crowd, setCrowd] = useState(false)
-  useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(votes)) } catch { /* armazenamento indisponível */ } }, [votes])
+  const area = useRef<HTMLDivElement>(null)
+  const near = useInView(area, '800px')
+  const [armed, setArmed] = useState(false)
+  const [mine, setMine] = useState<Mine>(() => read(MINE_KEY))
+  const [tallies, setTallies] = useState<Tallies>({})
+  const [status, setStatus] = useState<Status>('loading')
+  useEffect(() => { if (near) setArmed(true) }, [near])
+  useEffect(() => write(MINE_KEY, mine), [mine])
 
-  // Modo normal: um voto por dispositivo (pode trocar). Modo plateia: cada clique soma +1 (contagem ao vivo no telão).
-  const vote = (id: string, s: Stance) => setVotes((v) => {
-    const t = { ...(v.tally[id] ?? EMPTY) }
-    const prev = v.mine[id]
-    if (!crowd && prev) t[prev] = Math.max(0, t[prev] - 1)
-    t[s] += 1
-    return { mine: { ...v.mine, [id]: s }, tally: { ...v.tally, [id]: t } }
-  })
+  // conecta ao banco quando os dilemas se aproximam da tela: reenvia pendências, lê totais e assina o tempo real
+  useEffect(() => {
+    if (!armed) return
+    let alive = true
+    let off: (() => void) | undefined
+    ;(async () => {
+      try {
+        const pending = read(PENDING_KEY)
+        for (const [id, st] of Object.entries(pending)) await castVote(id, st)
+        write(PENDING_KEY, {})
+        const all = await fetchTallies()
+        if (!alive) return
+        setTallies(all)
+        setStatus('live')
+        off = await subscribeTallies((id, st, v) => setTallies((x) => ({ ...x, [id]: { ...(x[id] ?? EMPTY), [st]: v } })))
+        if (!alive) off()
+      } catch {
+        if (alive) setStatus('offline')
+      }
+    })()
+    return () => { alive = false; off?.() }
+  }, [armed])
+
+  // 1 voto por pessoa e por dilema (pode trocar); atualização otimista, confirmada pelo banco
+  const vote = async (id: string, st: Stance) => {
+    const prev = mine[id]
+    if (prev === st) return
+    setMine((m) => ({ ...m, [id]: st }))
+    setTallies((x) => {
+      const t = { ...(x[id] ?? EMPTY) }
+      if (prev) t[prev] = Math.max(0, t[prev] - 1)
+      t[st] += 1
+      return { ...x, [id]: t }
+    })
+    try {
+      const fresh = await castVote(id, st)
+      setTallies((x) => ({ ...x, [id]: fresh }))
+      setStatus('live')
+    } catch {
+      write(PENDING_KEY, { ...read(PENDING_KEY), [id]: st })
+      setStatus('offline')
+    }
+  }
 
   const { brazil } = E
   return (
@@ -120,16 +172,13 @@ export default function Ethics() {
       <div className="mt-24">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4" data-reveal>
           <h3 className="text-3xl font-semibold md:text-4xl">{t('Dilemas', 'Dilemmas')}</h3>
-          <div className="flex items-center gap-4 text-sm text-mist">
-            <label className="flex cursor-pointer items-center gap-2">
-              <input type="checkbox" checked={crowd} onChange={(e) => setCrowd(e.target.checked)} className="h-4 w-4 accent-[#ff4fa3]" />
-              {t('Modo plateia (cada clique = +1 voto)', 'Audience mode (each click = +1 vote)')}
-            </label>
-            <button type="button" onClick={() => setVotes({ mine: {}, tally: {} })} className="underline hover:text-white">{t('zerar votos', 'reset votes')}</button>
-          </div>
+          <p className="flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 text-sm text-mist ring-1 ring-white/10">
+            <i className={`h-2 w-2 rounded-full ${status === 'live' ? 'animate-pulse bg-bio' : status === 'offline' ? 'bg-rna' : 'bg-mist/50'}`} />
+            {t('Votação aberta a todos os visitantes · resultados ao vivo', 'Open to every visitor · live results')}
+          </p>
         </div>
-        <div className="space-y-6">
-          {E.dilemmas.map((d, i) => <DilemmaCard key={d.id} d={d} n={i + 1} votes={votes} onVote={vote} crowd={crowd} />)}
+        <div ref={area} className="space-y-6">
+          {E.dilemmas.map((d, i) => <DilemmaCard key={d.id} d={d} n={i + 1} mine={mine[d.id]} tally={tallies[d.id] ?? EMPTY} status={status} onVote={vote} />)}
         </div>
       </div>
 
