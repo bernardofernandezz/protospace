@@ -49,6 +49,8 @@ test('playground percorre as 6 etapas e mostra o resultado', async ({ page }) =>
 })
 
 test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page, isMobile }) => {
+  // dois voos guiados com WebGL por software (runner do CI) passam de 60 s
+  test.setTimeout(120_000)
   const errors = trackErrors(page)
   await page.goto('/?lang=pt#playground')
   await page.locator('.stage').scrollIntoViewIfNeeded()

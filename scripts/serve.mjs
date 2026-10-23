@@ -15,7 +15,9 @@ const match = (source, path) => new RegExp(`^${source.replace(/\(\.\*\)/g, '.*')
 
 createServer(async (req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname)
-  for (const r of rules) if (match(r.source, path)) for (const h of r.headers) res.setHeader(h.key, h.value)
+  // upgrade-insecure-requests sai daqui: servimos em http://localhost e o WebKit (ao contrário do Chrome) também promove
+  // localhost para https, quebrando todos os scripts. Em produção o site já é https e a diretiva não muda nada.
+  for (const r of rules) if (match(r.source, path)) for (const h of r.headers) res.setHeader(h.key, h.key === 'Content-Security-Policy' ? h.value.replace(/;\s*upgrade-insecure-requests/, '') : h.value)
   let file = normalize(join(root, path))
   if (!file.startsWith(root)) { res.writeHead(403).end(); return }
   try { if ((await stat(file)).isDirectory()) file = join(file, 'index.html') } catch { file = join(root, 'index.html') }
