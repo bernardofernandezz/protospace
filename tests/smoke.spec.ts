@@ -25,11 +25,13 @@ test('alterna para inglês pelo seletor e pelo caminho /en/', async ({ page }) =
   await page.getByRole('button', { name: 'en', exact: true }).click()
   await expect(page.locator('h1')).toContainText('Edit the genome')
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  await expect(page).toHaveURL(/\/en\/$/)
 
   await page.goto('/en/')
   await expect(page.locator('h1')).toContainText('Edit the genome')
   const og = await page.locator('meta[property="og:image"]').getAttribute('content')
   expect(og).toMatch(/og-en\.png$/)
+  expect(await page.locator('link[rel="canonical"]').getAttribute('href')).toMatch(/\/en\/$/)
 })
 
 test('playground percorre as 6 etapas e mostra o resultado', async ({ page }) => {
