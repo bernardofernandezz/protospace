@@ -4,11 +4,12 @@ import { DELIVERY, type CasType, type Delivery, type NucleaseId, type Repair } f
 import { hasWebGL, useInView } from '../lib/hooks'
 import { report } from '../lib/monitor'
 import { useT, type T } from '../i18n'
-import { MISSIONS_KEY, SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim } from './store'
+import { MISSIONS_KEY, SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, experimentUrl, useDerived, useSim } from './store'
 import { EXHIBIT, EXHIBITS, REGIONS, type Region } from '../content/exhibits'
 import { BASES, MISSIONS, accomplished, currentMission } from '../content/missions'
 import { input, requestCapture } from './scene/shared'
 import { sound } from './sound'
+import { useSimClock } from './clock'
 import { ComparePanel, GuidePanel, ParamsPanel, ResultPanel, SequenceView } from './panels'
 import { BASE_COLOR } from './colors'
 import { pct } from './format'
@@ -624,43 +625,7 @@ export default function Playground() {
     flash(t('Imagem salva', 'Image saved'))
   }
 
-  // relógio da simulação: avança o progresso da etapa atual (pausado fora da viewport).
-  // Só roda enquanto há algo tocando (play ou modo cinema).
-  useEffect(() => {
-    let raf = 0
-    let last = 0
-    let hold = 0
-    const running = (st: ReturnType<typeof useSim.getState>) => st.playing || st.cinema
-    const tick = (now: number) => {
-      const dt = Math.min(0.1, (now - last) / 1000)
-      last = now
-      const st = useSim.getState()
-      if (st.playing && (inView || st.presentation)) {
-        const p = Math.min(1, st.progress + (dt * st.speed) / STEP_SECONDS[st.step])
-        st.set({ progress: p, playing: p < 1 })
-      } else if (st.cinema && st.progress >= 1) {
-        // modo cinema: segura o quadro final um instante e segue para a próxima etapa
-        hold += dt
-        if (hold > 1.4) {
-          hold = 0
-          if (st.step < STEP_COUNT - 1) st.goto(st.step + 1)
-          else st.set({ cinema: false })
-        }
-      }
-      raf = running(useSim.getState()) ? requestAnimationFrame(tick) : 0
-    }
-    const sync = (st: ReturnType<typeof useSim.getState>) => {
-      if (!running(st) || raf) return
-      last = performance.now()
-      raf = requestAnimationFrame(tick)
-    }
-    sync(useSim.getState())
-    const unsub = useSim.subscribe(sync)
-    return () => {
-      unsub()
-      cancelAnimationFrame(raf)
-    }
-  }, [inView])
+  useSimClock(inView)
 
   useEffect(() => {
     if (sim.step === 5) setTab('resultado')
