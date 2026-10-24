@@ -49,6 +49,13 @@ export default function App() {
     return () => clearTimeout(id)
   }, [])
 
+  // links com âncora (ex.: /#bioetica): o conteúdo é renderizado no cliente, depois que o navegador já tentou rolar
+  useEffect(() => {
+    const id = decodeURIComponent(location.hash.slice(1))
+    const el = id ? document.getElementById(id) : null
+    if (el) requestAnimationFrame(() => el.scrollIntoView())
+  }, [])
+
   // o foco acompanha a âncora clicada (o Lenis rola, mas não move o foco; ex.: "pular para o conteúdo").
   // setTimeout: espera a gaveta do menu fechar e tirar o `inert` do <main>
   useEffect(() => {

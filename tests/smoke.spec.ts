@@ -1,6 +1,25 @@
 import { expect, test, type Page } from '@playwright/test'
 
 /** Coleta erros de console/página durante o teste. */
+// No CI, o projeto "iphone" (WebKit) roda sem WebGL, como o Safari no Modo de Bloqueio do iOS: o WebGL do WebKit
+// no Linux é por software e trava a página inteira, coisa que não acontece num iPhone (o 3D é coberto pelo Chromium)
+test.beforeEach(async ({ page }, info) => {
+  if (info.project.name !== 'iphone') return
+  await page.addInitScript(() => {
+    const orig = HTMLCanvasElement.prototype.getContext
+    // @ts-expect-error — simula navegador sem WebGL
+    HTMLCanvasElement.prototype.getContext = function (type: string, ...rest: unknown[]) {
+      return /webgl/.test(type) ? null : orig.call(this, type as '2d', ...(rest as []))
+    }
+  })
+})
+
+const hasWebGL = (page: Page) => page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'))
+/** O modo Explorar precisa de WebGL (o WebKit do Linux, usado no CI para simular o iPhone, não tem). */
+async function skipWithoutWebGL(page: Page) {
+  test.skip(!(await hasWebGL(page)), 'navegador sem WebGL')
+}
+
 function trackErrors(page: Page) {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
@@ -43,8 +62,8 @@ test('playground percorre as 6 etapas e mostra o resultado', async ({ page }) =>
   await expect(steps.nth(5)).toHaveAttribute('aria-current', 'step')
   await expect(page.getByRole('tab', { name: 'Resultado' })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByText('Eficiência simulada').first()).toBeVisible()
-  // a cena 3D monta (canvas WebGL) sem quebrar a página
-  await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
+  // a cena 3D monta (canvas WebGL) sem quebrar a página; sem WebGL, o fallback mantém os painéis
+  if (await hasWebGL(page)) await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
   expect(errors, errors.join('\n')).toEqual([])
 })
 
@@ -54,6 +73,7 @@ test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page, isMo
   const errors = trackErrors(page)
   await page.goto('/?lang=pt#playground')
   await page.locator('.stage').scrollIntoViewIfNeeded()
+  await skipWithoutWebGL(page)
   await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
   const btn = page.getByRole('toolbar', { name: 'Controles da simulação' }).getByRole('button', { name: /Explorar/ })
   await btn.click()
@@ -87,6 +107,7 @@ test('missões de pilotagem mostram o progresso e podem ser puladas', async ({ p
   await page.addInitScript(() => localStorage.setItem('protospace.missions', JSON.stringify(['find-guide', 'find-pam', 'find-decoy'])))
   await page.goto('/?lang=pt#playground')
   await page.locator('.stage').scrollIntoViewIfNeeded()
+  await skipWithoutWebGL(page)
   await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
   await page.getByRole('toolbar', { name: 'Controles da simulação' }).getByRole('button', { name: /Explorar/ }).click()
   await expect(page.getByText('Missão 4/11')).toBeVisible()
@@ -102,6 +123,20 @@ test('mismatches na região seed impedem a edição', async ({ page }) => {
   for (const i of [12, 14, 16]) await bases.nth(i).click()
   await page.getByRole('tab', { name: 'Resultado' }).click()
   await expect(page.getByText(/Sem edição/)).toBeVisible()
+})
+
+test('cenário clínico: o alelo falciforme é corrigido por HDR e destruído por NHEJ', async ({ page }) => {
+  // carregado pela URL, o caso já abre em Cas9 selvagem + molde (a configuração que corrige)
+  await page.goto('/?lang=pt&dis=sickle#playground')
+  await expect(page.getByText(/c\.20A>T · p\.Glu7Val/)).toBeVisible()
+  await page.getByRole('list', { name: 'Etapas do experimento' }).getByRole('button').nth(5).click()
+  await expect(page.getByText('Alelo corrigido', { exact: true })).toBeVisible()
+
+  // a mesma edição por NHEJ inativa o gene em vez de consertar a letra trocada
+  await page.getByRole('tab', { name: 'Parâmetros' }).click()
+  await page.getByRole('button', { name: 'NHEJ', exact: true }).click()
+  await page.getByRole('tab', { name: 'Resultado' }).click()
+  await expect(page.getByText('Gene inativado, não corrigido')).toBeVisible()
 })
 
 test('link compartilhável restaura o experimento', async ({ page }) => {
@@ -194,6 +229,12 @@ test('dilemas: canal de tempo real recusado cai para releitura periódica', asyn
   votes = 2
   await page.clock.runFor(31_000)
   await expect(card.getByText('6 pessoas votaram ·')).toBeVisible()
+})
+
+test('link com âncora abre já na seção', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/?lang=pt#bioetica')
+  await expect(page.getByRole('heading', { name: 'O que devemos fazer com o que já podemos fazer?' })).toBeInViewport()
 })
 
 test('cabeçalhos de segurança de produção estão presentes', async ({ request }) => {

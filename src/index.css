@@ -139,6 +139,8 @@ html.lenis, html.lenis body { height: auto; }
 /* seções fora da tela não passam por estilo/layout/pintura até se aproximarem (performance) */
 main > .section:not(#o-que-e) { content-visibility: auto; contain-intrinsic-size: auto 1400px; }
 .grain { will-change: transform; }
+/* no celular o grão (6% de opacidade) quase não aparece e custaria uma camada de tela cheia animada o tempo todo */
+@media (pointer: coarse) { .grain { display: none; } }
 
 /* revelação ao rolar (classe .in adicionada por IntersectionObserver em App.tsx) */
 .motion [data-reveal] {
