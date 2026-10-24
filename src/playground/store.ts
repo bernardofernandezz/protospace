@@ -3,9 +3,9 @@ import { useShallow } from 'zustand/react/shallow'
 import { useMemo } from 'react'
 import {
   BASE_EDITORS, CAS, DEFAULT_LOCUS, DELIVERY, FIX_RANGE, MAX_LOCUS, PE_RANGE, applyOps, clean, consequence,
-  cutProbability, editOps, findCandidates, firstOrf, isBaseEditor, nearestSite, netLength, nhejOps,
+  bestSite, cutProbability, editOps, findCandidates, firstOrf, isBaseEditor, nearestSite, netLength, nhejOps,
   offTargetSites, population, repairOdds, translate,
-  type Candidate, type CasType, type Delivery, type Fix, type Op, type Repair,
+  type Candidate, type CasType, type Delivery, type Fix, type NucleaseId, type Op, type Repair,
 } from '../lib/dna'
 import { useLang, type L } from '../i18n'
 import { EXHIBIT } from '../content/exhibits'
@@ -31,6 +31,8 @@ interface SimState {
   locus: string
   /** Cenário clínico carregado (src/content/diseases.ts); null = locus fictício. */
   disease: string | null
+  /** Nuclease que define quais PAMs valem (src/lib/dna.ts). */
+  nuclease: NucleaseId
   selected: number
   guide: string
   delivery: Delivery
@@ -67,6 +69,7 @@ interface SimState {
   sound: boolean
   set: (p: Partial<SimState>) => void
   setLocus: (s: string) => void
+  setNuclease: (n: NucleaseId) => void
   setDisease: (id: string | null) => void
   select: (i: number) => void
   goto: (step: number) => void
@@ -85,7 +88,7 @@ function load(key: string, valid: (id: string) => boolean): string[] {
 const isCoarse = () => typeof matchMedia !== 'undefined' && (matchMedia('(pointer: coarse)').matches || innerWidth < 768)
 
 // ---------- estado do experimento na URL (links compartilháveis) ----------
-const PARAM_KEYS = ['locus', 'dis', 'site', 'guide', 'cas', 'delivery', 'repair', 'tol', 'seed'] as const
+const PARAM_KEYS = ['locus', 'dis', 'site', 'guide', 'nuc', 'cas', 'delivery', 'repair', 'tol', 'seed'] as const
 
 /** Via de reparo com que cada caso abre: corrigir pede molde; destruir pede justamente o indel. */
 const defaultRepair = (dis?: Disease): Repair => (dis?.goal === 'fix' ? 'hdr' : 'nhej')
@@ -94,14 +97,17 @@ function fromUrl() {
   const q = typeof location === 'undefined' ? new URLSearchParams() : new URLSearchParams(location.search)
   const dis = findDisease(q.get('dis'))
   const locus = clean(q.get('locus') ?? '').slice(0, MAX_LOCUS) || dis?.locus || DEFAULT_LOCUS
-  const cands = findCandidates(locus)
-  const fallback = dis ? nearestSite(cands, targetPos(dis)) : locus === DEFAULT_LOCUS ? 1 : 0
+  const pickNuclease = (v: string | null): NucleaseId => (v === 'cas12a' ? 'cas12a' : 'spcas9')
+  const nuclease = pickNuclease(q.get('nuc'))
+  const cands = findCandidates(locus, nuclease)
+  const fallback = dis ? nearestSite(cands, targetPos(dis)) : bestSite(cands)
   const site = Math.min(Math.max(0, Number(q.get('site') ?? fallback) || 0), Math.max(0, cands.length - 1))
   const g = clean(q.get('guide') ?? '')
   const pick = <T extends string>(v: string | null, ok: readonly T[], def: T): T => (ok.includes(v as T) ? (v as T) : def)
   return {
     locus,
     disease: dis?.id ?? null,
+    nuclease,
     selected: site,
     guide: g.length === 20 ? g : cands[site]?.protospacer ?? '',
     cas: pick(q.get('cas'), ['wt', 'nickase', 'be', 'abe', 'pe'] as const, 'wt'),
@@ -120,8 +126,9 @@ export function experimentUrl() {
   const dis = findDisease(s.disease)
   if (dis) url.searchParams.set('dis', dis.id)
   if (s.locus !== DEFAULT_LOCUS && s.locus !== dis?.locus) url.searchParams.set('locus', s.locus)
-  const cand = findCandidates(s.locus)[s.selected]
+  const cand = findCandidates(s.locus, s.nuclease)[s.selected]
   url.searchParams.set('site', String(s.selected))
+  if (s.nuclease !== 'spcas9') url.searchParams.set('nuc', s.nuclease)
   if (cand && s.guide !== cand.protospacer) url.searchParams.set('guide', s.guide)
   url.searchParams.set('cas', s.cas)
   url.searchParams.set('delivery', s.delivery)
@@ -154,18 +161,29 @@ export const useSim = create<SimState>((set, get) => ({
   sound: (() => { try { return localStorage.getItem(SOUND_KEY) !== 'off' } catch { return true } })(),
   set: (p) => set(p),
   setLocus: (locus) => {
-    const c = findCandidates(locus)
-    const prev = findCandidates(get().locus)[get().selected]
+    const { nuclease } = get()
+    const c = findCandidates(locus, nuclease)
+    const prev = findCandidates(get().locus, nuclease)[get().selected]
     // mantém o sítio mais próximo do anterior: trocar uma base não deve pular a seleção
     const i = prev ? nearestSite(c, prev.cut) : 0
     // editar a sequência à mão invalida o alelo marcado pelo cenário
     set({ locus, disease: null, selected: i, guide: c[i]?.protospacer ?? '', step: 0, progress: 0, playing: false })
   },
+  setNuclease: (nuclease) => {
+    const { locus, selected, disease } = get()
+    const prev = findCandidates(locus, get().nuclease)[selected]
+    const c = findCandidates(locus, nuclease)
+    const dis = findDisease(disease)
+    // mantém o sítio mais próximo do anterior; sem candidato antigo, volta para o alvo do cenário
+    const anchor = prev?.cut ?? (dis ? targetPos(dis) : 0)
+    const i = c.length ? nearestSite(c, anchor) : 0
+    set({ nuclease, selected: i, guide: c[i]?.protospacer ?? '', step: 0, progress: 0, playing: false })
+  },
   setDisease: (id) => {
     const dis = findDisease(id)
     const locus = dis?.locus ?? DEFAULT_LOCUS
-    const c = findCandidates(locus)
-    const i = dis ? nearestSite(c, targetPos(dis)) : 1
+    const c = findCandidates(locus, get().nuclease)
+    const i = dis ? nearestSite(c, targetPos(dis)) : bestSite(c)
     set({
       disease: dis?.id ?? null, locus, selected: i, guide: c[i]?.protospacer ?? '',
       ...(dis ? { cas: 'wt' as const, repair: defaultRepair(dis) } : {}),
@@ -173,7 +191,7 @@ export const useSim = create<SimState>((set, get) => ({
     })
   },
   select: (i) => {
-    const c = findCandidates(get().locus)[i]
+    const c = findCandidates(get().locus, get().nuclease)[i]
     if (c) set({ selected: i, guide: c.protospacer, step: 0, progress: 0, playing: false })
   },
   goto: (step) => set({ step: Math.max(0, Math.min(STEP_COUNT - 1, step)), progress: 0, playing: true, camTick: get().camTick + 1 }),
@@ -190,6 +208,7 @@ export const useSim = create<SimState>((set, get) => ({
 export interface Params {
   locus: string
   disease: string | null
+  nuclease: NucleaseId
   selected: number
   guide: string
   delivery: Delivery
@@ -200,7 +219,7 @@ export interface Params {
 }
 
 const params = (s: SimState): Params => ({
-  locus: s.locus, disease: s.disease, selected: s.selected, guide: s.guide,
+  locus: s.locus, disease: s.disease, nuclease: s.nuclease, selected: s.selected, guide: s.guide,
   delivery: s.delivery, cas: s.cas, repair: s.repair, tolerance: s.tolerance, seed: s.seed,
 })
 
@@ -287,7 +306,7 @@ function verdictOf(dis: Disease, seq: string, prot?: Proteins): Verdict {
 
 /** Tudo que deriva dos parâmetros: candidatos, probabilidades, resultado da edição. */
 export function derive(p: Params, en: boolean) {
-  const candidates = findCandidates(p.locus)
+  const candidates = findCandidates(p.locus, p.nuclease)
   const cand = candidates[p.selected] ?? candidates[0]
   const dis = findDisease(p.disease)
   if (!cand) return { candidates, cand: undefined, dis } as const

@@ -17,7 +17,8 @@ export interface Candidate {
   protospacer: string // 20 nt, 5'→3', lidos na fita do próprio guia
   pam: string // NGG, lido na fita do guia
   pamStart: number // índice, no locus, da base mais à esquerda do PAM
-  cut: number // corte entre cut-1 e cut (3 pb a montante do PAM)
+  cut: number // corte na fita do protoespaçador, entre cut-1 e cut
+  cutFar: number // corte na fita oposta: igual a `cut` num corte cego
   gc: number
   score: number // ilustrativo
 }
@@ -35,9 +36,10 @@ export const inPam = (c: Candidate, i: number) => i >= c.pamStart && i < c.pamSt
 
 export const revComp = (s: string) => [...s].reverse().map((b) => COMP[b]).join('')
 
-// Sequência fictícia (não é um gene real), desenhada para conter vários PAMs NGG.
+// Sequência fictícia (não é um gene real), desenhada para conter PAMs das duas nucleases:
+// vários NGG para a SpCas9 e, no trecho final rico em T, TTTV para a Cas12a.
 export const DEFAULT_LOCUS =
-  'ATCGTTACCGATGCTAGCTCAAGGTCTGACCATGTCGACGTTCCAGTGGCTAACGATCCTGCAGTTCGAGCCAGGATCATCAAGCTTTCACGGTA'
+  'ATCGTTACCGATGCTAGCTCAAGGTCTGACCATGTCGACGTTCCAGTGGCTAACGATCCTGCAGTTCGAGCCAGGATCATCAAGCTTTCACGGTAGCTTTAGCATCGGATTCCAGTAGCTAACG'
 
 export const MAX_LOCUS = 160
 export const COMP: Record<string, string> = { A: 'T', T: 'A', C: 'G', G: 'C' }
@@ -58,39 +60,86 @@ export function onTargetScore(p: string): number {
   return Math.round(Math.max(0, Math.min(100, s)))
 }
 
-const describe = (locus: string, start: number, strand: Strand): Candidate => {
-  const raw = locus.slice(start, start + 20)
+/**
+ * As duas nucleases do playground. O PAM é a diferença mais visível: a SpCas9 exige NGG
+ * logo a 3′ do protoespaçador, enquanto a Cas12a exige TTTV a 5′ — por isso ela alcança
+ * regiões ricas em A/T onde a Cas9 não tem onde encaixar.
+ */
+export const NUCLEASE = {
+  spcas9: {
+    name: { pt: 'SpCas9', en: 'SpCas9' },
+    pam: { seq: 'NGG', re: /^.GG$/, side: 3 },
+    spacer: 20,
+    /** Distância do corte até o PAM, em cada fita: iguais num corte cego. */
+    cuts: { near: 3, far: 3 },
+    note: {
+      pt: 'Corte cego, 3 pb a montante do PAM. É a nuclease mais usada e a que tem mais ferramentas derivadas.',
+      en: 'Blunt cut, 3 bp upstream of the PAM. The most used nuclease, and the one with the most derived tools.',
+    },
+  },
+  cas12a: {
+    name: { pt: 'Cas12a (Cpf1)', en: 'Cas12a (Cpf1)' },
+    pam: { seq: 'TTTV', re: /^TTT[ACG]$/, side: 5 },
+    spacer: 20,
+    cuts: { near: 18, far: 23 },
+    note: {
+      pt: 'PAM rico em T, do outro lado do protoespaçador, e corte escalonado: sobram pontas coesivas de 5 nt. Também processa o próprio RNA guia, dispensando o tracrRNA.',
+      en: 'T-rich PAM, on the other side of the protospacer, and a staggered cut leaving 5-nt sticky ends. It also processes its own guide RNA, with no tracrRNA needed.',
+    },
+  },
+} as const
+
+export type NucleaseId = keyof typeof NUCLEASE
+
+/**
+ * Descreve um candidato a partir do índice da base mais à esquerda do protoespaçador.
+ * `cut` é o corte na fita do protoespaçador e `cutFar` o da fita oposta: eles coincidem
+ * num corte cego e se afastam num escalonado.
+ */
+function describe(locus: string, start: number, strand: Strand, n: NucleaseId): Candidate {
+  const { pam, spacer, cuts } = NUCLEASE[n]
+  const raw = locus.slice(start, start + spacer)
   const protospacer = strand === 1 ? raw : revComp(raw)
-  const pamStart = strand === 1 ? start + 20 : start - 3
+  // o PAM encosta no protoespaçador do lado que a nuclease exige, já em coordenadas do locus
+  const atLeft = (pam.side === 3) === (strand === -1)
+  const pamStart = atLeft ? start - pam.seq.length : start + spacer
+  // o corte é medido a partir do PAM, afastando-se dele
+  const from = (offset: number) => (atLeft ? start + offset : start + spacer - offset)
   return {
     start,
     strand,
     protospacer,
-    pam: strand === 1 ? locus.slice(pamStart, pamStart + 3) : revComp(locus.slice(pamStart, pamStart + 3)),
+    pam: strand === 1 ? locus.slice(pamStart, pamStart + pam.seq.length) : revComp(locus.slice(pamStart, pamStart + pam.seq.length)),
     pamStart,
-    // o corte fica 3 pb a montante do PAM, do lado do protoespaçador
-    cut: strand === 1 ? start + 17 : start + 3,
+    cut: from(cuts.near),
+    cutFar: from(cuts.far),
     gc: gcContent(protospacer),
     score: onTargetScore(protospacer),
   }
 }
 
-/**
- * Varre as duas fitas por protoespaçadores de 20 nt adjacentes a um PAM NGG (SpCas9).
- * Na fita antissenso o PAM aparece como CCN à esquerda do protoespaçador.
- */
-export function findCandidates(locus: string): Candidate[] {
+/** Varre as duas fitas atrás de protoespaçadores com o PAM que a nuclease escolhida exige. */
+export function findCandidates(locus: string, n: NucleaseId = 'spcas9'): Candidate[] {
+  const { pam, spacer } = NUCLEASE[n]
+  const len = pam.seq.length
   const out: Candidate[] = []
-  for (let start = 0; start + 20 <= locus.length; start++) {
-    if (start + 23 <= locus.length && locus[start + 21] === 'G' && locus[start + 22] === 'G') {
-      out.push(describe(locus, start, 1))
-    }
-    if (start >= 3 && locus[start - 3] === 'C' && locus[start - 2] === 'C') {
-      out.push(describe(locus, start, -1))
-    }
+  const reads = (at: number, strand: Strand) => {
+    if (at < 0 || at + len > locus.length) return false
+    const s = locus.slice(at, at + len)
+    return pam.re.test(strand === 1 ? s : revComp(s))
+  }
+  for (let start = 0; start + spacer <= locus.length; start++) {
+    const right = start + spacer
+    // fita senso: o PAM fica à direita se a nuclease o quer a 3′, à esquerda se a 5′
+    if (reads(pam.side === 3 ? right : start - len, 1)) out.push(describe(locus, start, 1, n))
+    if (reads(pam.side === 3 ? start - len : right, -1)) out.push(describe(locus, start, -1, n))
   }
   return out.sort((a, b) => a.start - b.start || a.strand - b.strand)
 }
+
+/** Índice do candidato com o melhor score ilustrativo: por onde faz sentido começar. */
+export const bestSite = (cands: Candidate[]) =>
+  cands.reduce((best, c, i) => (c.score > cands[best].score ? i : best), 0)
 
 /** Índice do sítio cujo corte cai mais perto de `pos` (o que um molde de HDR consegue corrigir). */
 export function nearestSite(cands: Candidate[], pos: number): number {

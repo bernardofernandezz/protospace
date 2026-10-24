@@ -80,13 +80,17 @@ export default function Cas9({ d, quality }: { d: Ready; quality: Quality }) {
   })
 
   const casTip = (e: ThreeEvent<PointerEvent>) => {
-    const c = useSim.getState().cas
+    const { cas: c, nuclease } = useSim.getState()
+    const cas12a = nuclease === 'cas12a'
     tip(e,
-      c === 'be' ? t('Editor de bases (nCas9 + desaminase de citosina)', 'Base editor (nCas9 + cytidine deaminase)')
+      cas12a ? t('Cas12a (Cpf1)', 'Cas12a (Cpf1)')
+        : c === 'be' ? t('Editor de bases (nCas9 + desaminase de citosina)', 'Base editor (nCas9 + cytidine deaminase)')
         : c === 'abe' ? t('Editor de bases (nCas9 + desaminase de adenina)', 'Base editor (nCas9 + adenine deaminase)')
         : c === 'pe' ? t('Prime editor (nCas9 + transcriptase reversa)', 'Prime editor (nCas9 + reverse transcriptase)')
         : c === 'nickase' ? t('Cas9 nickase (D10A)', 'Cas9 nickase (D10A)') : 'SpCas9',
-      isBaseEditor(c)
+      cas12a
+        ? t('Nuclease com um só domínio RuvC: lê um PAM rico em T na ponta 5′ do protoespaçador e deixa pontas coesivas. Processa o próprio crRNA, sem tracrRNA.', 'A nuclease with a single RuvC domain: it reads a T-rich PAM at the 5′ end of the protospacer and leaves sticky ends. It processes its own crRNA, with no tracrRNA.')
+        : isBaseEditor(c)
         ? t(`Cas9 nickase fundida a uma desaminase: converte ${BASE_EDITORS[c].from}→${BASE_EDITORS[c].to} numa janela do protoespaçador, sem quebra de fita dupla.`, `Cas9 nickase fused to a deaminase: converts ${BASE_EDITORS[c].from}→${BASE_EDITORS[c].to} within a window of the protospacer, with no double-strand break.`)
         : c === 'pe'
         ? t('Cas9 nickase fundida a uma transcriptase reversa: corta uma fita e escreve ali a sequência ditada pela extensão do pegRNA.', 'Cas9 nickase fused to a reverse transcriptase: it nicks one strand and writes there the sequence dictated by the pegRNA extension.')
@@ -101,6 +105,7 @@ export default function Cas9({ d, quality }: { d: Ready; quality: Quality }) {
     return fn(v.step, v.p)
   }
   const cas = useSim((s) => s.cas)
+  const cas12a = useSim((s) => s.nuclease === 'cas12a')
 
   return (
     <group ref={g}>
@@ -121,10 +126,14 @@ export default function Cas9({ d, quality }: { d: Ready; quality: Quality }) {
       <mesh geometry={geo.scaffold} material={mat.scaffold}
         onPointerMove={domTip(t('Scaffold do sgRNA', 'sgRNA scaffold'), t('Parte fixa do RNA guia, com hairpins que encaixam na Cas9. Só os 20 nt do espaçador mudam de um experimento para outro.', 'Fixed part of the guide RNA, with hairpins that dock into Cas9. Only the 20-nt spacer changes between experiments.'))} onPointerOut={untip} />
 
-      <Label tone={PALETTE.cas} at={(o) => visible((s) => s === 2 || s === 3)(o, _v.set(-0.4, 3.9, 0))}>Cas9 · sgRNA</Label>
-      <Label tone={PALETTE.hnh} at={(o) => visible((s, p) => s === 3 && p < 0.9)(o, _v.copy(hnh.current?.position ?? HNH_OFF).add(_w.set(0, 0.9, 0)))}>HNH</Label>
+      <Label tone={PALETTE.cas} at={(o) => visible((s) => s === 2 || s === 3)(o, _v.set(-0.4, 3.9, 0))}>
+        {cas12a ? 'Cas12a · crRNA' : 'Cas9 · sgRNA'}
+      </Label>
+      {/* a Cas12a tem um único domínio RuvC, que corta as duas fitas em sequência */}
+      {!cas12a && <Label tone={PALETTE.hnh} at={(o) => visible((s, p) => s === 3 && p < 0.9)(o, _v.copy(hnh.current?.position ?? HNH_OFF).add(_w.set(0, 0.9, 0)))}>HNH</Label>}
       <Label tone={PALETTE.pi} at={(o) => visible((s, p) => s === 2 && p < 0.62)(o, _v.set(3.4, -1.7, 0.4))}>{t('PI · lê o PAM', 'PI · reads the PAM')}</Label>
-      {cas !== 'wt' && <Label tone="#9aa3b5" at={(o) => visible((s) => s === 3)(o, _v.set(1.5, -2.2, 1.1))}>{t('RuvC inativo (D10A)', 'RuvC inactive (D10A)')}</Label>}
+      {cas !== 'wt' && !cas12a && <Label tone="#9aa3b5" at={(o) => visible((s) => s === 3)(o, _v.set(1.5, -2.2, 1.1))}>{t('RuvC inativo (D10A)', 'RuvC inactive (D10A)')}</Label>}
+      {cas12a && <Label tone={PALETTE.ruvc} at={(o) => visible((s) => s === 3)(o, _v.set(1.5, -2.2, 1.1))}>{t('RuvC · corta as duas fitas', 'RuvC · cuts both strands')}</Label>}
       {isBaseEditor(cas) && <Label tone={PALETTE.deaminase} at={(o) => visible((s) => s === 3)(o, _v.set(-1.9, 1.6, 2.05))}>{t(`desaminase · ${BASE_EDITORS[cas].from}→${cas === 'be' ? 'U' : 'I'}`, `deaminase · ${BASE_EDITORS[cas].from}→${cas === 'be' ? 'U' : 'I'}`)}</Label>}
       {cas === 'pe' && <Label tone={PALETTE.deaminase} at={(o) => visible((s) => s === 3)(o, _v.set(-1.9, 1.6, 2.05))}>{t('transcriptase reversa', 'reverse transcriptase')}</Label>}
     </group>

@@ -40,6 +40,21 @@ for (const c of cands) {
   }
 }
 
+// Cas12a: PAM TTTV do outro lado do protoespaçador e corte escalonado
+const atLocus = 'TTTAGGCATTACGCCATGCTAGCTCAAGGTCTGACCATGTCGACGTTCCAGTGGCTAACG'
+const cpf = findCandidates(atLocus, 'cas12a')
+assert.ok(cpf.length > 0, 'nenhum sítio TTTV encontrado')
+for (const c of cpf) {
+  assert.match(c.pam, /^TTT[ACG]$/, 'PAM da Cas12a é TTTV')
+  assert.notEqual(c.cut, c.cutFar, 'o corte da Cas12a é escalonado')
+  assert.equal(Math.abs(c.cutFar - c.cut), 5, 'pontas coesivas de 5 nt')
+  // o PAM encosta na ponta 5′ do protoespaçador, do lado oposto ao da SpCas9
+  const pamSeq = atLocus.slice(c.pamStart, c.pamStart + 4)
+  assert.equal(c.strand === 1 ? pamSeq : revComp(pamSeq), c.pam)
+  assert.equal(c.strand === 1 ? c.pamStart + 4 : c.pamStart, c.strand === 1 ? c.start : c.start + 20)
+}
+assert.ok(findCandidates(atLocus).every((c) => c.cut === c.cutFar), 'a SpCas9 corta em ponta cega')
+
 // num guia antissenso a edição de base aparece complementada na fita senso
 const anti = cands.find((k) => k.strand === -1)!
 for (const op of baseEditOps(anti, 'be')) {

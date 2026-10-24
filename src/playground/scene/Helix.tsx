@@ -128,9 +128,15 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
       // brilho nas pontas recém-cortadas
       if (orig && v.flash > 0 && (i === c.cut || i === c.cut - 1)) out.multiplyScalar(1 + 3 * v.flash)
     }
-    tubes.s1.update(L.p1, n, (i, u) => BB_R * endTaper(i, u) * breakTaper(i, u, c.cut, gapAmt), (i, o) => strandColor(S1, i, o))
+    // cada fita rompe no seu próprio ponto: iguais num corte cego, afastados num escalonado
+    const cutS1 = c.strand === 1 ? c.cut : c.cutFar
+    const cutS2 = c.strand === 1 ? c.cutFar : c.cut
+    // a nickase inativa o RuvC, então só a fita-alvo (a que pareia com o guia) é cortada
+    const nickS1 = c.strand === -1 ? (orig ? v.nickCut : 0) : 0
+    const nickS2 = c.strand === 1 ? (orig ? v.nickCut : 0) : 0
+    tubes.s1.update(L.p1, n, (i, u) => BB_R * endTaper(i, u) * breakTaper(i, u, cutS1, Math.max(gapAmt, nickS1)), (i, o) => strandColor(S1, i, o))
     // fita-alvo (2): o nick da D10A (HNH ativo) é nela
-    tubes.s2.update(L.p2, n, (i, u) => BB_R * endTaper(i, u) * breakTaper(i, u, c.cut, Math.max(gapAmt, orig ? v.nickCut : 0)), (i, o) => strandColor(S2, i, o))
+    tubes.s2.update(L.p2, n, (i, u) => BB_R * endTaper(i, u) * breakTaper(i, u, cutS2, Math.max(gapAmt, nickS2)), (i, o) => strandColor(S2, i, o))
 
     // fosfatos (contas sobre o tubo)
     if (phos.current) {
@@ -284,7 +290,12 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
 
   // âncoras dos rótulos
   const below = (i: number, out: THREE.Vector3, dist = 2.1) => { const { L } = frame(d); normalAt(L.theta[i], _N); return out.copy(L.center[i]).addScaledVector(_N, -dist) }
-  const cutLabel = d.cuts === 'nick' ? t('nick · só a fita-alvo', 'nick · target strand only') : t('quebra de fita dupla (DSB) · 3 pb do PAM', 'double-strand break (DSB) · 3 bp from PAM')
+  const staggered = d.cand.cut !== d.cand.cutFar
+  const cutLabel = d.cuts === 'nick'
+    ? t('nick · só a fita-alvo', 'nick · target strand only')
+    : staggered
+      ? t(`DSB escalonado · pontas coesivas de ${Math.abs(d.cand.cutFar - d.cand.cut)} nt`, `staggered DSB · ${Math.abs(d.cand.cutFar - d.cand.cut)}-nt sticky ends`)
+      : t('quebra de fita dupla (DSB) · 3 pb do PAM', 'double-strand break (DSB) · 3 bp from PAM')
 
   return (
     <group>

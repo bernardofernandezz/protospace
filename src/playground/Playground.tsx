@@ -1,8 +1,9 @@
 import { Component, Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import {
-  CAS, DELIVERY, FIX_RANGE, MAX_LOCUS, NAMES3, clean, diffSegments, inPam, isSeed, mismatches, revComp, spacerPos,
-  type AlleleOutcome, type CasType, type Consequence, type Delivery, type Population, type Repair,
+  CAS, DELIVERY, FIX_RANGE, MAX_LOCUS, NAMES3, NUCLEASE, clean, diffSegments, inPam, isSeed, mismatches,
+  revComp, spacerPos, type AlleleOutcome, type Candidate, type CasType, type Consequence, type Delivery, type NucleaseId,
+  type Population, type Repair,
 } from '../lib/dna'
 import { DISEASES, findDisease, targetPos, targetSpan, type Disease } from '../content/diseases'
 import { hasWebGL, useInView } from '../lib/hooks'
@@ -25,11 +26,14 @@ const pct = (x: number) => `${Math.round(x * 100)}%`
 const NEXT_BASE: Record<string, string> = { A: 'C', C: 'G', G: 'T', T: 'A' }
 
 /** Legenda curta por etapa — pensada para ser lida em voz alta no modo Apresentação. */
-function narration(t: T, step: number, cas: CasType, delivery: Delivery, repair: Repair, acts: boolean): string {
+function narration(t: T, step: number, nuclease: NucleaseId, cas: CasType, delivery: Delivery, repair: Repair, acts: boolean): string {
+  const cas12a = nuclease === 'cas12a'
   switch (step) {
-    case 0: return t(
-      'Escolhemos um protoespaçador de 20 nt imediatamente a 5′ de um PAM NGG. O espaçador do sgRNA (acima) tem a mesma sequência, com U no lugar de T. Bases em vermelho são mismatches.',
-      'We pick a 20-nt protospacer immediately 5′ of an NGG PAM. The sgRNA spacer (above) has the same sequence, with U instead of T. Red bases are mismatches.')
+    case 0: return cas12a
+      ? t('Escolhemos um protoespaçador de 20 nt imediatamente a 3′ de um PAM TTTV — do lado oposto ao da Cas9. O crRNA (acima) tem a mesma sequência, com U no lugar de T.',
+        'We pick a 20-nt protospacer immediately 3′ of a TTTV PAM — on the opposite side from Cas9. The crRNA (above) has the same sequence, with U instead of T.')
+      : t('Escolhemos um protoespaçador de 20 nt imediatamente a 5′ de um PAM NGG. O espaçador do sgRNA (acima) tem a mesma sequência, com U no lugar de T. Bases em vermelho são mismatches.',
+        'We pick a 20-nt protospacer immediately 5′ of an NGG PAM. The sgRNA spacer (above) has the same sequence, with U instead of T. Red bases are mismatches.')
     case 1: return `${t('Entrega por', 'Delivery by')} ${t.pick(DELIVERY[delivery].name)}. ${t.pick(DELIVERY[delivery].note)}`
     case 2: return acts
       ? t('A Cas9 alterna difusão 3D e paradas em PAMs. Em cada NGG o domínio PI segura o DNA e o guia é testado a partir da região seed; havendo complementaridade, a dupla-fita se abre e forma o R-loop.',
@@ -38,11 +42,15 @@ function narration(t: T, step: number, cas: CasType, delivery: Delivery, repair:
         'Cas9 finds the PAM, but the mismatches prevent stable pairing: the R-loop starts to open and collapses.')
     case 3:
       if (!acts) return t('Sem pareamento suficiente, o HNH não gira até o DNA: não há corte.', 'Without enough pairing, HNH never docks onto the DNA: no cut.')
+      if (cas12a) return t('A Cas12a não tem nickase nem editor de base neste playground: aqui ela corta e pronto.', 'Cas12a has no nickase or base editor in this playground: here it simply cuts.')
       if (cas === 'be') return t('Editor de bases: em vez de cortar as duas fitas, a desaminase converte C em U na janela de edição (depois lido como T).', 'Base editor: instead of cutting both strands, the deaminase converts C to U in the editing window (later read as T).')
       if (cas === 'abe') return t('Editor de adenina: a desaminase evoluída em laboratório converte A em inosina na janela de edição, que a célula lê como G. Também sem quebra de fita dupla.', 'Adenine editor: the lab-evolved deaminase converts A to inosine in the editing window, which the cell reads as G. Also without a double-strand break.')
       if (cas === 'pe') return t('Prime editor: a nickase corta uma fita e a transcriptase reversa, fundida a ela, copia a correção escrita na própria extensão do pegRNA.', 'Prime editor: the nickase cuts one strand and the reverse transcriptase fused to it copies the edit written into the pegRNA extension itself.')
       if (cas === 'nickase') return t('Nickase D10A: o RuvC está inativo (cinza). Só o HNH corta, e só a fita-alvo: um nick, sem quebra de fita dupla.', 'D10A nickase: RuvC is inactive (grey). Only HNH cuts, and only the target strand: a nick, no double-strand break.')
-      return t('O HNH gira até a fita-alvo e, junto com o RuvC, cliva as duas fitas 3 pb a montante do PAM: quebra de fita dupla (DSB), com extremidades cegas.', 'HNH swings onto the target strand and, together with RuvC, cleaves both strands 3 bp upstream of the PAM: a double-strand break (DSB) with blunt ends.')
+      return cas12a
+        ? t('O único domínio RuvC da Cas12a corta as duas fitas em pontos diferentes, longe do PAM: a quebra fica escalonada e sobram pontas coesivas de 5 nt.',
+          'The single RuvC domain of Cas12a cuts both strands at different points, far from the PAM: the break is staggered and leaves 5-nt sticky ends.')
+        : t('O HNH gira até a fita-alvo e, junto com o RuvC, cliva as duas fitas 3 pb a montante do PAM: quebra de fita dupla (DSB), com extremidades cegas.', 'HNH swings onto the target strand and, together with RuvC, cleaves both strands 3 bp upstream of the PAM: a double-strand break (DSB) with blunt ends.')
     case 4:
       if (!acts) return t('Nada para reparar: a sequência permanece intacta.', 'Nothing to repair: the sequence stays intact.')
       if (cas === 'be') return t('O reparo/replicação fixa a mudança: C•G vira T•A. Não há molde doador nem DSB.', 'Repair/replication fixes the change: C•G becomes T•A. No donor template and no DSB.')
@@ -144,6 +152,13 @@ function SequenceView() {
   )
 }
 
+/** O sítio na ordem em que existe no DNA: o PAM da Cas12a vem antes do protoespaçador. */
+function SiteSequence({ c, side }: { c: Candidate; side: number }) {
+  const spacer = <span className="text-dna">{c.protospacer}</span>
+  const pam = <span className="text-cas">{c.pam}</span>
+  return side === 5 ? <>{pam}{spacer}</> : <>{spacer}{pam}</>
+}
+
 /** Cenário clínico: carrega um alvo real e explica a doença nos dois níveis. */
 function Scenario() {
   const t = useT()
@@ -187,7 +202,9 @@ function Scenario() {
 function GuidePanel() {
   const t = useT()
   const d = useDerived()
-  const s = useSim(useShallow((s) => ({ locus: s.locus, selected: s.selected, guide: s.guide, set: s.set, select: s.select, setLocus: s.setLocus })))
+  const s = useSim(useShallow((s) => ({ locus: s.locus, nuclease: s.nuclease, selected: s.selected, guide: s.guide, set: s.set, select: s.select, setLocus: s.setLocus })))
+  const pam = NUCLEASE[s.nuclease].pam.seq
+  const pamSide = NUCLEASE[s.nuclease].pam.side
   const [typed, setTyped] = useState('')
   const [msg, setMsg] = useState('')
   const [locusDraft, setLocusDraft] = useState(s.locus)
@@ -195,7 +212,7 @@ function GuidePanel() {
   if (!d.cand) return (
     <div className="space-y-5">
       <Scenario />
-      <p className="text-sm text-red-300">{t('Nenhum PAM NGG encontrado no locus. Edite a sequência.', 'No NGG PAM found in the locus. Edit the sequence.')}</p>
+      <p className="text-sm text-red-300">{t(`Nenhum PAM ${pam} neste locus. Troque de nuclease (em Parâmetros) ou edite a sequência.`, `No ${pam} PAM in this locus. Switch nuclease (in Parameters) or edit the sequence.`)}</p>
     </div>
   )
   const mm = mismatches(s.guide, d.cand.protospacer)
@@ -214,7 +231,7 @@ function GuidePanel() {
     <div className="space-y-5">
       <Scenario />
       <div>
-        <h3 className="hud-label">{t('Sítios candidatos (PAM NGG, duas fitas)', 'Candidate sites (NGG PAM, both strands)')}</h3>
+        <h3 className="hud-label">{t(`Sítios candidatos (PAM ${pam}, duas fitas)`, `Candidate sites (${pam} PAM, both strands)`)}</h3>
         <div className="mt-2 max-h-44 space-y-1 overflow-auto pr-1" role="radiogroup" aria-label={t('Sítios candidatos', 'Candidate sites')}>
           {d.candidates.map((c, i) => (
             <div key={c.start}>
@@ -222,7 +239,7 @@ function GuidePanel() {
                 className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-xs transition ${i === s.selected ? 'bg-dna/15 ring-1 ring-dna/60' : 'hover:bg-white/5'}`}>
                 <span className="truncate">
                   <span className="mr-1 text-mist/60" title={c.strand === 1 ? t('fita senso', 'sense strand') : t('fita antissenso', 'antisense strand')}>{c.strand === 1 ? '+' : '−'}</span>
-                  <span className="text-dna">{c.protospacer}</span><span className="text-cas">{c.pam}</span>
+                  <SiteSequence c={c} side={NUCLEASE[s.nuclease].pam.side} />
                 </span>
                 {d.dis && (
                   <span className={`shrink-0 ${Math.abs(c.cut - targetPos(d.dis)) <= FIX_RANGE ? 'text-bio' : 'text-mist/50'}`}
@@ -240,7 +257,8 @@ function GuidePanel() {
 
       <div>
         <h3 className="hud-label">{t('Guia (clique numa base para criar mismatch)', 'Guide (click a base to create a mismatch)')}</h3>
-        <div className="mt-2 flex flex-wrap gap-[3px]" role="group" aria-label={t('Bases do guia', 'Guide bases')}>
+        <div className="mt-2 flex flex-wrap items-center gap-[3px]" role="group" aria-label={t('Bases do guia', 'Guide bases')}>
+          {pamSide === 5 && <span className="mr-1 font-mono text-xs text-cas">{d.cand.pam}</span>}
           {[...s.guide].map((b, i) => {
             const isMm = mm.includes(i)
             return (
@@ -250,7 +268,7 @@ function GuidePanel() {
                 style={{ color: isMm ? undefined : BASE_COLOR[b] }}>{b}</button>
             )
           })}
-          <span className="ml-1 self-center font-mono text-xs text-cas">{d.cand.pam}</span>
+          {pamSide === 3 && <span className="ml-1 font-mono text-xs text-cas">{d.cand.pam}</span>}
         </div>
         <div className="mt-1 flex justify-between text-[11px] text-mist/70">
           <span>5′ distal · <span className="text-rna">{t('sublinhado = seed (12 nt)', 'underlined = seed (12 nt)')}</span></span>
@@ -283,10 +301,27 @@ const QUALITY_LABEL: Record<Quality, [string, string]> = { low: ['Baixa', 'Low']
 
 function ParamsPanel() {
   const t = useT()
-  const s = useSim(useShallow((s) => ({ cas: s.cas, delivery: s.delivery, repair: s.repair, tolerance: s.tolerance, speed: s.speed, set: s.set, seed: s.seed, quality: s.quality, qualityAuto: s.qualityAuto })))
+  const s = useSim(useShallow((s) => ({ nuclease: s.nuclease, setNuclease: s.setNuclease, cas: s.cas, delivery: s.delivery, repair: s.repair, tolerance: s.tolerance, speed: s.speed, set: s.set, seed: s.seed, quality: s.quality, qualityAuto: s.qualityAuto })))
   const repairOff = s.cas !== 'wt'
   return (
     <div className="space-y-5">
+      <fieldset>
+        <legend className="hud-label">{t('Nuclease', 'Nuclease')}</legend>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {(Object.keys(NUCLEASE) as NucleaseId[]).map((k) => (
+            <Seg key={k} onClick={() => s.setNuclease(k)} on={s.nuclease === k} cls="bg-dna/20 text-white ring-1 ring-dna/60">
+              {t.pick(NUCLEASE[k].name)} · {NUCLEASE[k].pam.seq}
+            </Seg>
+          ))}
+        </div>
+        <p className="mt-1 text-[11px] text-mist/80">{t.pick(NUCLEASE[s.nuclease].note)}</p>
+        {s.nuclease === 'cas12a' && s.cas !== 'wt' && (
+          <p className="mt-1 text-[11px] text-rna">
+            {t('Nickase, editores de base e prime editing deste playground são construídos sobre a Cas9; com a Cas12a, use a nuclease selvagem.',
+              'The nickase, base editors and prime editing in this playground are built on Cas9; with Cas12a, use the wild-type nuclease.')}
+          </p>
+        )}
+      </fieldset>
       <fieldset>
         <legend className="hud-label">{t('Tipo de Cas', 'Cas type')}</legend>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -378,8 +413,8 @@ const STRATEGIES: { cas: CasType; repair: Repair }[] = [
   { cas: 'pe', repair: 'nhej' },
 ]
 
-const strategyLabel = (s: { cas: CasType; repair: Repair }, t: T) =>
-  s.cas === 'wt' ? `${t.pick(CAS.wt.name)} · ${s.repair.toUpperCase()}` : t.pick(CAS[s.cas].name)
+const strategyLabel = (s: { cas: CasType; repair: Repair }, nuclease: NucleaseId, t: T) =>
+  s.cas === 'wt' ? `${t.pick(NUCLEASE[nuclease].name)} · ${s.repair.toUpperCase()}` : t.pick(CAS[s.cas].name)
 
 /** Símbolo curto do veredito, para caber numa célula da tabela. */
 const VERDICT_MARK: Record<VerdictKind, { mark: string; cls: string }> = {
@@ -397,8 +432,11 @@ function ComparePanel() {
   const d = useDerived()
   const p = useParams()
   const set = useSim((s) => s.set)
+  // nickase, editores de base e prime editing deste playground são construídos sobre a Cas9
   const rows = useMemo(
-    () => STRATEGIES.map((s) => ({ ...s, d: derive({ ...p, ...s }, t.lang === 'en') })),
+    () => STRATEGIES
+      .filter((s) => p.nuclease === 'spcas9' || s.cas === 'wt')
+      .map((s) => ({ ...s, d: derive({ ...p, ...s }, t.lang === 'en') })),
     [p, t.lang],
   )
   const best = rows.reduce((a, b) => {
@@ -434,7 +472,7 @@ function ComparePanel() {
                   <button type="button" onClick={() => set({ cas: r.cas, repair: r.repair })} aria-current={current}
                     className={`grid w-full grid-cols-[1fr_auto_auto_auto] items-center gap-2 rounded-lg px-2 py-1.5 text-left transition ${current ? 'bg-dna/15 ring-1 ring-dna/60' : 'hover:bg-white/5'}`}>
                     <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate">{strategyLabel(r, t)}</span>
+                      <span className="truncate">{strategyLabel(r, p.nuclease, t)}</span>
                       {r === best && <span className="shrink-0 rounded bg-bio/20 px-1 text-[10px] uppercase tracking-wider text-bio">{t('melhor', 'best')}</span>}
                     </span>
                     <span className="w-12 text-right font-mono text-bio">{pct(r.d.eff ?? 0)}</span>
@@ -887,7 +925,7 @@ export default function Playground() {
   const [lost, setLost] = useState(false)
   const [toast, setToast] = useState('')
   const [tab, setTab] = useState<'guia' | 'params' | 'comparar' | 'resultado'>('guia')
-  const sim = useSim(useShallow((s) => ({ step: s.step, playing: s.playing, presentation: s.presentation, cinema: s.cinema, explore: s.explore, sound: s.sound, cas: s.cas, delivery: s.delivery, repair: s.repair })))
+  const sim = useSim(useShallow((s) => ({ step: s.step, playing: s.playing, presentation: s.presentation, cinema: s.cinema, explore: s.explore, sound: s.sound, nuclease: s.nuclease, cas: s.cas, delivery: s.delivery, repair: s.repair })))
   const d = useDerived()
   const acts = !!d.acts
   const steps = t.pick(STEPS)
@@ -1025,7 +1063,7 @@ export default function Playground() {
   }, [inView, webgl, lost])
 
   const st = useSim.getState()
-  const caption = narration(t, sim.step, sim.cas, sim.delivery, sim.repair, acts)
+  const caption = narration(t, sim.step, sim.nuclease, sim.cas, sim.delivery, sim.repair, acts)
   // no Explorar, a narração das etapas só aparece nas zonas do locus (as outras têm o próprio cartão)
   const zone = useSim((s) => s.zone)
   const showCaption = !sim.explore || !!(zone && EXHIBIT[zone].steps)
