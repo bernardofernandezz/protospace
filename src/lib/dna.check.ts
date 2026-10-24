@@ -1,8 +1,9 @@
 // Autoverificação da lógica de sequência: `npm test`
 import assert from 'node:assert/strict'
 import {
-  BASE_EDITORS, DEFAULT_LOCUS, PE_RANGE, aminoAcid, applyOps, baseEditOps, consequence, cutProbability,
-  diffSegments, findCandidates, hdrOps, nhejOps, population, primeEditOps, repairOdds, translate,
+  BASE_EDITORS, COMP, DEFAULT_LOCUS, PE_RANGE, aminoAcid, applyOps, baseEditOps, consequence, cutProbability,
+  diffSegments, findCandidates, hdrOps, nhejOps, population, primeEditOps, repairOdds, revComp,
+  spacerIndex, translate,
 } from './dna.ts'
 
 // código genético: âncoras conhecidas em cada bloco da tabela
@@ -17,12 +18,36 @@ assert.equal(translate('ATGGA', 0), 'M')
 
 const cands = findCandidates(DEFAULT_LOCUS)
 assert.ok(cands.length >= 3, 'locus padrão deve ter ≥3 sítios NGG')
+assert.ok(cands.some((k) => k.strand === -1), 'a varredura precisa achar guias antissenso')
 for (const c of cands) {
   assert.equal(c.protospacer.length, 20)
-  assert.match(c.pam, /^[ACGT]GG$/)
-  assert.equal(c.cut, c.start + 17) // 3 pb a montante do PAM
+  assert.match(c.pam, /^[ACGT]GG$/, 'o PAM é NGG lido na fita do guia')
+  // o PAM fica logo a 3′ do protoespaçador, e o corte 3 pb a montante dele
+  if (c.strand === 1) {
+    assert.equal(c.pamStart, c.start + 20)
+    assert.equal(c.cut, c.start + 17)
+    assert.equal(c.protospacer, DEFAULT_LOCUS.slice(c.start, c.start + 20))
+  } else {
+    assert.equal(c.pamStart, c.start - 3)
+    assert.equal(c.cut, c.start + 3)
+    assert.equal(c.protospacer, revComp(DEFAULT_LOCUS.slice(c.start, c.start + 20)))
+    assert.equal(c.pam, revComp(DEFAULT_LOCUS.slice(c.pamStart, c.pamStart + 3)))
+  }
+  // spacerIndex leva cada posição do guia de volta à base certa do locus
+  for (let k = 0; k < 20; k++) {
+    const base = DEFAULT_LOCUS[spacerIndex(c, k)]
+    assert.equal(c.strand === 1 ? base : COMP[base], c.protospacer[k], 'spacerIndex fora de lugar')
+  }
 }
-const c = cands[0]
+
+// num guia antissenso a edição de base aparece complementada na fita senso
+const anti = cands.find((k) => k.strand === -1)!
+for (const op of baseEditOps(anti, 'be')) {
+  assert.equal(DEFAULT_LOCUS[op.pos], 'G', 'C→T na fita antissenso é G→A na senso')
+  assert.equal(op.ins, 'A')
+}
+
+const c = cands.find((k) => k.strand === 1)!
 assert.ok(cutProbability(c.protospacer, c.protospacer, 1) > 0.9)
 const seedMm = c.protospacer.slice(0, 19) + (c.protospacer[19] === 'A' ? 'C' : 'A')
 const distalMm = (c.protospacer[0] === 'A' ? 'C' : 'A') + c.protospacer.slice(1)
@@ -45,13 +70,18 @@ for (let s = 1; s < 50; s++) {
 for (const [editor, { from, to }] of Object.entries(BASE_EDITORS)) {
   for (const k of cands) {
     for (const op of baseEditOps(k, editor as keyof typeof BASE_EDITORS)) {
-      assert.equal(DEFAULT_LOCUS[op.pos], from, `${editor} fora da base de origem`)
-      assert.equal(op.ins, to)
-      const offset = op.pos - k.start
-      assert.ok(offset >= 3 && offset <= 7, `${editor} fora da janela de edição`)
+      const onSpacer = k.strand === 1 ? from : COMP[from]
+      assert.equal(DEFAULT_LOCUS[op.pos], onSpacer, `${editor} fora da base de origem`)
+      assert.equal(op.ins, k.strand === 1 ? to : COMP[to])
+      const offset = Math.abs(op.pos - k.start)
+      assert.ok(offset >= 3 && offset <= 16, `${editor} fora da janela de edição`)
     }
   }
 }
+
+// prime editing numa fita antissenso escreve para a esquerda do nick
+assert.equal(primeEditOps(anti, { pos: anti.cut - 5, del: 1, ins: 'A' }).length, 1)
+assert.equal(primeEditOps(anti, { pos: anti.cut + 5, del: 1, ins: 'A' }).length, 0)
 
 // prime editing: escreve só para a frente do nick e dentro do alcance da extensão do pegRNA
 const target = { pos: c.cut + 10, del: 1, ins: 'A' }

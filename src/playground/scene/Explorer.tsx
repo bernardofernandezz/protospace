@@ -39,14 +39,14 @@ function zonePositions(d: Ready, out: Map<ZoneId, THREE.Vector3>) {
   const at = (id: ZoneId) => { if (!out.has(id)) out.set(id, new THREE.Vector3()); return out.get(id)! }
   const th = centerAt(L, c.start + 10, at('guide'))
   at('guide').addScaledVector(normalAt(th, _n), 3)
-  centerAt(L, Math.min(L.n - 1, c.start + 21), at('pam'))
+  centerAt(L, Math.min(L.n - 1, c.pamStart + 1), at('pam'))
   centerAt(L, c.cut, at('cut'))
   const pose = casPose(v, L)
   if (pose.visible) at('cas9').copy(pose.pos)
   else centerAt(L, c.start + 10, at('cas9'))
   // PAM "isca" mais próximo do alvo (onde a Cas9 para e desiste na busca)
   const decoy = d.candidates.filter((k) => k !== c).sort((a, b) => Math.abs(a.start - c.start) - Math.abs(b.start - c.start))[0]
-  if (decoy) centerAt(L, Math.min(L.n - 1, decoy.start + 21), at('decoy'))
+  if (decoy) centerAt(L, Math.min(L.n - 1, decoy.pamStart + 1), at('decoy'))
   else out.delete('decoy')
   at('off0').copy(OFF_POS[0])
   at('off1').copy(OFF_POS[1])

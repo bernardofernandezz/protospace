@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three-stdlib'
-import { BASE_EDITORS, COMP, isBaseEditor } from '../../lib/dna'
+import { BASE_EDITORS, COMP, inPam, isBaseEditor, spacerIndex, spacerPos } from '../../lib/dna'
 import { targetSpan } from '../../content/diseases'
 import { useT, tNow } from '../../i18n'
 import { BASE_COLOR, PALETTE } from '../colors'
@@ -119,15 +119,11 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
     const gapAmt = orig ? clamp01(v.gap / 0.25) : 0
     // pontas do locus afinam (o DNA continua além do trecho mostrado)
     const endTaper = (i: number, u: number) => (i === 0 ? 0.3 + 0.7 * smooth(0, 1, u) : i === n - 2 ? 1 - 0.7 * smooth(0, 1, u) : i === n - 1 ? 0.3 : 1)
-    const hl = (i: number) => {
-      const j = i - c.start
-      return orig ? (j >= 0 && j < 23) : !!L.changed?.[i]
-    }
+    const hl = (i: number) => (orig ? spacerPos(c, i) >= 0 || inPam(c, i) : !!L.changed?.[i])
     const strandColor = (base: THREE.Color, i: number, out: THREE.Color) => {
-      const j = i - c.start
-      if (orig && j >= 20 && j < 23) out.copy(CASC).multiplyScalar(1 + 1.2 * v.rloop)
+      if (orig && inPam(c, i)) out.copy(CASC).multiplyScalar(1 + 1.2 * v.rloop)
       else out.copy(base).multiplyScalar(hl(i) ? 1 : 0.42)
-      if (probe && orig && i >= probe.start + 20 && i < probe.start + 23) out.lerp(CASC, v.path.probeAmt).multiplyScalar(1 + 1.6 * v.path.probeAmt)
+      if (probe && orig && inPam(probe, i)) out.lerp(CASC, v.path.probeAmt).multiplyScalar(1 + 1.6 * v.path.probeAmt)
       if (orig && L.deleted[i] && v.shrinkDel > 0) out.lerp(MM, v.shrinkDel)
       // brilho nas pontas recém-cortadas
       if (orig && v.flash > 0 && (i === c.cut || i === c.cut - 1)) out.multiplyScalar(1 + 3 * v.flash)
@@ -203,7 +199,7 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
         if (guide[i] !== c.protospacer[i]) out.lerp(MM, 0.5)
       })
       for (let jj = 0; jj < 20; jj++) {
-        const i = c.start + jj
+        const i = spacerIndex(c, jj)
         tangentAt(L.theta[i], _T)
         const mm = guide[jj] !== c.protospacer[jj]
         const g = guide[jj] === 'T' ? 'U' : guide[jj]

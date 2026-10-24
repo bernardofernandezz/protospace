@@ -1,7 +1,7 @@
 // Estado visual da simulação: tudo é função pura de (parâmetros, etapa, progresso),
 // então voltar/avançar etapas sempre reproduz a mesma cena.
 import * as THREE from 'three'
-import { isBaseEditor } from '../../lib/dna'
+import { isBaseEditor, spacerIndex, spacerPos } from '../../lib/dna'
 import { useSim, type useDerived } from '../store'
 
 // ---------- geometria do B-DNA estilizado ----------
@@ -181,8 +181,8 @@ function compute(d: Ready, v: Visual, locus: string): Layout {
     L.h1[i].copy(cc).addScaledVector(_N, RADIUS * Math.cos(phi)).addScaledVector(_Z, RADIUS * Math.sin(phi))
     L.p2[i].copy(cc).addScaledVector(_N, RADIUS * Math.cos(phi + GROOVE)).addScaledVector(_Z, RADIUS * Math.sin(phi + GROOVE))
     // R-loop: a fita não-alvo é deslocada num arco para a frente; abre do PAM para a ponta distal
-    const j = i - c.start
-    const inT = !v.edited && j >= 0 && j < 20
+    const j = spacerPos(c, i)
+    const inT = !v.edited && j >= 0
     const o = inT ? smooth(((19 - j) / 20) * 0.7, ((19 - j) / 20) * 0.7 + 0.3, v.rloop) : 0
     L.open[i] = o
     if (o > 0) {
@@ -230,7 +230,7 @@ export function rnaLayout(v: Visual, lay: Layout): boolean {
   if (v.edited || v.step === 1) return false
   if (v.step === 0) {
     for (let j = 0; j < 20; j++) {
-      const i = c.start + j
+      const i = spacerIndex(c, j)
       normalAt(lay.theta[i], _N)
       lay.rna[j].copy(lay.center[i]).addScaledVector(_N, 3.1).addScaledVector(_Z, 0.4)
     }
@@ -241,7 +241,7 @@ export function rnaLayout(v: Visual, lay: Layout): boolean {
   tangentAt(cp.theta, _T)
   normalAt(cp.theta, _N)
   for (let j = 0; j < 20; j++) {
-    const i = c.start + j
+    const i = spacerIndex(c, j)
     _C.copy(cp.pos).addScaledVector(_T, (j - 11) * RISE).addScaledVector(_N, 1.9).addScaledVector(_Z, -0.2)
     // pareado: no lugar da fita não-alvo, levemente para dentro (heterodúplex)
     _D.copy(lay.h1[i]).lerp(lay.center[i], 0.08)

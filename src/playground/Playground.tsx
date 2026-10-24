@@ -1,7 +1,7 @@
 import { Component, Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import {
-  CAS, DELIVERY, FIX_RANGE, MAX_LOCUS, NAMES3, clean, diffSegments, isSeed, mismatches,
+  CAS, DELIVERY, FIX_RANGE, MAX_LOCUS, NAMES3, clean, diffSegments, inPam, isSeed, mismatches, revComp, spacerPos,
   type AlleleOutcome, type CasType, type Consequence, type Delivery, type Population, type Repair,
 } from '../lib/dna'
 import { DISEASES, findDisease, targetPos, targetSpan, type Disease } from '../content/diseases'
@@ -98,14 +98,17 @@ function SequenceView() {
   const span = d.dis ? targetSpan(d.dis) : null
   return (
     <div className="font-mono text-[13px] leading-7 tracking-wider break-all">
-      <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-mist/70">5′ → 3′ · {t('fita senso', 'sense strand')} {edited ? t('· diff (original → editado)', '· diff (original → edited)') : !d.dis && t('· clique numa base para trocá-la', '· click a base to swap it')}</div>
+      <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-mist/70">5′ → 3′ · {t('fita senso', 'sense strand')} {edited
+          ? t('· diff (original → editado)', '· diff (original → edited)')
+          : <>· {c.strand === 1 ? t('guia na fita senso', 'guide on the sense strand') : t('guia na fita antissenso', 'guide on the antisense strand')}{!d.dis && t(' · clique numa base para trocá-la', ' · click a base to swap it')}</>}</div>
       {!edited ? (
         <div className="flex flex-wrap gap-[3px]" role="group" aria-label={t('Sequência do locus', 'Locus sequence')}>
           {[...locus].map((b, i) => {
-            const j = i - c.start
+            const onSpacer = spacerPos(c, i) >= 0
+            const onPam = inPam(c, i)
             const onTarget = !!span && i >= span.start && i < span.start + span.length
             const cls = onTarget ? 'bg-red-500 text-white ring-1 ring-red-300'
-              : j >= 0 && j < 20 ? 'bg-dna/20 ring-1 ring-dna/50' : j >= 20 && j < 23 ? 'bg-cas/60 text-white' : 'bg-white/5 hover:bg-white/15'
+              : onSpacer ? 'bg-dna/20 ring-1 ring-dna/50' : onPam ? 'bg-cas/60 text-white' : 'bg-white/5 hover:bg-white/15'
             return (
               <Fragment key={i}>
                 {i === c.cut && step >= 3 && d.cuts !== 'none' && <span className="w-[3px] rounded bg-white" aria-label={t('corte', 'cut')} />}
@@ -113,7 +116,7 @@ function SequenceView() {
                   aria-label={`${t('Posição', 'Position')} ${i + 1}: ${b}`}
                   title={onTarget ? (d.dis!.goal === 'disrupt' ? t('Motivo a destruir', 'Motif to destroy') : t('Região alterada pela doença', 'Region altered by the disease')) : undefined}
                   className={`h-8 w-[26px] rounded text-sm font-semibold transition enabled:hover:-translate-y-0.5 enabled:active:scale-90 ${cls}`}
-                  style={{ color: onTarget || (j >= 20 && j < 23) ? undefined : BASE_COLOR[b] }}>{b}</button>
+                  style={{ color: onTarget || onPam ? undefined : BASE_COLOR[b] }}>{b}</button>
               </Fragment>
             )
           })}
@@ -202,22 +205,25 @@ function GuidePanel() {
     if (g.length !== 20) return setMsg(t('O guia precisa ter exatamente 20 nt (A, C, G, T).', 'The guide must be exactly 20 nt (A, C, G, T).'))
     const i = d.candidates.findIndex((c) => c.protospacer === g)
     if (i >= 0) { s.select(i); setMsg(t('Sítio encontrado, com PAM NGG adjacente.', 'Site found, with an adjacent NGG PAM.')) }
-    else setMsg(s.locus.includes(g)
+    else setMsg(s.locus.includes(g) || s.locus.includes(revComp(g))
       ? t('Sequência presente, mas sem PAM NGG adjacente: a SpCas9 não cortaria aqui.', 'Sequence present, but with no adjacent NGG PAM: SpCas9 would not cut here.')
-      : t('Sequência não encontrada neste locus (fita senso).', 'Sequence not found in this locus (sense strand).'))
+      : t('Sequência não encontrada neste locus, em nenhuma das duas fitas.', 'Sequence not found in this locus, on either strand.'))
   }
 
   return (
     <div className="space-y-5">
       <Scenario />
       <div>
-        <h3 className="hud-label">{t('Sítios candidatos (PAM NGG, fita senso)', 'Candidate sites (NGG PAM, sense strand)')}</h3>
+        <h3 className="hud-label">{t('Sítios candidatos (PAM NGG, duas fitas)', 'Candidate sites (NGG PAM, both strands)')}</h3>
         <div className="mt-2 max-h-44 space-y-1 overflow-auto pr-1" role="radiogroup" aria-label={t('Sítios candidatos', 'Candidate sites')}>
           {d.candidates.map((c, i) => (
             <div key={c.start}>
               <button type="button" role="radio" aria-checked={i === s.selected} onClick={() => s.select(i)}
                 className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-xs transition ${i === s.selected ? 'bg-dna/15 ring-1 ring-dna/60' : 'hover:bg-white/5'}`}>
-                <span className="truncate"><span className="text-dna">{c.protospacer}</span><span className="text-cas">{c.pam}</span></span>
+                <span className="truncate">
+                  <span className="mr-1 text-mist/60" title={c.strand === 1 ? t('fita senso', 'sense strand') : t('fita antissenso', 'antisense strand')}>{c.strand === 1 ? '+' : '−'}</span>
+                  <span className="text-dna">{c.protospacer}</span><span className="text-cas">{c.pam}</span>
+                </span>
                 {d.dis && (
                   <span className={`shrink-0 ${Math.abs(c.cut - targetPos(d.dis)) <= FIX_RANGE ? 'text-bio' : 'text-mist/50'}`}
                     title={t('Distância entre o corte e o alvo: molde de HDR e prime editing só alcançam o que está perto.', 'Distance between the cut and the target: the HDR template and prime editing only reach what is nearby.')}>

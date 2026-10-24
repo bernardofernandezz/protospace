@@ -8,14 +8,32 @@ export type Repair = 'nhej' | 'hdr'
 /** Edição em coordenadas da sequência ORIGINAL: remove `del` bases em `pos` e insere `ins`. */
 export interface Op { pos: number; del: number; ins: string }
 
+/** 1 = fita senso (a que guardamos); -1 = fita antissenso, lida de trás para frente. */
+export type Strand = 1 | -1
+
 export interface Candidate {
-  start: number // índice do 1º nt do protoespaçador
-  protospacer: string // 20 nt, 5'→3', fita senso
-  pam: string // NGG
+  start: number // índice, no locus, do 1º nt do protoespaçador à esquerda
+  strand: Strand
+  protospacer: string // 20 nt, 5'→3', lidos na fita do próprio guia
+  pam: string // NGG, lido na fita do guia
+  pamStart: number // índice, no locus, da base mais à esquerda do PAM
   cut: number // corte entre cut-1 e cut (3 pb a montante do PAM)
   gc: number
   score: number // ilustrativo
 }
+
+/** Índice, no locus, da posição `k` (0–19) do protoespaçador. */
+export const spacerIndex = (c: Candidate, k: number) => (c.strand === 1 ? c.start + k : c.start + 19 - k)
+
+/** Posição (0–19) no protoespaçador que corresponde ao índice `i` do locus; -1 se estiver fora. */
+export function spacerPos(c: Candidate, i: number): number {
+  const k = c.strand === 1 ? i - c.start : 19 - (i - c.start)
+  return k >= 0 && k < 20 ? k : -1
+}
+
+export const inPam = (c: Candidate, i: number) => i >= c.pamStart && i < c.pamStart + 3
+
+export const revComp = (s: string) => [...s].reverse().map((b) => COMP[b]).join('')
 
 // Sequência fictícia (não é um gene real), desenhada para conter vários PAMs NGG.
 export const DEFAULT_LOCUS =
@@ -40,23 +58,38 @@ export function onTargetScore(p: string): number {
   return Math.round(Math.max(0, Math.min(100, s)))
 }
 
-/** Varre a fita senso por protoespaçadores de 20 nt seguidos de NGG (SpCas9). */
+const describe = (locus: string, start: number, strand: Strand): Candidate => {
+  const raw = locus.slice(start, start + 20)
+  const protospacer = strand === 1 ? raw : revComp(raw)
+  const pamStart = strand === 1 ? start + 20 : start - 3
+  return {
+    start,
+    strand,
+    protospacer,
+    pam: strand === 1 ? locus.slice(pamStart, pamStart + 3) : revComp(locus.slice(pamStart, pamStart + 3)),
+    pamStart,
+    // o corte fica 3 pb a montante do PAM, do lado do protoespaçador
+    cut: strand === 1 ? start + 17 : start + 3,
+    gc: gcContent(protospacer),
+    score: onTargetScore(protospacer),
+  }
+}
+
+/**
+ * Varre as duas fitas por protoespaçadores de 20 nt adjacentes a um PAM NGG (SpCas9).
+ * Na fita antissenso o PAM aparece como CCN à esquerda do protoespaçador.
+ */
 export function findCandidates(locus: string): Candidate[] {
   const out: Candidate[] = []
-  for (let i = 20; i + 3 <= locus.length; i++) {
-    if (locus[i + 1] === 'G' && locus[i + 2] === 'G') {
-      const protospacer = locus.slice(i - 20, i)
-      out.push({
-        start: i - 20,
-        protospacer,
-        pam: locus.slice(i, i + 3),
-        cut: i - 3,
-        gc: gcContent(protospacer),
-        score: onTargetScore(protospacer),
-      })
+  for (let start = 0; start + 20 <= locus.length; start++) {
+    if (start + 23 <= locus.length && locus[start + 21] === 'G' && locus[start + 22] === 'G') {
+      out.push(describe(locus, start, 1))
+    }
+    if (start >= 3 && locus[start - 3] === 'C' && locus[start - 2] === 'C') {
+      out.push(describe(locus, start, -1))
     }
   }
-  return out
+  return out.sort((a, b) => a.start - b.start || a.strand - b.strand)
 }
 
 /** Índice do sítio cujo corte cai mais perto de `pos` (o que um molde de HDR consegue corrigir). */
@@ -154,10 +187,10 @@ export type Fix = Op
  */
 export function hdrOps(c: Candidate, fix?: Fix): Op[] {
   if (fix && Math.abs(fix.pos - c.cut) <= FIX_RANGE) return [fix]
-  const pamG = c.start + 21
+  // muta o G do meio do NGG (na fita senso, o C do meio de um CCN) para a Cas9 não cortar de novo
   return [
     { pos: c.cut, del: 0, ins: HDR_INSERT },
-    { pos: pamG, del: 1, ins: 'C' },
+    { pos: c.pamStart + 1, del: 1, ins: c.strand === 1 ? 'C' : 'G' },
   ]
 }
 
@@ -170,7 +203,8 @@ export const PE_RANGE = 30
  */
 export function primeEditOps(c: Candidate, fix?: Fix): Op[] {
   const target = fix ?? { pos: c.cut, del: 0, ins: HDR_INSERT }
-  const reach = target.pos - c.cut
+  // "adiante do nick" segue a fita cortada: num guia antissenso, isso é para a esquerda do locus
+  const reach = (target.pos - c.cut) * c.strand
   return reach >= 0 && reach <= PE_RANGE ? [target] : []
 }
 
@@ -216,13 +250,18 @@ export const isBaseEditor = (cas: CasType): cas is BaseEditor => cas in BASE_EDI
 /** Janela de edição: posições 4–8 do protoespaçador, contadas a partir da ponta distal ao PAM. */
 export const BE_WINDOW = { first: 3, last: 7 } as const
 
+/**
+ * A desaminase atua na fita do protoespaçador. Num guia antissenso, um C→T lá aparece
+ * como G→A aqui, porque o locus é sempre guardado na fita senso.
+ */
 export function baseEditOps(c: Candidate, editor: BaseEditor): Op[] {
   const { from, to } = BASE_EDITORS[editor]
   const ops: Op[] = []
   for (let k = BE_WINDOW.first; k <= BE_WINDOW.last; k++) {
-    if (c.protospacer[k] === from) ops.push({ pos: c.start + k, del: 1, ins: to })
+    if (c.protospacer[k] !== from) continue
+    ops.push({ pos: spacerIndex(c, k), del: 1, ins: c.strand === 1 ? to : COMP[to] })
   }
-  return ops
+  return ops.sort((a, b) => a.pos - b.pos)
 }
 
 export interface Applied { seq: string; changed: boolean[] }
