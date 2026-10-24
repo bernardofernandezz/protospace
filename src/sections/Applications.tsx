@@ -1,4 +1,5 @@
 import SectionHeader from '../components/SectionHeader'
+import WhatIf from '../components/WhatIf'
 import { useT, type L } from '../i18n'
 import { Rich } from '../components/Term'
 
@@ -49,6 +50,12 @@ export default function Applications() {
           </article>
         ))}
       </div>
+
+      <WhatIf
+        question={t('você levar a ferramenta certa para o alvo errado? Na fibrose cística faltam três letras, e um editor de base só sabe trocar uma por outra: ele edita algo, sem corrigir nada.',
+          'you bring the right tool to the wrong target? Cystic fibrosis is missing three letters, and a base editor only swaps one letter for another: it edits something without fixing anything.')}
+        preset={{ disease: 'cftr', cas: 'abe' }}
+      />
     </section>
   )
 }

@@ -2,16 +2,7 @@ import { useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
 import { PATHS, type Path } from '../content/paths'
 import { useT } from '../i18n'
-
-/**
- * Carrega o playground sob demanda para não trazer a simulação ao pacote inicial,
- * aplica o preset do cartão e leva o usuário até lá.
- */
-async function openInPlayground(preset: Path['preset']) {
-  const { useSim } = await import('../playground/store')
-  useSim.getState().applyPreset(preset)
-  document.getElementById('playground')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
+import { openInPlayground } from '../playground/open'
 
 export default function Paths() {
   const t = useT()

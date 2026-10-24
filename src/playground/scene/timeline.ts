@@ -6,6 +6,11 @@ import { useSim, type useDerived } from '../store'
 
 // ---------- geometria do B-DNA estilizado ----------
 export const RISE = 0.34 // nm por par de bases (escala da cena)
+
+/** Espaçador do guia e, só no prime editor, a extensão do pegRNA copiada pela RT. */
+export const SPACER_NT = 20
+export const PEG_TAIL_NT = 8
+export const RNA_MAX = SPACER_NT + PEG_TAIL_NT
 export const RADIUS = 1
 export const TWIST = (2 * Math.PI) / 10.5 // ~10,5 pb por volta
 /** Defasagem entre as fitas (≠ 180°): é o que cria os sulcos maior e menor. */
@@ -126,7 +131,7 @@ export interface Layout {
 }
 const L: Layout = {
   n: 0, seq: '', s: new Float32Array(MAXN), theta: new Float32Array(MAXN), center: v3(), p1: v3(), p2: v3(), h1: v3(),
-  open: new Float32Array(MAXN), rna: Array.from({ length: 20 }, () => new THREE.Vector3()), deleted: new Uint8Array(MAXN), changed: null,
+  open: new Float32Array(MAXN), rna: Array.from({ length: RNA_MAX }, () => new THREE.Vector3()), deleted: new Uint8Array(MAXN), changed: null,
 }
 
 const _N = new THREE.Vector3(), _Z = new THREE.Vector3(0, 0, 1), _D = new THREE.Vector3(), _T = new THREE.Vector3()
@@ -224,30 +229,49 @@ export function casPose(v: Visual, lay: Layout): CasPose {
   return pose
 }
 
-/** Espaçador do sgRNA: desenhado acima do alvo (etapa 0), guardado na Cas9 ou pareado no R-loop. */
-export function rnaLayout(v: Visual, lay: Layout): boolean {
+/** Cauda que só o pegRNA tem (PBS + molde da RT), desenhada como extensão livre do espaçador. */
+function pegTail(lay: Layout) {
+  _D.subVectors(lay.rna[SPACER_NT - 1], lay.rna[SPACER_NT - 2]).normalize()
+  for (let k = 1; k <= PEG_TAIL_NT; k++) {
+    lay.rna[SPACER_NT - 1 + k].copy(lay.rna[SPACER_NT - 1])
+      .addScaledVector(_D, k * RISE * 1.1)
+      .addScaledVector(_Z, k * 0.12)
+  }
+}
+
+/**
+ * Espaçador do sgRNA: desenhado acima do alvo (etapa 0), guardado na Cas9 ou pareado no R-loop.
+ * Retorna quantos pontos foram escritos — o prime editor acrescenta a cauda do pegRNA.
+ */
+export function rnaLayout(v: Visual, lay: Layout): number {
   const c = v.cand
-  if (v.edited || v.step === 1) return false
+  if (v.edited || v.step === 1) return 0
+  const prime = useSim.getState().cas === 'pe'
+  const total = prime ? RNA_MAX : SPACER_NT
+
   if (v.step === 0) {
-    for (let j = 0; j < 20; j++) {
+    for (let j = 0; j < SPACER_NT; j++) {
       const i = spacerIndex(c, j)
       normalAt(lay.theta[i], _N)
       lay.rna[j].copy(lay.center[i]).addScaledVector(_N, 3.1).addScaledVector(_Z, 0.4)
     }
-    return true
+    if (prime) pegTail(lay)
+    return total
   }
+
   const cp = casPose(v, lay)
-  if (!cp.visible) return false
+  if (!cp.visible) return 0
   tangentAt(cp.theta, _T)
   normalAt(cp.theta, _N)
-  for (let j = 0; j < 20; j++) {
+  for (let j = 0; j < SPACER_NT; j++) {
     const i = spacerIndex(c, j)
     _C.copy(cp.pos).addScaledVector(_T, (j - 11) * RISE).addScaledVector(_N, 1.9).addScaledVector(_Z, -0.2)
     // pareado: no lugar da fita não-alvo, levemente para dentro (heterodúplex)
     _D.copy(lay.h1[i]).lerp(lay.center[i], 0.08)
     lay.rna[j].lerpVectors(_C, _D, lay.open[i])
   }
-  return true
+  if (prime) pegTail(lay)
+  return total
 }
 
 /** Alvo do foco (câmera e profundidade de campo), escrito pelo CameraRig. */

@@ -11,7 +11,7 @@ import { Label } from './Labels'
 import { TUBE_RES, tip, untip } from './shared'
 import { glowingPhysical, glowTexture } from './materials'
 import { Tube, breakTaper } from './tube'
-import { MAXN, RADIUS, clamp01, frame, normalAt, rnaLayout, smooth, tangentAt, type Ready } from './timeline'
+import { MAXN, RADIUS, RNA_MAX, SPACER_NT, clamp01, frame, normalAt, rnaLayout, smooth, tangentAt, type Ready } from './timeline'
 
 const BB_R = 0.11 // raio do backbone
 const PURINE = new Set(['A', 'G'])
@@ -19,6 +19,7 @@ const S1 = new THREE.Color(PALETTE.strand1)
 const S2 = new THREE.Color(PALETTE.strand2)
 const CASC = new THREE.Color(PALETTE.cas)
 const RNAC = new THREE.Color(PALETTE.rna)
+const DONORC = new THREE.Color(PALETTE.donor)
 const MM = new THREE.Color(PALETTE.mismatch)
 const HEAL = new THREE.Color(PALETTE.donor)
 const BASES = Object.fromEntries(Object.entries(BASE_COLOR).map(([k, v]) => [k, new THREE.Color(v)]))
@@ -75,7 +76,7 @@ function editLabel(d: Ready, t: ReturnType<typeof useT>) {
 export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
   const t = useT()
   const [sub, radial] = TUBE_RES[quality]
-  const tubes = useMemo(() => ({ s1: new Tube(MAXN, sub, radial), s2: new Tube(MAXN, sub, radial), rna: new Tube(20, sub, radial) }), [sub, radial])
+  const tubes = useMemo(() => ({ s1: new Tube(MAXN, sub, radial), s2: new Tube(MAXN, sub, radial), rna: new Tube(RNA_MAX, sub, radial) }), [sub, radial])
   useEffect(() => () => { tubes.s1.dispose(); tubes.s2.dispose(); tubes.rna.dispose() }, [tubes])
   const mats = useMemo(() => ({
     backbone: glowingPhysical({ vertexColors: true, roughness: 0.28, metalness: 0.05, clearcoat: 1, clearcoatRoughness: 0.2, glow: 0.32 }),
@@ -92,6 +93,7 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
   const beSites = useMemo(() => new Set(d.cuts === 'none' && d.acts && isBaseEditor(useSim.getState().cas) ? d.ops.map((o) => o.pos) : []), [d])
   // a CBE deixa um U na fita; a ABE deixa inosina, que a célula lê como G
   const deamColor = useSim((s) => (s.cas === 'abe' ? BASES.G : BASES.U))
+  const prime = useSim((s) => s.cas === 'pe')
 
   const bases = useRef<THREE.InstancedMesh>(null!)
   const phos = useRef<THREE.InstancedMesh>(null!)
@@ -158,7 +160,7 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
     }
 
     // bases: purina mais longa que pirimidina; no R-loop a fita-alvo pareia com o RNA
-    const rnaOn = rnaLayout(v, L)
+    const rnaCount = rnaLayout(v, L)
     const span = 2 * RADIUS * Math.sin(((Math.PI * 0.78) / 2))
     for (let i = 0; i < n; i++) {
       const b1 = seq[i]
@@ -174,7 +176,7 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
       if (o > 0) plate(bases.current, i, L.p1[i], L.center[i], (span * f1 - 0.03) * (1 - 0.6 * o), _T, s)
       else plate(bases.current, i, L.p1[i], L.p2[i], span * f1 - 0.03, _T, s)
       // fita 2 (alvo): parceira passa a ser a base do RNA
-      if (o > 0 && rnaOn) {
+      if (o > 0 && rnaCount > 0) {
         _c.lerpVectors(L.p1[i], L.rna[j], o)
         plate(bases.current, n + i, L.p2[i], _c, _b.subVectors(_c, L.p2[i]).length() * (1 - f1) - 0.03, _T, s)
       } else plate(bases.current, n + i, L.p2[i], L.p1[i], span * (1 - f1) - 0.03, _T, s)
@@ -199,14 +201,16 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
     if (bases.current.instanceColor) bases.current.instanceColor.needsUpdate = true
 
     // sgRNA: tubo + bases; mismatches com o protoespaçador ficam vermelhos e não encaixam
-    rnaMesh.current.visible = rnaBases.current.visible = rnaOn
-    if (rnaOn) {
+    rnaMesh.current.visible = rnaBases.current.visible = rnaCount > 0
+    if (rnaCount > 0) {
       const guide = useSim.getState().guide
-      tubes.rna.update(L.rna, 20, (i, u) => BB_R * 1.3 * (i === 0 ? 0.4 + 0.6 * u : 1), (i, out) => {
+      tubes.rna.update(L.rna, rnaCount, (i, u) => BB_R * 1.3 * (i === 0 ? 0.4 + 0.6 * u : 1), (i, out) => {
+        // a cauda do pegRNA usa a cor do molde doador: é ela que carrega a sequência a escrever
+        if (i >= SPACER_NT) return void out.copy(DONORC).multiplyScalar(1.4)
         out.copy(RNAC).multiplyScalar(1.5)
         if (guide[i] !== c.protospacer[i]) out.lerp(MM, 0.5)
       })
-      for (let jj = 0; jj < 20; jj++) {
+      for (let jj = 0; jj < SPACER_NT; jj++) {
         const i = spacerIndex(c, jj)
         tangentAt(L.theta[i], _T)
         const mm = guide[jj] !== c.protospacer[jj]
@@ -328,6 +332,11 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
         }}>{t.pick(d.dis.name)} · {d.dis.goal === 'disrupt' ? t('motivo-alvo', 'target motif') : t('região alterada', 'altered region')}</Label>
       )}
       <Label tone={PALETTE.rna} at={(o) => { const { v, L } = frame(d); if (v.step !== 0) return false; normalAt(L.theta[v.cand.start], _N); o.copy(L.rna[0]).addScaledVector(_N, 0.5); return true }}>{t('sgRNA · espaçador 5′ → 3′', 'sgRNA · spacer 5′ → 3′')}</Label>
+      {prime && (
+        <Label tone={PALETTE.donor} at={(o) => { const { v, L } = frame(d); if (v.step > 3) return false; o.copy(L.rna[RNA_MAX - 1]).y += 0.8; return true }}>
+          {t('cauda do pegRNA · molde da correção', 'pegRNA tail · template for the edit')}
+        </Label>
+      )}
       <Label tone="#ffffff" at={(o) => { const { v, L } = frame(d); if (v.edited || v.step !== 3 || d.cuts === 'none') return false; o.lerpVectors(L.center[v.cand.cut - 1], L.center[v.cand.cut], 0.5).y -= 2.2; return v.p > 0.35 }}>{cutLabel}</Label>
       <Label tone={PALETTE.edit} at={(o) => {
         const { v, L } = frame(d)

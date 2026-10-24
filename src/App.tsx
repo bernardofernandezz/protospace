@@ -53,9 +53,8 @@ export default function App() {
     return () => clearTimeout(id)
   }, [])
 
-  // Links com âncora (ex.: /#bioetica): o conteúdo é renderizado no cliente, depois que o navegador
-  // já tentou rolar. E a altura acima da âncora ainda muda depois disso — fontes trocam, o playground
-  // monta —, então reancora a cada mudança, até o usuário rolar por conta própria.
+  // Links com âncora (ex.: /#bioetica): o conteúdo entra depois que o navegador já tentou rolar, e a
+  // altura acima ainda muda (fontes, playground). Reancora enquanto isso, até alguém rolar a página.
   useEffect(() => {
     const id = decodeURIComponent(location.hash.slice(1))
     const el = id ? document.getElementById(id) : null

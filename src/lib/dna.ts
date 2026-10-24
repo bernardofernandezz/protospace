@@ -60,11 +60,7 @@ export function onTargetScore(p: string): number {
   return Math.round(Math.max(0, Math.min(100, s)))
 }
 
-/**
- * As duas nucleases do playground. O PAM é a diferença mais visível: a SpCas9 exige NGG
- * logo a 3′ do protoespaçador, enquanto a Cas12a exige TTTV a 5′ — por isso ela alcança
- * regiões ricas em A/T onde a Cas9 não tem onde encaixar.
- */
+/** As duas nucleases do playground. O PAM é a diferença decisiva: muda o lado e muda os alvos possíveis. */
 export const NUCLEASE = {
   spcas9: {
     name: { pt: 'SpCas9', en: 'SpCas9' },
@@ -91,11 +87,7 @@ export const NUCLEASE = {
 
 export type NucleaseId = keyof typeof NUCLEASE
 
-/**
- * Descreve um candidato a partir do índice da base mais à esquerda do protoespaçador.
- * `cut` é o corte na fita do protoespaçador e `cutFar` o da fita oposta: eles coincidem
- * num corte cego e se afastam num escalonado.
- */
+/** Candidato a partir do índice da base mais à esquerda do protoespaçador. */
 function describe(locus: string, start: number, strand: Strand, n: NucleaseId): Candidate {
   const { pam, spacer, cuts } = NUCLEASE[n]
   const raw = locus.slice(start, start + spacer)
@@ -147,6 +139,12 @@ export function nearestSite(cands: Candidate[], pos: number): number {
   cands.forEach((c, i) => { if (Math.abs(c.cut - pos) < Math.abs(cands[best].cut - pos)) best = i })
   return best
 }
+
+/** Próxima letra do ciclo A→C→G→T: o jeito mais simples de trocar uma base com um clique. */
+export const NEXT_BASE: Record<string, string> = { A: 'C', C: 'G', G: 'T', T: 'A' }
+
+export const withMismatches = (guide: string, at: number[]) =>
+  [...guide].map((b, i) => (at.includes(i) ? NEXT_BASE[b] : b)).join('')
 
 export const mismatches = (guide: string, site: string) =>
   [...guide].flatMap((b, i) => (b !== site[i] ? [i] : []))
@@ -409,9 +407,8 @@ export interface Population {
 }
 
 /**
- * Simula uma população de alelos com as mesmas regras de uma rodada só, para mostrar que o
- * resultado de um experimento é uma distribuição — não um desfecho único. Alelos aos pares
- * formam células diploides, que é o que decide uma doença recessiva.
+ * Aplica as regras de uma rodada a muitos alelos: o resultado de um experimento é uma
+ * distribuição, não um desfecho único. Alelos aos pares formam as células diploides.
  */
 export function population(a: PopulationArgs): Population {
   const alleles = a.alleles ?? 1000

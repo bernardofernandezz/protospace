@@ -4,13 +4,14 @@ import { useMemo } from 'react'
 import {
   BASE_EDITORS, CAS, DEFAULT_LOCUS, DELIVERY, FIX_RANGE, MAX_LOCUS, PE_RANGE, applyOps, clean, consequence,
   bestSite, cutProbability, editOps, findCandidates, firstOrf, isBaseEditor, nearestSite, netLength, nhejOps,
-  offTargetSites, population, repairOdds, translate,
+  offTargetSites, population, repairOdds, translate, withMismatches,
   type Candidate, type CasType, type Delivery, type Fix, type NucleaseId, type Op, type Repair,
 } from '../lib/dna'
 import { useLang, type L } from '../i18n'
 import { EXHIBIT } from '../content/exhibits'
 import { MISSIONS } from '../content/missions'
 import { findDisease, targetPos, type Disease } from '../content/diseases'
+import type { Preset } from './open'
 
 export const STEPS: L<string[]> = {
   pt: ['Design do guia', 'Entrega', 'Busca e reconhecimento', 'Clivagem', 'Reparo', 'Resultado'],
@@ -70,7 +71,7 @@ interface SimState {
   set: (p: Partial<SimState>) => void
   setLocus: (s: string) => void
   setNuclease: (n: NucleaseId) => void
-  applyPreset: (p: { disease?: string | null; nuclease?: NucleaseId; cas?: CasType; repair?: Repair }) => void
+  applyPreset: (p: Preset) => void
   setDisease: (id: string | null) => void
   select: (i: number) => void
   goto: (step: number) => void
@@ -180,11 +181,11 @@ export const useSim = create<SimState>((set, get) => ({
     const i = c.length ? nearestSite(c, anchor) : 0
     set({ nuclease, selected: i, guide: c[i]?.protospacer ?? '', step: 0, progress: 0, playing: false })
   },
-  /** Abre o playground numa configuração pronta, vinda dos links do conteúdo. */
-  applyPreset: ({ disease = null, nuclease = 'spcas9', cas = 'wt', repair }) => {
+  applyPreset: ({ disease = null, nuclease = 'spcas9', cas = 'wt', repair, mismatches = [] }) => {
     get().setDisease(disease)
     get().setNuclease(nuclease)
     set({ cas, repair: repair ?? defaultRepair(findDisease(disease)) })
+    if (mismatches.length) set({ guide: withMismatches(get().guide, mismatches) })
   },
   setDisease: (id) => {
     const dis = findDisease(id)

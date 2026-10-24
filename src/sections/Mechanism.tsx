@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
+import WhatIf from '../components/WhatIf'
 import MechanismDiagram from './MechanismDiagram'
 import { useT, type L } from '../i18n'
 import { Rich } from '../components/Term'
@@ -71,6 +72,12 @@ export default function Mechanism() {
           </div>
         </div>
       </div>
+
+      <WhatIf
+        question={t('o guia tiver só dois erros, mas bem na região seed, colada no PAM? A Cas9 acha o PAM, começa a abrir a dupla-fita — e desiste.',
+          'the guide has just two errors, but right in the seed region next to the PAM? Cas9 finds the PAM, starts unwinding the duplex — and gives up.')}
+        preset={{ mismatches: [12, 14] }}
+      />
     </section>
   )
 }
