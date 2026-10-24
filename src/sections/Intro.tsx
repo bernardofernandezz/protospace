@@ -1,3 +1,4 @@
+import { Fragment, useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
 import { useT, type L } from '../i18n'
 import { prefersReducedMotion } from '../lib/hooks'
@@ -45,37 +46,105 @@ const STEPS: L<[string, string, string][]> = {
   ],
 }
 
-/** Arranjo CRISPR estilizado: líder, repetições (losangos) e espaçadores (memória de infecções). */
+/** Fagos de laboratório, com a "foto" de 20 nt que a bactéria arquivaria de cada um. */
+const PHAGES = [
+  { name: 'λ', color: '#3ef0d0', seq: 'GATCCTGCAGTTCGAGCCAG' },
+  { name: 'T4', color: '#ffb547', seq: 'TTACCGATGCTAGCTCAAGG' },
+  { name: 'T7', color: '#ff4fa3', seq: 'CCAGGATCATCAAGCTTTCA' },
+  { name: 'P1', color: '#7dff9b', seq: 'TGACCATGTCGACGTTCCAG' },
+  { name: 'Mu', color: '#4cc9ff', seq: 'ACGTTAGCCACTGGAACGTC' },
+  { name: 'SPP1', color: '#c58cff', seq: 'GGTCTGACCATGTCGACGTT' },
+  { name: 'T5', color: '#ff8a5c', seq: 'CAGTTCGAGCCAGGATCATC' },
+] as const
+
+/** O arquivo começa com quatro infecções antigas; o usuário acrescenta as novas. */
+const INITIAL_ARCHIVE = [1, 2, 3, 4]
+const MAX_SPACERS = 6
+
+/** Losango entre dois espaçadores: a repetição, sempre igual. */
+const Repeat = () => (
+  <span aria-hidden="true" className="h-3.5 w-3.5 shrink-0 rotate-45 rounded-[3px] border border-mist/50 bg-ink/60" />
+)
+
+/**
+ * Arquivo CRISPR interativo: cada espaçador é a memória de uma infecção, e o mais recente
+ * entra logo depois do líder. Clicar num espaçador mostra o RNA guia que ele origina.
+ */
 function CrisprArray() {
   const t = useT()
-  const spacerColors = ['#3ef0d0', '#ffb547', '#ff4fa3', '#7dff9b', '#4cc9ff']
-  // animação SMIL não obedece ao CSS de "reduzir movimento"
+  const [archive, setArchive] = useState<number[]>(INITIAL_ARCHIVE)
+  const [selected, setSelected] = useState(0)
+  const [justAdded, setJustAdded] = useState(false)
   const still = prefersReducedMotion()
+  const phage = PHAGES[archive[selected]]
+
+  const infect = () => {
+    const next = PHAGES.findIndex((_, i) => !archive.includes(i))
+    if (next < 0) return
+    setArchive([next, ...archive].slice(0, MAX_SPACERS))
+    setSelected(0)
+    setJustAdded(!still)
+  }
+
+  const onKey = (e: React.KeyboardEvent) => {
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+    if (!step) return
+    e.preventDefault()
+    setSelected((i) => (i + step + archive.length) % archive.length)
+  }
+
   return (
-    <figure className="glass rounded-3xl p-6 md:p-8" data-reveal>
-      <svg viewBox="0 0 640 170" className="w-full" role="img" aria-labelledby="arr-t arr-d">
-        <title id="arr-t">{t('Arranjo CRISPR', 'CRISPR array')}</title>
-        <desc id="arr-d">{t('Esquema do arquivo CRISPR: uma sequência líder seguida de repetições iguais (losangos), alternadas com pedaços de DNA de vírus diferentes (retângulos coloridos). O pedaço mais recente entra logo após o líder.', 'Diagram of the CRISPR archive: a leader sequence followed by identical repeats (diamonds) alternating with pieces of DNA from different viruses (coloured rectangles). The newest piece is inserted right after the leader.')}</desc>
-        <rect x="10" y="70" width="70" height="30" rx="6" fill="#1b2a3a" stroke="#a9b8c9" strokeOpacity=".4" />
-        <text x="45" y="90" textAnchor="middle" fill="#a9b8c9" fontSize="12" fontFamily="JetBrains Mono Variable">{t('líder', 'leader')}</text>
-        {spacerColors.map((c, i) => {
-          const x = 92 + i * 108
+    <figure className="glass rounded-3xl p-5 md:p-8" data-reveal>
+      <figcaption className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+        <h3 className="font-display text-xl font-semibold">{t('O arquivo de infecções', 'The infection archive')}</h3>
+        <button type="button" onClick={infect} disabled={archive.length >= MAX_SPACERS && PHAGES.length === archive.length}
+          className="rounded-xl bg-rna/15 px-3 py-1.5 text-sm text-rna ring-1 ring-rna/40 transition hover:bg-rna/25 disabled:opacity-40">
+          {t('+ nova infecção', '+ new infection')}
+        </button>
+      </figcaption>
+
+      <p className="mb-2 text-xs text-rna">{t('↓ o vírus mais recente entra aqui', '↓ the newest virus goes in here')}</p>
+      <div role="radiogroup" aria-label={t('Espaçadores do arquivo', 'Spacers in the archive')} onKeyDown={onKey}
+        className="flex flex-wrap items-center gap-x-1.5 gap-y-2 overflow-x-auto">
+        <span className="shrink-0 rounded-lg border border-mist/40 bg-white/5 px-3 py-2 font-mono text-xs text-mist">{t('líder', 'leader')}</span>
+        {archive.map((p, i) => {
+          const { name, color } = PHAGES[p]
+          const on = i === selected
           return (
-            <g key={i}>
-              <polygon points={`${x},85 ${x + 14},70 ${x + 28},85 ${x + 14},100`} fill="#0f1b28" stroke="#a9b8c9" strokeOpacity=".6" />
-              <rect x={x + 34} y="72" width="66" height="26" rx="5" fill={c} fillOpacity=".22" stroke={c}>
-                {!still && <animate attributeName="fill-opacity" values=".1;.45;.1" dur="3s" begin={`${i * 0.4}s`} repeatCount="indefinite" />}
-              </rect>
-              <text x={x + 67} y="90" textAnchor="middle" fill={c} fontSize="11" fontFamily="JetBrains Mono Variable">S{i + 1}</text>
-            </g>
+            <Fragment key={p}>
+              <Repeat />
+              <button type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1} onClick={() => setSelected(i)}
+                className={`shrink-0 rounded-lg px-3.5 py-2.5 font-mono text-sm transition ${on ? 'scale-105' : 'opacity-75 hover:opacity-100'} ${i === 0 && justAdded ? 'caption-in' : ''}`}
+                style={{ background: `${color}22`, color, boxShadow: `inset 0 0 0 ${on ? 2 : 1}px ${color}${on ? 'dd' : '66'}` }}>
+                {name}
+                <span className="ml-1.5 text-[11px] text-mist/70">S{i + 1}</span>
+              </button>
+            </Fragment>
           )
         })}
-        <path d="M126 50 Q 140 20 200 22" stroke="#ffb547" fill="none" strokeDasharray="3 4" />
-        <text x="206" y="26" fill="#ffb547" fontSize="12">{t('o vírus mais recente entra aqui', 'the newest virus goes in here')}</text>
-        <text x="106" y="128" fill="#a9b8c9" fontSize="12">{t('◇ repetição (sempre igual)', '◇ repeat (always identical)')}</text>
-        <text x="360" y="128" fill="#a9b8c9" fontSize="12">{t('▭ espaçador: pedaço de DNA de um vírus', '▭ spacer: a piece of viral DNA')}</text>
-        <text x="10" y="160" fill="#a9b8c9" fillOpacity=".7" fontSize="11">{t('Cada espaçador vira um RNA guia, que leva a proteína Cas até o vírus correspondente.', 'Each spacer becomes a guide RNA that leads the Cas protein to the matching virus.')}</text>
-      </svg>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-mist">
+        <span><i aria-hidden="true" className="mr-1.5 inline-block h-2.5 w-2.5 rotate-45 rounded-[2px] border border-mist/50 align-middle" />{t('repetição (sempre igual)', 'repeat (always identical)')}</span>
+        <span>{t(`S1 é a infecção mais recente; S${archive.length}, a mais antiga.`, `S1 is the newest infection; S${archive.length}, the oldest.`)}</span>
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4" aria-live="polite">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <b className="text-sm text-white">{t(`Espaçador S${selected + 1} · fago ${phage.name}`, `Spacer S${selected + 1} · phage ${phage.name}`)}</b>
+          <span className="text-[11px] text-mist/70">{t('pedaço de DNA arquivado', 'archived piece of DNA')}</span>
+        </div>
+        <p className="mt-2 border-l-2 pl-2 font-mono text-sm tracking-wider break-all" style={{ color: phage.color, borderColor: phage.color }}>{phage.seq}</p>
+        <p className="mt-3 text-[11px] uppercase tracking-[0.2em] text-mist/70">{t('transcrito em RNA guia', 'transcribed into guide RNA')}</p>
+        <p className="mt-1 border-l-2 border-rna pl-2 font-mono text-sm tracking-wider break-all text-white/90">
+          {[...phage.seq.replaceAll('T', 'U')].map((b, i) => (
+            <span key={i} className={b === 'U' ? 'text-rna' : undefined}>{b}</span>
+          ))}
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-mist">
+          {t(`Se o fago ${phage.name} voltar, este RNA guia leva a proteína Cas até esse mesmo trecho do DNA dele — e o corte neutraliza o ataque.`,
+            `If phage ${phage.name} comes back, this guide RNA leads the Cas protein to that same stretch of its DNA — and the cut neutralises the attack.`)}
+        </p>
+      </div>
     </figure>
   )
 }
