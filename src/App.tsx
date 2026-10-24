@@ -24,6 +24,9 @@ import { useT } from './i18n'
 
 const Playground = lazy(() => import('./playground/Playground'))
 
+/** Por quanto tempo um link com âncora continua se reposicionando enquanto a página assenta. */
+const ANCHOR_SETTLE_MS = 3000
+
 
 function PlaygroundSection() {
   const t = useT()
@@ -50,11 +53,37 @@ export default function App() {
     return () => clearTimeout(id)
   }, [])
 
-  // links com âncora (ex.: /#bioetica): o conteúdo é renderizado no cliente, depois que o navegador já tentou rolar
+  // Links com âncora (ex.: /#bioetica): o conteúdo é renderizado no cliente, depois que o navegador
+  // já tentou rolar. E a altura acima da âncora ainda muda depois disso — fontes trocam, o playground
+  // monta —, então reancora a cada mudança, até o usuário rolar por conta própria.
   useEffect(() => {
     const id = decodeURIComponent(location.hash.slice(1))
     const el = id ? document.getElementById(id) : null
-    if (el) requestAnimationFrame(() => el.scrollIntoView())
+    if (!el) return
+
+    let active = true
+    let expected = -1
+    const stop = () => { active = false }
+    const anchor = () => {
+      if (!active) return
+      el.scrollIntoView({ behavior: 'instant' })
+      expected = Math.round(scrollY)
+    }
+    // qualquer rolagem que não seja a nossa — do usuário ou de outro script — encerra a correção
+    const onScroll = () => { if (Math.round(scrollY) !== expected) stop() }
+
+    const ro = new ResizeObserver(anchor)
+    ro.observe(document.body)
+    addEventListener('scroll', onScroll, { passive: true })
+    const timer = setTimeout(stop, ANCHOR_SETTLE_MS)
+    requestAnimationFrame(anchor)
+
+    return () => {
+      stop()
+      clearTimeout(timer)
+      ro.disconnect()
+      removeEventListener('scroll', onScroll)
+    }
   }, [])
 
   // o foco acompanha a âncora clicada (o Lenis rola, mas não move o foco; ex.: "pular para o conteúdo").
