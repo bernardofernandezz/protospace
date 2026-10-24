@@ -27,16 +27,32 @@ const Playground = lazy(() => import('./playground/Playground'))
 /** Por quanto tempo um link com âncora continua se reposicionando enquanto a página assenta. */
 const ANCHOR_SETTLE_MS = 3000
 
-
 function PlaygroundSection() {
   const t = useT()
   return (
     <section id="playground" className="section">
-      <SectionHeader n="04" eyebrow={t('Playground 3D', '3D Playground')}
-        title={t.lang === 'en' ? <>Run an experiment <span className="text-gradient">from guide to outcome</span>.</> : <>Conduza um experimento <span className="text-gradient">do guia ao resultado</span>.</>}
-        lead={t('Escolha o sítio-alvo, o tipo de Cas, a via de entrega e o reparo; introduza mismatches e veja o efeito no corte e nos off-targets. Use ← → para navegar, M para o modo cinema e P para o modo apresentação.',
-          'Pick the target site, Cas type, delivery route and repair pathway; introduce mismatches and watch the effect on cutting and off-targets. Use ← → to navigate, M for cinema mode and P for presentation mode.')} />
-      <Suspense fallback={<div className="glass grid h-[74vh] place-items-center rounded-3xl text-mist">{t('Carregando playground…', 'Loading playground…')}</div>}>
+      <SectionHeader
+        n="04"
+        eyebrow={t('Playground 3D', '3D Playground')}
+        title={
+          t.lang === 'en' ? (
+            <>
+              Run an experiment <span className="text-gradient">from guide to outcome</span>.
+            </>
+          ) : (
+            <>
+              Conduza um experimento <span className="text-gradient">do guia ao resultado</span>.
+            </>
+          )
+        }
+        lead={t(
+          'Escolha o sítio-alvo, o tipo de Cas, a via de entrega e o reparo; introduza mismatches e veja o efeito no corte e nos off-targets. Use ← → para navegar, M para o modo cinema e P para o modo apresentação.',
+          'Pick the target site, Cas type, delivery route and repair pathway; introduce mismatches and watch the effect on cutting and off-targets. Use ← → to navigate, M for cinema mode and P for presentation mode.',
+        )}
+      />
+      <Suspense
+        fallback={<div className="glass grid h-[74vh] place-items-center rounded-3xl text-mist">{t('Carregando playground…', 'Loading playground…')}</div>}
+      >
         <Playground />
       </Suspense>
     </section>
@@ -62,14 +78,18 @@ export default function App() {
 
     let active = true
     let expected = -1
-    const stop = () => { active = false }
+    const stop = () => {
+      active = false
+    }
     const anchor = () => {
       if (!active) return
       el.scrollIntoView({ behavior: 'instant' })
       expected = Math.round(scrollY)
     }
     // qualquer rolagem que não seja a nossa — do usuário ou de outro script — encerra a correção
-    const onScroll = () => { if (Math.round(scrollY) !== expected) stop() }
+    const onScroll = () => {
+      if (Math.round(scrollY) !== expected) stop()
+    }
 
     const ro = new ResizeObserver(anchor)
     ro.observe(document.body)
@@ -92,7 +112,10 @@ export default function App() {
       const href = (e.target as Element).closest?.('a[href^="#"]')?.getAttribute('href')
       const el = href && href.length > 1 ? document.getElementById(href.slice(1)) : null
       if (!el) return
-      if (!el.hasAttribute('tabindex')) { el.setAttribute('tabindex', '-1'); el.dataset.anchor = '' }
+      if (!el.hasAttribute('tabindex')) {
+        el.setAttribute('tabindex', '-1')
+        el.dataset.anchor = ''
+      }
       setTimeout(() => el.focus({ preventScroll: true }))
     }
     document.addEventListener('click', onClick)
@@ -111,9 +134,15 @@ export default function App() {
       const tick = (time: number) => lenis.raf(time * 1000)
       gsap.ticker.add(tick)
       gsap.ticker.lagSmoothing(0)
-      off = () => { gsap.ticker.remove(tick); lenis.destroy() }
+      off = () => {
+        gsap.ticker.remove(tick)
+        lenis.destroy()
+      }
     })
-    return () => { alive = false; off() }
+    return () => {
+      alive = false
+      off()
+    }
   }, [])
 
   // revelação ao rolar: IntersectionObserver + transição CSS (não força layout, ao contrário de
@@ -122,11 +151,15 @@ export default function App() {
     if (prefersReducedMotion()) return
     const root = document.documentElement
     root.classList.add('motion')
-    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
-      if (!e.isIntersecting) return
-      e.target.classList.add('in')
-      io.unobserve(e.target)
-    }), { rootMargin: '0px 0px -10% 0px' })
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return
+          e.target.classList.add('in')
+          io.unobserve(e.target)
+        }),
+      { rootMargin: '0px 0px -10% 0px' },
+    )
     document.querySelectorAll('[data-reveal]:not(.in)').forEach((el) => io.observe(el))
 
     // linha da timeline cresce conforme o scroll (único gatilho com scrub)
@@ -141,23 +174,42 @@ export default function App() {
       ctx = gsap.context(() => {
         const line = document.querySelector<HTMLElement>('[data-timeline-line]')
         if (line) {
-          gsap.fromTo(line, { scaleY: 0 }, {
-            scaleY: 1, transformOrigin: 'top', ease: 'none',
-            scrollTrigger: { trigger: '[data-timeline]', start: 'top 60%', end: 'bottom 80%', scrub: 0.5 },
-          })
+          gsap.fromTo(
+            line,
+            { scaleY: 0 },
+            {
+              scaleY: 1,
+              transformOrigin: 'top',
+              ease: 'none',
+              scrollTrigger: { trigger: '[data-timeline]', start: 'top 60%', end: 'bottom 80%', scrub: 0.5 },
+            },
+          )
         }
       })
-      refresh = () => { clearTimeout(tm); tm = setTimeout(() => ScrollTrigger.refresh(), 200) }
+      refresh = () => {
+        clearTimeout(tm)
+        tm = setTimeout(() => ScrollTrigger.refresh(), 200)
+      }
       id = setTimeout(refresh, 1200)
     })
     const onVis = () => refresh()
     document.addEventListener('contentvisibilityautostatechange', onVis, true)
-    return () => { alive = false; io.disconnect(); clearTimeout(id); clearTimeout(tm); document.removeEventListener('contentvisibilityautostatechange', onVis, true); ctx?.revert() }
+    return () => {
+      alive = false
+      io.disconnect()
+      clearTimeout(id)
+      clearTimeout(tm)
+      document.removeEventListener('contentvisibilityautostatechange', onVis, true)
+      ctx?.revert()
+    }
   }, [t.lang])
 
   return (
     <>
-      <a href="#o-que-e" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-dna focus:px-4 focus:py-2 focus:font-semibold focus:text-ink">
+      <a
+        href="#o-que-e"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-dna focus:px-4 focus:py-2 focus:font-semibold focus:text-ink"
+      >
         {t('Pular para o conteúdo', 'Skip to content')}
       </a>
       <Cursor />
@@ -178,7 +230,12 @@ export default function App() {
         <About />
       </main>
       <div className="grain" aria-hidden="true" />
-      {import.meta.env.VITE_ON_VERCEL === '1' && <><Analytics /><SpeedInsights /></>}
+      {import.meta.env.VITE_ON_VERCEL === '1' && (
+        <>
+          <Analytics />
+          <SpeedInsights />
+        </>
+      )}
     </>
   )
 }

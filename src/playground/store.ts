@@ -2,10 +2,37 @@ import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
 import { useMemo } from 'react'
 import {
-  BASE_EDITORS, CAS, DEFAULT_LOCUS, DELIVERY, FIX_RANGE, MAX_LOCUS, PE_RANGE, applyOps, clean, consequence,
-  bestSite, cutProbability, editOps, findCandidates, firstOrf, isBaseEditor, nearestSite, netLength, nhejOps,
-  offTargetSites, population, repairOdds, translate, withMismatches,
-  type Candidate, type CasType, type Delivery, type Fix, type NucleaseId, type Op, type Repair,
+  BASE_EDITORS,
+  CAS,
+  DEFAULT_LOCUS,
+  DELIVERY,
+  FIX_RANGE,
+  MAX_LOCUS,
+  PE_RANGE,
+  applyOps,
+  clean,
+  consequence,
+  bestSite,
+  cutProbability,
+  editOps,
+  findCandidates,
+  firstOrf,
+  isBaseEditor,
+  nearestSite,
+  netLength,
+  nhejOps,
+  offTargetSites,
+  population,
+  repairOdds,
+  translate,
+  withMismatches,
+  type Candidate,
+  type CasType,
+  type Delivery,
+  type Fix,
+  type NucleaseId,
+  type Op,
+  type Repair,
 } from '../lib/dna'
 import { useLang, type L } from '../i18n'
 import { EXHIBIT } from '../content/exhibits'
@@ -24,7 +51,12 @@ export const STEP_SECONDS = [3.5, 6, 9, 4, 7, 3.5]
 
 export type Quality = 'low' | 'medium' | 'high'
 
-export interface Tip { title: string; body: string; x: number; y: number }
+export interface Tip {
+  title: string
+  body: string
+  x: number
+  y: number
+}
 
 /** Id de uma exposição do modo Explorar (src/content/exhibits.ts). */
 export type ZoneId = string
@@ -84,8 +116,12 @@ export const SEEN_KEY = 'protospace.seen'
 export const SOUND_KEY = 'protospace.sound'
 export const MISSIONS_KEY = 'protospace.missions'
 function load(key: string, valid: (id: string) => boolean): string[] {
-  try { const v = JSON.parse(localStorage.getItem(key) ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string' && valid(x)) : [] }
-  catch { return [] }
+  try {
+    const v = JSON.parse(localStorage.getItem(key) ?? '[]')
+    return Array.isArray(v) ? v.filter((x) => typeof x === 'string' && valid(x)) : []
+  } catch {
+    return []
+  }
 }
 
 const isCoarse = () => typeof matchMedia !== 'undefined' && (matchMedia('(pointer: coarse)').matches || innerWidth < 768)
@@ -112,7 +148,7 @@ function fromUrl() {
     disease: dis?.id ?? null,
     nuclease,
     selected: site,
-    guide: g.length === 20 ? g : cands[site]?.protospacer ?? '',
+    guide: g.length === 20 ? g : (cands[site]?.protospacer ?? ''),
     cas: pick(q.get('cas'), ['wt', 'nickase', 'be', 'abe', 'pe'] as const, 'wt'),
     delivery: pick(q.get('delivery'), ['rnp', 'plasmid', 'viral'] as const, 'rnp'),
     repair: pick(q.get('repair'), ['nhej', 'hdr'] as const, defaultRepair(dis)),
@@ -161,7 +197,13 @@ export const useSim = create<SimState>((set, get) => ({
   bases: '',
   cargo: false,
   missionsDone: load(MISSIONS_KEY, (x) => MISSIONS.some((m) => m.id === x)),
-  sound: (() => { try { return localStorage.getItem(SOUND_KEY) !== 'off' } catch { return true } })(),
+  sound: (() => {
+    try {
+      return localStorage.getItem(SOUND_KEY) !== 'off'
+    } catch {
+      return true
+    }
+  })(),
   set: (p) => set(p),
   setLocus: (locus) => {
     const { nuclease } = get()
@@ -194,9 +236,15 @@ export const useSim = create<SimState>((set, get) => ({
     const c = findCandidates(locus, get().nuclease)
     const i = dis ? nearestSite(c, targetPos(dis)) : bestSite(c)
     set({
-      disease: dis?.id ?? null, locus, selected: i, guide: c[i]?.protospacer ?? '',
+      disease: dis?.id ?? null,
+      locus,
+      selected: i,
+      guide: c[i]?.protospacer ?? '',
       ...(dis ? { cas: 'wt' as const, repair: defaultRepair(dis) } : {}),
-      step: 0, progress: 0, playing: false, camTick: get().camTick + 1,
+      step: 0,
+      progress: 0,
+      playing: false,
+      camTick: get().camTick + 1,
     })
   },
   select: (i) => {
@@ -228,12 +276,24 @@ export interface Params {
 }
 
 const params = (s: SimState): Params => ({
-  locus: s.locus, disease: s.disease, nuclease: s.nuclease, selected: s.selected, guide: s.guide,
-  delivery: s.delivery, cas: s.cas, repair: s.repair, tolerance: s.tolerance, seed: s.seed,
+  locus: s.locus,
+  disease: s.disease,
+  nuclease: s.nuclease,
+  selected: s.selected,
+  guide: s.guide,
+  delivery: s.delivery,
+  cas: s.cas,
+  repair: s.repair,
+  tolerance: s.tolerance,
+  seed: s.seed,
 })
 
 /** Proteína traduzida antes e depois da edição; `healthy` existe quando há um alelo de referência. */
-export interface Proteins { before: string; after: string; healthy?: string }
+export interface Proteins {
+  before: string
+  after: string
+  healthy?: string
+}
 
 /** Sucesso = o cenário atingiu seu objetivo; inalterado = nada mudou; quebrado = mudou para pior. */
 export type Verdict = 'success' | 'unchanged' | 'broken'
@@ -291,9 +351,7 @@ function outcomeText(p: Params, c: Candidate, ops: Op[], fix: Fix | undefined, e
         ? `HDR with template, but the cut is ${Math.abs(fix.pos - c.cut)} nt from the mutation: too far for these homology arms, so the template only leaves its GAATTC tag. Choose a site closer to the mutation.`
         : `HDR com molde, mas o corte está a ${Math.abs(fix.pos - c.cut)} nt da mutação: longe demais para estes braços de homologia, e o molde só deixa a marca GAATTC. Escolha um sítio mais perto da mutação.`
     }
-    return en
-      ? 'HDR with template: GAATTC (EcoRI site) inserted + PAM mutated.'
-      : 'HDR com molde: inserção de GAATTC (sítio EcoRI) + mutação do PAM.'
+    return en ? 'HDR with template: GAATTC (EcoRI site) inserted + PAM mutated.' : 'HDR com molde: inserção de GAATTC (sítio EcoRI) + mutação do PAM.'
   }
 
   const n = netLength(ops)
@@ -330,38 +388,49 @@ export function derive(p: Params, en: boolean) {
   const build = editOps(p.cas, p.repair, p.locus, cand, fix)
   const unwanted = (seed: number) => nhejOps(p.locus, cand.cut, seed)
   // destruir um elemento regulador não é garantido: um indel pode deixar o motivo legível
-  const succeeded = dis?.goal === 'disrupt'
-    ? (ops: Op[]) => !applyOps(p.locus, ops).seq.includes(dis.motif!)
-    : (ops: Op[]) => ops.length > 0
+  const succeeded = dis?.goal === 'disrupt' ? (ops: Op[]) => !applyOps(p.locus, ops).seq.includes(dis.motif!) : (ops: Op[]) => ops.length > 0
   const ops = acts ? build(p.seed) : []
   const odds = repairOdds(p.cas, p.repair)
   const pEngage = pOn * delivery.eff
   const eff = ops.length ? pEngage * odds.intended : 0
   const kind = acts
     ? outcomeText(p, cand, ops, fix, en)
-    : en ? 'No edit: the guide does not recognise the target well (too many mismatches).'
+    : en
+      ? 'No edit: the guide does not recognise the target well (too many mismatches).'
       : 'Sem edição: o guia não reconhece bem o alvo (mismatches demais).'
 
   const applied = applyOps(p.locus, ops)
   // sem cenário, o primeiro ATG dá um quadro de leitura ao locus fictício; num cenário
   // não codificante (um enhancer) não há proteína nenhuma para comparar
-  const orf = dis ? dis.orf ?? -1 : firstOrf(p.locus)
-  const proteins: Proteins | undefined = orf >= 0
-    ? {
-        before: translate(p.locus, orf),
-        after: translate(applied.seq, orf),
-        healthy: dis?.fix ? translate(applyOps(dis.locus, [dis.fix]).seq, orf) : undefined,
-      }
-    : undefined
+  const orf = dis ? (dis.orf ?? -1) : firstOrf(p.locus)
+  const proteins: Proteins | undefined =
+    orf >= 0
+      ? {
+          before: translate(p.locus, orf),
+          after: translate(applied.seq, orf),
+          healthy: dis?.fix ? translate(applyOps(dis.locus, [dis.fix]).seq, orf) : undefined,
+        }
+      : undefined
 
   return {
-    candidates, cand, pOn, offs, ops, kind, eff, applied, acts, dis, fix, odds, pEngage,
+    candidates,
+    cand,
+    pOn,
+    offs,
+    ops,
+    kind,
+    eff,
+    applied,
+    acts,
+    dis,
+    fix,
+    odds,
+    pEngage,
     proteins,
     effect: proteins && consequence(proteins.before, proteins.after, ops),
     verdict: dis ? verdictOf(dis, applied.seq, proteins) : undefined,
     cuts: acts ? CAS[p.cas].cuts : 'none',
-    population: (seed: number, alleles?: number) =>
-      population({ pEngage, odds, intended: build, unwanted, succeeded, seed, alleles }),
+    population: (seed: number, alleles?: number) => population({ pEngage, odds, intended: build, unwanted, succeeded, seed, alleles }),
   } as const
 }
 
@@ -370,11 +439,9 @@ export interface CompareRow extends RowPlan {
 }
 
 /** Junta o plano de linhas (lib/compare) com o resultado de cada uma. */
-export const compareRows = (p: Params, en: boolean): CompareRow[] =>
-  comparePlan(p).map((row) => ({ ...row, d: derive({ ...p, ...row }, en) }))
+export const compareRows = (p: Params, en: boolean): CompareRow[] => comparePlan(p).map((row) => ({ ...row, d: derive({ ...p, ...row }, en) }))
 
-export const bestRow = (rows: CompareRow[]): CompareRow =>
-  rows.reduce((a, b) => (rank(b.d) > rank(a.d) ? b : a))
+export const bestRow = (rows: CompareRow[]): CompareRow => rows.reduce((a, b) => (rank(b.d) > rank(a.d) ? b : a))
 
 export const useParams = () => useSim(useShallow(params))
 

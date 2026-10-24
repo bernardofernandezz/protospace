@@ -9,8 +9,7 @@ export default function WhatIf({ question, preset }: { question: string; preset:
       <p className="max-w-2xl leading-relaxed text-white/90">
         <b className="text-rna">{t('E se…', 'What if…')}</b> {question}
       </p>
-      <button type="button" onClick={() => openInPlayground(preset)}
-        className="shrink-0 rounded-xl bg-white/10 px-4 py-2 text-sm transition hover:bg-white/20">
+      <button type="button" onClick={() => openInPlayground(preset)} className="shrink-0 rounded-xl bg-white/10 px-4 py-2 text-sm transition hover:bg-white/20">
         {t('responder no playground →', 'answer it in the playground →')}
       </button>
     </aside>

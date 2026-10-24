@@ -7,8 +7,13 @@ const ON = !!DSN && !import.meta.env.DEV
 let sentry: Promise<Sentry> | undefined
 
 const early: unknown[] = []
-const keep = (e: ErrorEvent | PromiseRejectionEvent) => { if (early.length < 20) early.push('reason' in e ? e.reason : e.error ?? e.message) }
-if (ON) { addEventListener('error', keep); addEventListener('unhandledrejection', keep) }
+const keep = (e: ErrorEvent | PromiseRejectionEvent) => {
+  if (early.length < 20) early.push('reason' in e ? e.reason : (e.error ?? e.message))
+}
+if (ON) {
+  addEventListener('error', keep)
+  addEventListener('unhandledrejection', keep)
+}
 
 export function initMonitoring() {
   if (!ON || sentry) return
@@ -24,6 +29,10 @@ export function initMonitoring() {
 /** Envia um erro já tratado (ex.: falha do 3D que mostrou o fallback). Antes do SDK carregar, entra na fila. */
 export const report = (e: unknown) => {
   if (!ON) return
-  if (sentry) void sentry.then((S) => S.captureException(e), () => {})
+  if (sentry)
+    void sentry.then(
+      (S) => S.captureException(e),
+      () => {},
+    )
   else if (early.length < 20) early.push(e)
 }

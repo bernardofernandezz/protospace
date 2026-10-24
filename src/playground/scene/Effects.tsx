@@ -11,7 +11,9 @@ const CA_OFFSET = new THREE.Vector2(0.0007, 0.0005)
 /** Pós-processamento por nível: baixo = bloom; médio = + SMAA, vinheta; alto = + AO, profundidade de campo, aberração. */
 export default function Effects({ quality }: { quality: Quality }) {
   const dof = useRef<DepthOfFieldEffect>(null)
-  useFrame(() => { if (dof.current?.target) dof.current.target.copy(focus) })
+  useFrame(() => {
+    if (dof.current?.target) dof.current.target.copy(focus)
+  })
   const high = quality === 'high'
   const low = quality === 'low'
   return (

@@ -65,7 +65,11 @@ export default function Scene({ active, onLost }: { active: boolean; onLost: () 
       gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
       onPointerMissed={untip}
       onCreated={({ gl, scene, camera }) => {
-        gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); report(new Error('webglcontextlost')); onLost() })
+        gl.domElement.addEventListener('webglcontextlost', (e) => {
+          e.preventDefault()
+          report(new Error('webglcontextlost'))
+          onLost()
+        })
         // checar erros de shader força compilação síncrona (travadas): só em desenvolvimento
         gl.debug.checkShaderErrors = import.meta.env.DEV
         // depuração de desempenho (renderer.info etc.), só em desenvolvimento
@@ -91,7 +95,10 @@ export default function Scene({ active, onLost }: { active: boolean; onLost: () 
       <OrbitControls makeDefault enabled={!explore} enableDamping dampingFactor={0.08} minDistance={4} maxDistance={110} />
       <PerformanceMonitor
         flipflops={2}
-        onDecline={() => { const s = useSim.getState(); if (s.qualityAuto && s.quality !== 'low') s.set({ quality: DOWN[s.quality] }) }}
+        onDecline={() => {
+          const s = useSim.getState()
+          if (s.qualityAuto && s.quality !== 'low') s.set({ quality: DOWN[s.quality] })
+        }}
       />
       <Effects quality={quality} />
       <Capture />

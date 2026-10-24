@@ -115,10 +115,12 @@ export function glowingPhysical(params: THREE.MeshPhysicalMaterialParameters & {
   const m = new THREE.MeshPhysicalMaterial(rest)
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uGlow = { value: glow }
-    sh.fragmentShader = 'uniform float uGlow;\n' + sh.fragmentShader.replace(
-      '#include <emissivemap_fragment>',
-      '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * uGlow;\n#endif',
-    )
+    sh.fragmentShader =
+      'uniform float uGlow;\n' +
+      sh.fragmentShader.replace(
+        '#include <emissivemap_fragment>',
+        '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * uGlow;\n#endif',
+      )
   }
   return m
 }

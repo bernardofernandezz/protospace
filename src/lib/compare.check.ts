@@ -19,10 +19,16 @@ const params = (over: Partial<Parameters<typeof comparePlan>[0]> = {}) => {
   const theirs = plan.filter((r) => r.nuclease === 'cas12a')
   assert.equal(mine.length, STRATEGIES.length, 'a nuclease atual traz todas as ferramentas')
   assert.equal(theirs.length, WT_ONLY, 'a outra nuclease traz só as vias da enzima selvagem')
-  assert.ok(theirs.every((r) => r.cas === 'wt'), 'nickase e editores não existem fora da Cas9')
+  assert.ok(
+    theirs.every((r) => r.cas === 'wt'),
+    'nickase e editores não existem fora da Cas9',
+  )
 
   // a nuclease atual fica no sítio e no guia do usuário
-  assert.ok(mine.every((r) => r.selected === p.selected && r.guide === p.guide), 'a atual não muda de alvo')
+  assert.ok(
+    mine.every((r) => r.selected === p.selected && r.guide === p.guide),
+    'a atual não muda de alvo',
+  )
 
   // a outra entra num sítio dela: PAM TTTV e corte escalonado
   const sites = findCandidates(p.locus, 'cas12a')
@@ -39,7 +45,10 @@ const params = (over: Partial<Parameters<typeof comparePlan>[0]> = {}) => {
 {
   const semTttv = DEFAULT_LOCUS.replaceAll('TTT', 'TAT')
   assert.equal(findCandidates(semTttv, 'cas12a').length, 0, 'o locus de teste não deveria ter TTTV')
-  assert.ok(comparePlan(params({ locus: semTttv })).every((r) => r.nuclease === 'spcas9'), 'sem sítio, a outra não entra')
+  assert.ok(
+    comparePlan(params({ locus: semTttv })).every((r) => r.nuclease === 'spcas9'),
+    'sem sítio, a outra não entra',
+  )
 }
 
 // num cenário, a outra nuclease entra pelo sítio mais próximo do alvo

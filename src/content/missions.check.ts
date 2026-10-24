@@ -14,8 +14,14 @@ assert.equal(currentMission([MISSIONS[0].id])?.id, MISSIONS[1].id)
 assert.equal(currentMission(MISSIONS.map((m) => m.id)), undefined)
 
 // visita: basta entrar na zona; etapa: só quando ela toca até o fim, dentro da zona
-const at = (zone: string | null | undefined, rest: Partial<{ step: number; progress: number; bases: string; cargo: boolean }> = {}) =>
-  ({ zone: zone ?? null, step: 0, progress: 0, bases: '', cargo: false, ...rest })
+const at = (zone: string | null | undefined, rest: Partial<{ step: number; progress: number; bases: string; cargo: boolean }> = {}) => ({
+  zone: zone ?? null,
+  step: 0,
+  progress: 0,
+  bases: '',
+  cargo: false,
+  ...rest,
+})
 const visit = MISSIONS.find((m) => m.step === undefined && !m.task)!
 const watch = MISSIONS.find((m) => m.step !== undefined)!
 const collect = MISSIONS.find((m) => m.task === 'collect')!

@@ -1,13 +1,41 @@
 // Autoverificação da lógica de sequência: `npm test`
 import assert from 'node:assert/strict'
 import {
-  BASE_EDITORS, COMP, DEFAULT_LOCUS, PE_RANGE, aminoAcid, applyOps, baseEditOps, consequence, cutProbability,
-  diffSegments, findCandidates, hdrOps, nhejOps, population, primeEditOps, repairOdds, revComp,
-  spacerIndex, translate,
+  BASE_EDITORS,
+  COMP,
+  DEFAULT_LOCUS,
+  PE_RANGE,
+  aminoAcid,
+  applyOps,
+  baseEditOps,
+  consequence,
+  cutProbability,
+  diffSegments,
+  findCandidates,
+  hdrOps,
+  nhejOps,
+  population,
+  primeEditOps,
+  repairOdds,
+  revComp,
+  spacerIndex,
+  translate,
 } from './dna.ts'
 
 // código genético: âncoras conhecidas em cada bloco da tabela
-for (const [codon, aa] of [['ATG', 'M'], ['GAG', 'E'], ['GTG', 'V'], ['TTT', 'F'], ['TGG', 'W'], ['TAA', '*'], ['TAG', '*'], ['TGA', '*'], ['CCC', 'P'], ['AAA', 'K'], ['GGG', 'G']] as const) {
+for (const [codon, aa] of [
+  ['ATG', 'M'],
+  ['GAG', 'E'],
+  ['GTG', 'V'],
+  ['TTT', 'F'],
+  ['TGG', 'W'],
+  ['TAA', '*'],
+  ['TAG', '*'],
+  ['TGA', '*'],
+  ['CCC', 'P'],
+  ['AAA', 'K'],
+  ['GGG', 'G'],
+] as const) {
   assert.equal(aminoAcid(codon), aa, `códon ${codon}`)
 }
 assert.equal(aminoAcid('AT'), '?')
@@ -18,7 +46,10 @@ assert.equal(translate('ATGGA', 0), 'M')
 
 const cands = findCandidates(DEFAULT_LOCUS)
 assert.ok(cands.length >= 3, 'locus padrão deve ter ≥3 sítios NGG')
-assert.ok(cands.some((k) => k.strand === -1), 'a varredura precisa achar guias antissenso')
+assert.ok(
+  cands.some((k) => k.strand === -1),
+  'a varredura precisa achar guias antissenso',
+)
 for (const c of cands) {
   assert.equal(c.protospacer.length, 20)
   assert.match(c.pam, /^[ACGT]GG$/, 'o PAM é NGG lido na fita do guia')
@@ -53,7 +84,10 @@ for (const c of cpf) {
   assert.equal(c.strand === 1 ? pamSeq : revComp(pamSeq), c.pam)
   assert.equal(c.strand === 1 ? c.pamStart + 4 : c.pamStart, c.strand === 1 ? c.start : c.start + 20)
 }
-assert.ok(findCandidates(atLocus).every((c) => c.cut === c.cutFar), 'a SpCas9 corta em ponta cega')
+assert.ok(
+  findCandidates(atLocus).every((c) => c.cut === c.cutFar),
+  'a SpCas9 corta em ponta cega',
+)
 
 // num guia antissenso a edição de base aparece complementada na fita senso
 const anti = cands.find((k) => k.strand === -1)!
@@ -76,8 +110,14 @@ assert.equal(hdr.changed.filter(Boolean).length, 7)
 for (let s = 1; s < 50; s++) {
   const ops = nhejOps(DEFAULT_LOCUS, c.cut, s)
   const segs = diffSegments(DEFAULT_LOCUS, ops)
-  const orig = segs.filter((g) => g.type !== 'ins').map((g) => g.text).join('')
-  const edit = segs.filter((g) => g.type !== 'del').map((g) => g.text).join('')
+  const orig = segs
+    .filter((g) => g.type !== 'ins')
+    .map((g) => g.text)
+    .join('')
+  const edit = segs
+    .filter((g) => g.type !== 'del')
+    .map((g) => g.text)
+    .join('')
   assert.equal(orig, DEFAULT_LOCUS)
   assert.equal(edit, applyOps(DEFAULT_LOCUS, ops).seq)
 }
@@ -125,7 +165,10 @@ const popArgs = {
 const pop = population(popArgs)
 assert.equal(pop.tally.intended + pop.tally.indel + pop.tally.unedited, pop.alleles)
 assert.equal(pop.cells.none + pop.cells.one + pop.cells.both, pop.alleles / 2)
-assert.equal(pop.spectrum.reduce((a, s) => a + s.alleles, 0), pop.tally.intended + pop.tally.indel)
+assert.equal(
+  pop.spectrum.reduce((a, s) => a + s.alleles, 0),
+  pop.tally.intended + pop.tally.indel,
+)
 assert.deepEqual(population(popArgs), pop, 'a mesma semente deve dar o mesmo resultado')
 assert.notDeepEqual(population({ ...popArgs, seed: 8 }), pop, 'sementes diferentes, resultados diferentes')
 assert.equal(population({ ...popArgs, pEngage: 0 }).tally.unedited, pop.alleles, 'sem engate, nada é editado')

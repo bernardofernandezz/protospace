@@ -1,10 +1,7 @@
 // Autoverificação dos cenários clínicos: `npm test`
 import assert from 'node:assert/strict'
 import { DISEASES, targetPos, targetSpan } from './diseases.ts'
-import {
-  FIX_RANGE, MAX_LOCUS, PE_RANGE, applyOps, clean, findCandidates, hdrOps, nearestSite, nhejOps,
-  primeEditOps, translate,
-} from '../lib/dna.ts'
+import { FIX_RANGE, MAX_LOCUS, PE_RANGE, applyOps, clean, findCandidates, hdrOps, nearestSite, nhejOps, primeEditOps, translate } from '../lib/dna.ts'
 
 /** Início do peptídeo sadio de cada cenário codificante, conferido contra a literatura. */
 const PEPTIDE: Record<string, string> = {

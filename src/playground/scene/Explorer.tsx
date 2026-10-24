@@ -24,19 +24,35 @@ const SOLID = STATIC.filter((s) => s.solid > 0)
 const reach = (id: ZoneId) => (STATIC.find((s) => s.id === id)?.size ?? 0) + ZONE_R
 const FLOATERS: Record<Quality, number> = { low: 150, medium: 260, high: 400 }
 const KEYS: Record<string, [axis: 'x' | 'y' | 'z', dir: number]> = {
-  w: ['z', 1], s: ['z', -1], a: ['x', -1], d: ['x', 1], e: ['y', 1], q: ['y', -1],
+  w: ['z', 1],
+  s: ['z', -1],
+  a: ['x', -1],
+  d: ['x', 1],
+  e: ['y', 1],
+  q: ['y', -1],
 }
 
-const rand = (seed: number) => { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647) }
+const rand = (seed: number) => {
+  let s = seed
+  return () => (s = (s * 16807) % 2147483647) / 2147483647
+}
 const UP = new THREE.Vector3(0, 1, 0)
 const DONOR = new THREE.Vector3(...DONOR_POS)
-const _a = new THREE.Vector3(), _n = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3(), _t = new THREE.Vector3(), _m = new THREE.Matrix4()
+const _a = new THREE.Vector3(),
+  _n = new THREE.Vector3(),
+  _f = new THREE.Vector3(),
+  _r = new THREE.Vector3(),
+  _t = new THREE.Vector3(),
+  _m = new THREE.Matrix4()
 
 /** Posição de cada zona neste quadro (tudo se move com a timeline). */
 function zonePositions(d: Ready, out: Map<ZoneId, THREE.Vector3>) {
   const { v, L } = frame(d)
   const c = d.cand
-  const at = (id: ZoneId) => { if (!out.has(id)) out.set(id, new THREE.Vector3()); return out.get(id)! }
+  const at = (id: ZoneId) => {
+    if (!out.has(id)) out.set(id, new THREE.Vector3())
+    return out.get(id)!
+  }
   const th = centerAt(L, c.start + 10, at('guide'))
   at('guide').addScaledVector(normalAt(th, _n), 3)
   centerAt(L, Math.min(L.n - 1, c.pamStart + 1), at('pam'))
@@ -83,13 +99,22 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
       return { home, pos: home.clone(), vel: new THREE.Vector3() }
     })
   }, [count])
-  const mat = useMemo(() => ({
-    shell: organicMaterial({ color: PALETTE.strand1, rim: '#d6fffa', opacity: 0.55, amp: 0.18, freq: 2.4, power: 1.4 }),
-    core: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.strand1).multiplyScalar(3), toneMapped: false }),
-    dot: new THREE.MeshStandardMaterial({ roughness: 0.4, emissive: '#ffffff', emissiveIntensity: 0.15 }),
-    donor: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.donor).multiplyScalar(2.2), toneMapped: false }),
-    goal: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.rna).multiplyScalar(2), toneMapped: false, transparent: true, depthWrite: false, side: THREE.DoubleSide }),
-  }), [])
+  const mat = useMemo(
+    () => ({
+      shell: organicMaterial({ color: PALETTE.strand1, rim: '#d6fffa', opacity: 0.55, amp: 0.18, freq: 2.4, power: 1.4 }),
+      core: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.strand1).multiplyScalar(3), toneMapped: false }),
+      dot: new THREE.MeshStandardMaterial({ roughness: 0.4, emissive: '#ffffff', emissiveIntensity: 0.15 }),
+      donor: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.donor).multiplyScalar(2.2), toneMapped: false }),
+      goal: new THREE.MeshBasicMaterial({
+        color: new THREE.Color(PALETTE.rna).multiplyScalar(2),
+        toneMapped: false,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    }),
+    [],
+  )
   const geo = useMemo(() => new THREE.IcosahedronGeometry(0.22, 1), [])
 
   // cores dos dNTPs livres (A, C, G, T)
@@ -106,7 +131,10 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     untip()
     setEvents({ enabled: false })
     if (light) light.intensity = 18
-    return () => { setEvents({ enabled: true }); if (light) light.intensity = 0 }
+    return () => {
+      setEvents({ enabled: true })
+      if (light) light.intensity = 0
+    }
   }, [setEvents, light])
 
   // começa onde a câmera estava olhando, para a transição não "pular"
@@ -122,7 +150,10 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     const held = new Set<string>()
     const sync = () => {
       input.x = input.y = input.z = 0
-      for (const k of held) { const m = KEYS[k]; if (m) input[m[0]] += m[1] }
+      for (const k of held) {
+        const m = KEYS[k]
+        if (m) input[m[0]] += m[1]
+      }
     }
     const typing = (e: KeyboardEvent) => (e.target as HTMLElement).closest('input, textarea, select')
     const down = (e: KeyboardEvent) => {
@@ -141,18 +172,26 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
       held.delete(k)
       sync()
     }
-    const blur = () => { held.clear(); sync(); input.boost = false }
+    const blur = () => {
+      held.clear()
+      sync()
+      input.boost = false
+    }
     const el = gl.domElement
     // só o dedo que começou o arrasto gira a câmera (o outro pode estar no joystick)
     let drag: { id: number; x: number; y: number } | null = null
-    const pDown = (e: PointerEvent) => { if (!drag) drag = { id: e.pointerId, x: e.clientX, y: e.clientY } }
+    const pDown = (e: PointerEvent) => {
+      if (!drag) drag = { id: e.pointerId, x: e.clientX, y: e.clientY }
+    }
     const pMove = (e: PointerEvent) => {
       if (!drag || e.pointerId !== drag.id) return
       look.current.yaw += (e.clientX - drag.x) * 0.005
       look.current.pitch = THREE.MathUtils.clamp(look.current.pitch - (e.clientY - drag.y) * 0.004, -1.3, 1.3)
       drag = { id: drag.id, x: e.clientX, y: e.clientY }
     }
-    const pUp = (e: PointerEvent) => { if (e.pointerId === drag?.id) drag = null }
+    const pUp = (e: PointerEvent) => {
+      if (e.pointerId === drag?.id) drag = null
+    }
     addEventListener('keydown', down)
     addEventListener('keyup', up)
     addEventListener('blur', blur)
@@ -207,10 +246,16 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     }
     let impact = Math.max(pushOut(body, L.center, L.n, DNA_R), pushOut(body, OFF_POS, 2, 2.6))
     for (const s of SOLID) impact = Math.max(impact, pushOut(body, [s.pos], 1, s.solid + PROBE_R))
-    if (impact > 1.5) { sound.bump(impact); navigator.vibrate?.(Math.min(40, impact * 6)) }
+    if (impact > 1.5) {
+      sound.bump(impact)
+      navigator.vibrate?.(Math.min(40, impact * 6))
+    }
     sound.swim(body.vel.length() / MAX_SPEED)
     // borda do mundo: um "aquário" esférico, desliza ao longo da parede
-    if (body.pos.length() > WORLD_R) { body.pos.setLength(WORLD_R); body.vel.multiplyScalar(0.5) }
+    if (body.pos.length() > WORLD_R) {
+      body.pos.setLength(WORLD_R)
+      body.vel.multiplyScalar(0.5)
+    }
 
     // sonda: inclina na direção do movimento
     const g = probe.current
@@ -220,7 +265,9 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     tickOrganic(g, clock.elapsedTime)
 
     // câmera de perseguição com mola
-    _t.copy(body.pos).addScaledVector(_f, -7).add(_n.set(0, 1.4, 0))
+    _t.copy(body.pos)
+      .addScaledVector(_f, -7)
+      .add(_n.set(0, 1.4, 0))
     camera.position.lerp(_t, 1 - Math.exp(-dt * 5))
     camera.lookAt(_t.copy(body.pos).addScaledVector(_f, 3))
     focus.copy(body.pos)
@@ -229,7 +276,11 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     // Na missão de carga o alvo é primeiro o molde de reparo; tocá-lo o prende atrás da sonda.
     const m = currentMission(st.missionsDone)
     const fetch = m?.task === 'carry' && !st.cargo
-    if (fetch && body.pos.distanceTo(DONOR) < 1.8) { st.set({ cargo: true }); sound.chime(false); navigator.vibrate?.(20) }
+    if (fetch && body.pos.distanceTo(DONOR) < 1.8) {
+      st.set({ cargo: true })
+      sound.chime(false)
+      navigator.vibrate?.(20)
+    }
     const dn = donor.current
     dn.visible = m?.task === 'carry'
     if (st.cargo) dn.position.lerp(_t.copy(body.pos).addScaledVector(_f, -1.4), 1 - Math.exp(-dt * 8))
@@ -258,8 +309,13 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
       // demais). O floater i tem a cor da base i % 4, a mesma ordem das cores acima
       if (m?.task === 'collect' && f.pos.distanceToSquared(body.pos) < COLLECT_R2) {
         f.vel.addScaledVector(_n.subVectors(body.pos, f.pos), 6 * dt)
-        const b = BASES[i % 4], got = useSim.getState().bases
-        if (!got.includes(b)) { useSim.getState().set({ bases: got + b }); sound.chime(false); navigator.vibrate?.(15) }
+        const b = BASES[i % 4],
+          got = useSim.getState().bases
+        if (!got.includes(b)) {
+          useSim.getState().set({ bases: got + b })
+          sound.chime(false)
+          navigator.vibrate?.(15)
+        }
       }
       inst.current.setMatrixAt(i, _m.makeTranslation(f.pos.x, f.pos.y, f.pos.z))
     }
@@ -269,7 +325,13 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
     let best: ZoneId | null = null
     let bestD = Infinity
     // distância "normalizada" pelo alcance: exposições grandes não perdem para zonas pequenas vizinhas
-    for (const [id, p] of zones) { const dd = p.distanceTo(body.pos) - reach(id); if (dd < bestD) { bestD = dd; best = id } }
+    for (const [id, p] of zones) {
+      const dd = p.distanceTo(body.pos) - reach(id)
+      if (dd < bestD) {
+        bestD = dd
+        best = id
+      }
+    }
     const cur = st.zone
     const curD = cur && zones.has(cur) ? zones.get(cur)!.distanceTo(body.pos) - reach(cur) : Infinity
     let next = cur
@@ -280,21 +342,43 @@ export default function Explorer({ d, quality }: { d: Ready; quality: Quality })
 
   const ship = (
     <group ref={probe}>
-      <mesh material={mat.shell} scale={PROBE_R}><icosahedronGeometry args={[1, 8]} /></mesh>
-      <mesh material={mat.core} scale={PROBE_R * 0.35}><icosahedronGeometry args={[1, 2]} /></mesh>
+      <mesh material={mat.shell} scale={PROBE_R}>
+        <icosahedronGeometry args={[1, 8]} />
+      </mesh>
+      <mesh material={mat.core} scale={PROBE_R * 0.35}>
+        <icosahedronGeometry args={[1, 2]} />
+      </mesh>
     </group>
   )
   return (
     <>
       {/* o rastro custa um desenho extra por quadro: fica de fora na qualidade baixa */}
-      {quality === 'low' ? ship : <Trail width={1.4} length={5} color={PALETTE.strand1} attenuation={(t) => t * t}>{ship}</Trail>}
+      {quality === 'low' ? (
+        ship
+      ) : (
+        <Trail width={1.4} length={5} color={PALETTE.strand1} attenuation={(t) => t * t}>
+          {ship}
+        </Trail>
+      )}
       <group ref={donor} visible={false}>
         {/* molde de reparo: um trecho curto de fita dupla verde */}
-        {[-0.18, 0.18].map((x) => <mesh key={x} position={[x, 0, 0]} material={mat.donor}><capsuleGeometry args={[0.09, 1.3, 4, 8]} /></mesh>)}
-        {[-0.45, -0.15, 0.15, 0.45].map((y) => <mesh key={y} position={[0, y, 0]} rotation={[0, 0, Math.PI / 2]} material={mat.donor}><cylinderGeometry args={[0.04, 0.04, 0.36, 6]} /></mesh>)}
+        {[-0.18, 0.18].map((x) => (
+          <mesh key={x} position={[x, 0, 0]} material={mat.donor}>
+            <capsuleGeometry args={[0.09, 1.3, 4, 8]} />
+          </mesh>
+        ))}
+        {[-0.45, -0.15, 0.15, 0.45].map((y) => (
+          <mesh key={y} position={[0, y, 0]} rotation={[0, 0, Math.PI / 2]} material={mat.donor}>
+            <cylinderGeometry args={[0.04, 0.04, 0.36, 6]} />
+          </mesh>
+        ))}
       </group>
-      <mesh ref={beacon} material={mat.goal} visible={false}><ringGeometry args={[0.9, 1, 48]} /></mesh>
-      <mesh ref={arrow} material={mat.goal} visible={false}><coneGeometry args={[0.16, 0.5, 12]} /></mesh>
+      <mesh ref={beacon} material={mat.goal} visible={false}>
+        <ringGeometry args={[0.9, 1, 48]} />
+      </mesh>
+      <mesh ref={arrow} material={mat.goal} visible={false}>
+        <coneGeometry args={[0.16, 0.5, 12]} />
+      </mesh>
       <instancedMesh ref={inst} args={[geo, mat.dot, floaters.length]} frustumCulled={false} />
     </>
   )

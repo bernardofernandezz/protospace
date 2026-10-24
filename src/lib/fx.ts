@@ -9,7 +9,12 @@ export function useMicroInteractions() {
     if (!matchMedia('(pointer: fine) and (prefers-reduced-motion: no-preference)').matches) return
     let raf = 0
     let last: PointerEvent | null = null
-    const reset = (el: HTMLElement) => { el.style.removeProperty('--rx'); el.style.removeProperty('--ry'); el.style.removeProperty('--tx'); el.style.removeProperty('--ty') }
+    const reset = (el: HTMLElement) => {
+      el.style.removeProperty('--rx')
+      el.style.removeProperty('--ry')
+      el.style.removeProperty('--tx')
+      el.style.removeProperty('--ty')
+    }
     let hovered: HTMLElement[] = []
     const frame = () => {
       raf = 0
@@ -23,7 +28,8 @@ export function useMicroInteractions() {
       hovered = now
       if (tilt) {
         const r = tilt.getBoundingClientRect()
-        const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height
+        const x = (e.clientX - r.left) / r.width,
+          y = (e.clientY - r.top) / r.height
         tilt.style.setProperty('--rx', `${(0.5 - y) * 5}deg`)
         tilt.style.setProperty('--ry', `${(x - 0.5) * 7}deg`)
         tilt.style.setProperty('--mx', `${x * 100}%`)
@@ -35,10 +41,20 @@ export function useMicroInteractions() {
         mag.style.setProperty('--ty', `${(e.clientY - (r.top + r.height / 2)) * 0.25}px`)
       }
     }
-    const move = (e: PointerEvent) => { last = e; if (!raf) raf = requestAnimationFrame(frame) }
-    const leave = () => { hovered.forEach(reset); hovered = [] }
+    const move = (e: PointerEvent) => {
+      last = e
+      if (!raf) raf = requestAnimationFrame(frame)
+    }
+    const leave = () => {
+      hovered.forEach(reset)
+      hovered = []
+    }
     addEventListener('pointermove', move, { passive: true })
     document.addEventListener('pointerleave', leave)
-    return () => { removeEventListener('pointermove', move); document.removeEventListener('pointerleave', leave); cancelAnimationFrame(raf) }
+    return () => {
+      removeEventListener('pointermove', move)
+      document.removeEventListener('pointerleave', leave)
+      cancelAnimationFrame(raf)
+    }
   }, [])
 }

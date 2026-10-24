@@ -29,7 +29,11 @@ function boot(): AudioContext | null {
   pad.Q.value = 5
   const padGain = c.createGain()
   padGain.gain.value = 0.09
-  for (const [f, type] of [[55, 'sawtooth'], [82.4, 'triangle'], [110.3, 'sine']] as const) {
+  for (const [f, type] of [
+    [55, 'sawtooth'],
+    [82.4, 'triangle'],
+    [110.3, 'sine'],
+  ] as const) {
     const o = c.createOscillator()
     o.type = type
     o.frequency.value = f
@@ -92,7 +96,11 @@ function tone(c: AudioContext, freq: number, at: number, dur: number, gain: numb
 
 export const sound = {
   /** Cria/retoma o contexto. Chame dentro de um gesto do usuário (clique/tecla): política de autoplay. */
-  unlock() { boot()?.resume().catch(() => {}) },
+  unlock() {
+    boot()
+      ?.resume()
+      .catch(() => {})
+  },
 
   /** Liga ou silencia (com fade); desligado, o contexto é suspenso e não gasta CPU. */
   setOn(value: boolean) {
@@ -101,7 +109,10 @@ export const sound = {
     if (!c) return
     if (value) c.resume().catch(() => {})
     master.gain.setTargetAtTime(value ? 0.8 : 0, c.currentTime, 0.25)
-    if (!value) setTimeout(() => { if (!on) c.suspend().catch(() => {}) }, 1200)
+    if (!value)
+      setTimeout(() => {
+        if (!on) c.suspend().catch(() => {})
+      }, 1200)
   },
 
   /** Velocidade da sonda normalizada (0 = parada, 1 = velocidade máxima sem turbo). */

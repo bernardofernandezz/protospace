@@ -5,7 +5,11 @@ import type { Stance } from '../content/ethics'
 
 export type Tally = Record<Stance, number>
 export type Tallies = Record<string, Tally>
-interface Row { dilemma_id: string; stance: Stance; votes: number }
+interface Row {
+  dilemma_id: string
+  stance: Stance
+  votes: number
+}
 
 // URL e chave publicável são públicas por design (o acesso é controlado no banco).
 const URL = import.meta.env.VITE_SUPABASE_URL || 'https://vroqgaybxzzwmjrfacux.supabase.co'
@@ -21,7 +25,10 @@ export function voterId() {
   const key = 'protospace-voter'
   try {
     let id = localStorage.getItem(key)
-    if (!id) { id = crypto.randomUUID(); localStorage.setItem(key, id) }
+    if (!id) {
+      id = crypto.randomUUID()
+      localStorage.setItem(key, id)
+    }
     return id
   } catch {
     return crypto.randomUUID()
@@ -58,6 +65,10 @@ export async function subscribeTallies(onRow: (dilemma: string, stance: Stance, 
       const r = p.new as Row
       onRow(r.dilemma_id, r.stance, r.votes)
     })
-    .subscribe((status) => { if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') onFail() })
-  return () => { supabase.removeChannel(channel) }
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') onFail()
+    })
+  return () => {
+    supabase.removeChannel(channel)
+  }
 }

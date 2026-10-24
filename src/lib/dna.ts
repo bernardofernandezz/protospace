@@ -6,7 +6,11 @@ export type Delivery = 'rnp' | 'plasmid' | 'viral'
 export type Repair = 'nhej' | 'hdr'
 
 /** Edição em coordenadas da sequência ORIGINAL: remove `del` bases em `pos` e insere `ins`. */
-export interface Op { pos: number; del: number; ins: string }
+export interface Op {
+  pos: number
+  del: number
+  ins: string
+}
 
 /** 1 = fita senso (a que guardamos); -1 = fita antissenso, lida de trás para frente. */
 export type Strand = 1 | -1
@@ -34,12 +38,15 @@ export function spacerPos(c: Candidate, i: number): number {
 
 export const inPam = (c: Candidate, i: number) => i >= c.pamStart && i < c.pamStart + 3
 
-export const revComp = (s: string) => [...s].reverse().map((b) => COMP[b]).join('')
+export const revComp = (s: string) =>
+  [...s]
+    .reverse()
+    .map((b) => COMP[b])
+    .join('')
 
 // Sequência fictícia (não é um gene real), desenhada para conter PAMs das duas nucleases:
 // vários NGG para a SpCas9 e, no trecho final rico em T, TTTV para a Cas12a.
-export const DEFAULT_LOCUS =
-  'ATCGTTACCGATGCTAGCTCAAGGTCTGACCATGTCGACGTTCCAGTGGCTAACGATCCTGCAGTTCGAGCCAGGATCATCAAGCTTTCACGGTAGCTTTAGCATCGGATTCCAGTAGCTAACG'
+export const DEFAULT_LOCUS = 'ATCGTTACCGATGCTAGCTCAAGGTCTGACCATGTCGACGTTCCAGTGGCTAACGATCCTGCAGTTCGAGCCAGGATCATCAAGCTTTCACGGTAGCTTTAGCATCGGATTCCAGTAGCTAACG'
 
 export const MAX_LOCUS = 160
 export const COMP: Record<string, string> = { A: 'T', T: 'A', C: 'G', G: 'C' }
@@ -130,24 +137,23 @@ export function findCandidates(locus: string, n: NucleaseId = 'spcas9'): Candida
 }
 
 /** Índice do candidato com o melhor score ilustrativo: por onde faz sentido começar. */
-export const bestSite = (cands: Candidate[]) =>
-  cands.reduce((best, c, i) => (c.score > cands[best].score ? i : best), 0)
+export const bestSite = (cands: Candidate[]) => cands.reduce((best, c, i) => (c.score > cands[best].score ? i : best), 0)
 
 /** Índice do sítio cujo corte cai mais perto de `pos` (o que um molde de HDR consegue corrigir). */
 export function nearestSite(cands: Candidate[], pos: number): number {
   let best = 0
-  cands.forEach((c, i) => { if (Math.abs(c.cut - pos) < Math.abs(cands[best].cut - pos)) best = i })
+  cands.forEach((c, i) => {
+    if (Math.abs(c.cut - pos) < Math.abs(cands[best].cut - pos)) best = i
+  })
   return best
 }
 
 /** Próxima letra do ciclo A→C→G→T: o jeito mais simples de trocar uma base com um clique. */
 export const NEXT_BASE: Record<string, string> = { A: 'C', C: 'G', G: 'T', T: 'A' }
 
-export const withMismatches = (guide: string, at: number[]) =>
-  [...guide].map((b, i) => (at.includes(i) ? NEXT_BASE[b] : b)).join('')
+export const withMismatches = (guide: string, at: number[]) => [...guide].map((b, i) => (at.includes(i) ? NEXT_BASE[b] : b)).join('')
 
-export const mismatches = (guide: string, site: string) =>
-  [...guide].flatMap((b, i) => (b !== site[i] ? [i] : []))
+export const mismatches = (guide: string, site: string) => [...guide].flatMap((b, i) => (b !== site[i] ? [i] : []))
 
 /** Posições 0–19 (19 = adjacente ao PAM). "Seed" = 12 nt proximais ao PAM, onde mismatches pesam mais. */
 export const isSeed = (i: number) => i >= 8
@@ -163,10 +169,13 @@ export function cutProbability(guide: string, site: string, tolerance: number): 
 }
 
 const TRANSITION: Record<string, string> = { A: 'G', G: 'A', C: 'T', T: 'C' }
-const mutateAt = (s: string, idx: number[]) =>
-  [...s].map((b, i) => (idx.includes(i) ? TRANSITION[b] : b)).join('')
+const mutateAt = (s: string, idx: number[]) => [...s].map((b, i) => (idx.includes(i) ? TRANSITION[b] : b)).join('')
 
-export interface OffTargetSite { label: { pt: string; en: string }; site: string; pam: string }
+export interface OffTargetSite {
+  label: { pt: string; en: string }
+  site: string
+  pam: string
+}
 
 /** Dois sítios "em outro ponto do genoma" (fictícios), parecidos com o alvo: 2 mm distais e 1 distal + 1 seed. */
 export function offTargetSites(protospacer: string): OffTargetSite[] {
@@ -178,16 +187,31 @@ export function offTargetSites(protospacer: string): OffTargetSite[] {
 
 export const DELIVERY = {
   rnp: {
-    name: { pt: 'RNP', en: 'RNP' }, eff: 0.9, offMult: 0.6,
-    note: { pt: 'Proteína + guia prontos: ação rápida e transitória, menos off-target.', en: 'Pre-assembled protein + guide: fast, transient activity and fewer off-targets.' },
+    name: { pt: 'RNP', en: 'RNP' },
+    eff: 0.9,
+    offMult: 0.6,
+    note: {
+      pt: 'Proteína + guia prontos: ação rápida e transitória, menos off-target.',
+      en: 'Pre-assembled protein + guide: fast, transient activity and fewer off-targets.',
+    },
   },
   plasmid: {
-    name: { pt: 'Plasmídeo', en: 'Plasmid' }, eff: 0.7, offMult: 1.35,
-    note: { pt: 'Barato, mas a expressão prolongada aumenta off-target e há risco de integração.', en: 'Cheap, but prolonged expression raises off-target activity and there is a risk of integration.' },
+    name: { pt: 'Plasmídeo', en: 'Plasmid' },
+    eff: 0.7,
+    offMult: 1.35,
+    note: {
+      pt: 'Barato, mas a expressão prolongada aumenta off-target e há risco de integração.',
+      en: 'Cheap, but prolonged expression raises off-target activity and there is a risk of integration.',
+    },
   },
   viral: {
-    name: { pt: 'Vetor viral', en: 'Viral vector' }, eff: 0.85, offMult: 1.5,
-    note: { pt: 'Alta eficiência (inclusive in vivo); expressão persistente, imunogenicidade, limite de carga (AAV ≈ 4,7 kb).', en: 'High efficiency (including in vivo); persistent expression, immunogenicity, cargo limit (AAV ≈ 4.7 kb).' },
+    name: { pt: 'Vetor viral', en: 'Viral vector' },
+    eff: 0.85,
+    offMult: 1.5,
+    note: {
+      pt: 'Alta eficiência (inclusive in vivo); expressão persistente, imunogenicidade, limite de carga (AAV ≈ 4,7 kb).',
+      en: 'High efficiency (including in vivo); persistent expression, immunogenicity, cargo limit (AAV ≈ 4.7 kb).',
+    },
   },
 } as const
 
@@ -280,8 +304,27 @@ export function translate(seq: string, orf: number): string {
 export const firstOrf = (seq: string) => seq.indexOf('ATG')
 
 export const NAMES3: Record<string, string> = {
-  A: 'Ala', C: 'Cys', D: 'Asp', E: 'Glu', F: 'Phe', G: 'Gly', H: 'His', I: 'Ile', K: 'Lys', L: 'Leu',
-  M: 'Met', N: 'Asn', P: 'Pro', Q: 'Gln', R: 'Arg', S: 'Ser', T: 'Thr', V: 'Val', W: 'Trp', Y: 'Tyr', '*': 'Stop',
+  A: 'Ala',
+  C: 'Cys',
+  D: 'Asp',
+  E: 'Glu',
+  F: 'Phe',
+  G: 'Gly',
+  H: 'His',
+  I: 'Ile',
+  K: 'Lys',
+  L: 'Leu',
+  M: 'Met',
+  N: 'Asn',
+  P: 'Pro',
+  Q: 'Gln',
+  R: 'Arg',
+  S: 'Ser',
+  T: 'Thr',
+  V: 'Val',
+  W: 'Trp',
+  Y: 'Tyr',
+  '*': 'Stop',
 }
 
 /** Editores de base: trocam uma letra sem cortar o DNA. CBE faz C→T; ABE faz A→G. */
@@ -311,7 +354,10 @@ export function baseEditOps(c: Candidate, editor: BaseEditor): Op[] {
   return ops.sort((a, b) => a.pos - b.pos)
 }
 
-export interface Applied { seq: string; changed: boolean[] }
+export interface Applied {
+  seq: string
+  changed: boolean[]
+}
 
 export function applyOps(seq: string, ops: Op[]): Applied {
   const sorted = [...ops].sort((a, b) => a.pos - b.pos)
@@ -319,11 +365,20 @@ export function applyOps(seq: string, ops: Op[]): Applied {
   const changed: boolean[] = []
   let i = 0
   for (const op of sorted) {
-    for (; i < op.pos; i++) { out += seq[i]; changed.push(false) }
-    for (const b of op.ins) { out += b; changed.push(true) }
+    for (; i < op.pos; i++) {
+      out += seq[i]
+      changed.push(false)
+    }
+    for (const b of op.ins) {
+      out += b
+      changed.push(true)
+    }
     i += op.del
   }
-  for (; i < seq.length; i++) { out += seq[i]; changed.push(false) }
+  for (; i < seq.length; i++) {
+    out += seq[i]
+    changed.push(false)
+  }
   return { seq: out, changed }
 }
 
@@ -342,7 +397,10 @@ export function diffSegments(seq: string, ops: Op[]): Seg[] {
   for (const op of [...ops].sort((a, b) => a.pos - b.pos)) {
     push('same', seq.slice(i, op.pos))
     if (op.del && op.del === op.ins.length) push('sub', op.ins)
-    else { push('del', seq.slice(op.pos, op.pos + op.del)); push('ins', op.ins) }
+    else {
+      push('del', seq.slice(op.pos, op.pos + op.del))
+      push('ins', op.ins)
+    }
     i = op.pos + op.del
   }
   push('same', seq.slice(i))
@@ -364,7 +422,10 @@ export function editOps(cas: CasType, repair: Repair, locus: string, c: Candidat
 }
 
 /** Chance de um alelo reconhecido receber a edição pretendida, ou um indel indesejado do NHEJ. */
-export interface Odds { intended: number; indel: number }
+export interface Odds {
+  intended: number
+  indel: number
+}
 
 /**
  * Frações ilustrativas por ferramenta. A HDR é a mais ingrata: mesmo quando o corte acontece,

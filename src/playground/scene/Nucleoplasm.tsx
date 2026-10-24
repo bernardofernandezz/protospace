@@ -9,17 +9,22 @@ import { glowTexture } from './materials'
 import { MiniDuplex } from './Repair'
 import { tip, untip } from './shared'
 
-const rand = (seed: number) => { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647) }
+const rand = (seed: number) => {
+  let s = seed
+  return () => (s = (s * 16807) % 2147483647) / 2147483647
+}
 
 /** Céu da cena: gradiente vertical com leve ruído, desenhado por dentro de uma esfera. */
 function Backdrop() {
-  const mat = useMemo(() => new THREE.ShaderMaterial({
-    side: THREE.BackSide,
-    depthWrite: false,
-    fog: false,
-    uniforms: { uTop: { value: new THREE.Color('#120a2a') }, uMid: { value: new THREE.Color('#04070f') }, uBot: { value: new THREE.Color('#031a1f') } },
-    vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `uniform vec3 uTop, uMid, uBot; varying vec3 vP;
+  const mat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        fog: false,
+        uniforms: { uTop: { value: new THREE.Color('#120a2a') }, uMid: { value: new THREE.Color('#04070f') }, uBot: { value: new THREE.Color('#031a1f') } },
+        vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: `uniform vec3 uTop, uMid, uBot; varying vec3 vP;
       float h(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
       void main(){
         float y = vP.y;
@@ -27,8 +32,14 @@ function Backdrop() {
         c += (h(floor(vP * 400.0)) - 0.5) * 0.012; // dithering contra banding
         gl_FragColor = vec4(c, 1.0);
       }`,
-  }), [])
-  return <mesh material={mat} renderOrder={-10}><sphereGeometry args={[220, 32, 16]} /></mesh>
+      }),
+    [],
+  )
+  return (
+    <mesh material={mat} renderOrder={-10}>
+      <sphereGeometry args={[220, 32, 16]} />
+    </mesh>
+  )
 }
 
 /** Partículas em suspensão (parallax e profundidade). */
@@ -70,20 +81,34 @@ function Chromatin() {
       tubes.push(new THREE.TubeGeometry(curve, 160, 0.18, 6, false))
       for (let k = 0; k < 26; k++) beadPos.push(curve.getPointAt((k + 0.5) / 26))
     }
-    const beads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.9, 16, 12), new THREE.MeshStandardMaterial({ color: '#2c2558', emissive: '#1a1440', emissiveIntensity: 0.5, roughness: 0.7 }), beadPos.length)
+    const beads = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.9, 16, 12),
+      new THREE.MeshStandardMaterial({ color: '#2c2558', emissive: '#1a1440', emissiveIntensity: 0.5, roughness: 0.7 }),
+      beadPos.length,
+    )
     const m = new THREE.Matrix4()
     beadPos.forEach((b, i) => beads.setMatrixAt(i, m.makeScale(1, 0.62, 1).setPosition(b)))
     return { tubes, beads }
   }, [])
   const mat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1f4257', emissive: '#0e2836', emissiveIntensity: 0.6, roughness: 0.7 }), [])
-  useEffect(() => () => {
-    for (const g of tubes) g.dispose()
-    beads.geometry.dispose(); (beads.material as THREE.Material).dispose(); beads.dispose(); mat.dispose()
-  }, [tubes, beads, mat])
-  useFrame(() => { ref.current.visible = useSim.getState().step !== 1 })
+  useEffect(
+    () => () => {
+      for (const g of tubes) g.dispose()
+      beads.geometry.dispose()
+      ;(beads.material as THREE.Material).dispose()
+      beads.dispose()
+      mat.dispose()
+    },
+    [tubes, beads, mat],
+  )
+  useFrame(() => {
+    ref.current.visible = useSim.getState().step !== 1
+  })
   return (
     <group ref={ref}>
-      {tubes.map((g, i) => <mesh key={i} geometry={g} material={mat} />)}
+      {tubes.map((g, i) => (
+        <mesh key={i} geometry={g} material={mat} />
+      ))}
       <primitive object={beads} />
     </group>
   )
@@ -107,16 +132,33 @@ function OffTarget({ o, pos, protospacer, quality }: { o: Off; pos: [number, num
   const label = t.pick(o.label)
   return (
     <group position={pos}>
-      <group ref={g} scale={0.75} onPointerMove={(e) => tip(e, label, t(
-        `Sítio fictício parecido com o alvo (${mmIdx.length} mismatches, nas posições ${mmIdx.map((i) => i + 1).join(' e ')}). Probabilidade ilustrativa de corte: ${(o.p * 100).toFixed(0)}%.`,
-        `Fictional site similar to the target (${mmIdx.length} mismatches, at positions ${mmIdx.map((i) => i + 1).join(' and ')}). Illustrative cleavage probability: ${(o.p * 100).toFixed(0)}%.`,
-      ))} onPointerOut={untip}>
+      <group
+        ref={g}
+        scale={0.75}
+        onPointerMove={(e) =>
+          tip(
+            e,
+            label,
+            t(
+              `Sítio fictício parecido com o alvo (${mmIdx.length} mismatches, nas posições ${mmIdx.map((i) => i + 1).join(' e ')}). Probabilidade ilustrativa de corte: ${(o.p * 100).toFixed(0)}%.`,
+              `Fictional site similar to the target (${mmIdx.length} mismatches, at positions ${mmIdx.map((i) => i + 1).join(' and ')}). Illustrative cleavage probability: ${(o.p * 100).toFixed(0)}%.`,
+            ),
+          )
+        }
+        onPointerOut={untip}
+      >
         <MiniDuplex seq={o.site + o.pam} dim={0.75} quality={quality} />
       </group>
       <sprite ref={halo} scale={[12, 6, 1]}>
         <spriteMaterial map={glowTexture()} color={PALETTE.cas} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </sprite>
-      <Label tone={o.p > 0.35 ? PALETTE.cas : '#a9b8c9'} at={(v) => { v.set(0, 2.2, 0); return useSim.getState().step !== 1 }}>
+      <Label
+        tone={o.p > 0.35 ? PALETTE.cas : '#a9b8c9'}
+        at={(v) => {
+          v.set(0, 2.2, 0)
+          return useSim.getState().step !== 1
+        }}
+      >
         {label.split(' · ')[0]} · {t('corte', 'cut')} ≈ {(o.p * 100).toFixed(0)}%
       </Label>
     </group>
@@ -129,7 +171,9 @@ export default function Nucleoplasm({ offs, protospacer, quality }: { offs: Off[
       <Backdrop />
       <Dust count={quality === 'low' ? 250 : quality === 'medium' ? 600 : 1100} />
       {quality !== 'low' && <Chromatin />}
-      {offs.map((o, i) => <OffTarget key={i} o={o} protospacer={protospacer} quality={quality} pos={i === 0 ? [-12, 8, -16] : [12, 8, -16]} />)}
+      {offs.map((o, i) => (
+        <OffTarget key={i} o={o} protospacer={protospacer} quality={quality} pos={i === 0 ? [-12, 8, -16] : [12, 8, -16]} />
+      ))}
     </>
   )
 }

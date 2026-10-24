@@ -7,20 +7,31 @@ export default function Cursor() {
   useEffect(() => {
     if (!matchMedia('(pointer: fine) and (prefers-reduced-motion: no-preference)').matches) return
     document.documentElement.classList.add('has-cursor')
-    let x = innerWidth / 2, y = innerHeight / 2, rx = x, ry = y, big = false, raf = 0
+    let x = innerWidth / 2,
+      y = innerHeight / 2,
+      rx = x,
+      ry = y,
+      big = false,
+      raf = 0
     const move = (e: PointerEvent) => {
-      x = e.clientX; y = e.clientY
+      x = e.clientX
+      y = e.clientY
       big = !!(e.target as HTMLElement).closest('a, button, input, textarea, select, summary, label, canvas')
     }
     const loop = () => {
-      rx += (x - rx) * 0.18; ry += (y - ry) * 0.18
+      rx += (x - rx) * 0.18
+      ry += (y - ry) * 0.18
       if (dot.current) dot.current.style.transform = `translate(${x}px, ${y}px)`
       if (ring.current) ring.current.style.transform = `translate(${rx}px, ${ry}px) scale(${big ? 1.7 : 1})`
       raf = requestAnimationFrame(loop)
     }
     addEventListener('pointermove', move)
     raf = requestAnimationFrame(loop)
-    return () => { removeEventListener('pointermove', move); cancelAnimationFrame(raf); document.documentElement.classList.remove('has-cursor') }
+    return () => {
+      removeEventListener('pointermove', move)
+      cancelAnimationFrame(raf)
+      document.documentElement.classList.remove('has-cursor')
+    }
   }, [])
   return (
     <div aria-hidden="true" className="pointer-events-none fixed left-0 top-0 z-[90] hidden [@media(pointer:fine)]:block motion-reduce:hidden!">

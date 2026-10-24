@@ -29,19 +29,14 @@ export const otherNuclease = (n: NucleaseId): NucleaseId => (n === 'spcas9' ? 'c
  */
 export function comparePlan(p: { locus: string; disease: string | null; nuclease: NucleaseId; selected: number; guide: string }): RowPlan[] {
   const rows = (nuclease: NucleaseId, selected: number, guide: string) =>
-    STRATEGIES
-      .filter((s) => nuclease === 'spcas9' || s.cas === 'wt')
-      .map((s) => ({ ...s, nuclease, selected, guide }))
+    STRATEGIES.filter((s) => nuclease === 'spcas9' || s.cas === 'wt').map((s) => ({ ...s, nuclease, selected, guide }))
 
   const other = otherNuclease(p.nuclease)
   const sites = findCandidates(p.locus, other)
   const dis = findDisease(p.disease)
   const i = sites.length ? (dis ? nearestSite(sites, targetPos(dis)) : bestSite(sites)) : -1
 
-  return [
-    ...rows(p.nuclease, p.selected, p.guide),
-    ...(i >= 0 ? rows(other, i, sites[i].protospacer) : []),
-  ]
+  return [...rows(p.nuclease, p.selected, p.guide), ...(i >= 0 ? rows(other, i, sites[i].protospacer) : [])]
 }
 
 /** Alcançar o objetivo do cenário pesa mais que a eficiência bruta. */
