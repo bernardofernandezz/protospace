@@ -301,10 +301,7 @@ function outcomeText(p: Params, c: Candidate, ops: Op[], fix: Fix | undefined, e
     : `NHEJ: ${n > 0 ? `inserção de ${n} nt` : `deleção de ${-n} nt`}${n % 3 ? ' → frameshift (provável knockout, se em éxon codificante)' : ' → in-frame (pode não inativar o gene)'}.`
 }
 
-/**
- * Veredito do cenário clínico. Comparar a PROTEÍNA, e não a sequência, é o que distingue
- * corrigir de inativar o gene: um indel perto da mutação também "muda" o DNA.
- */
+/** Compara a PROTEÍNA, não a sequência: é isso que distingue corrigir de inativar o gene. */
 function verdictOf(dis: Disease, seq: string, prot?: Proteins): Verdict {
   if (dis.goal === 'disrupt') return seq.includes(dis.motif!) ? 'unchanged' : 'success'
   if (!prot?.healthy) return seq === applyOps(dis.locus, [dis.fix!]).seq ? 'success' : 'unchanged'

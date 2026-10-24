@@ -4,7 +4,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import {
   CAS, DELIVERY, FIX_RANGE, MAX_LOCUS, NAMES3, NEXT_BASE, NUCLEASE, clean, diffSegments,
-  findCandidates, inPam, isSeed, mismatches, revComp, spacerPos,
+  bestSite, findCandidates, inPam, isSeed, mismatches, nearestSite, revComp, spacerPos,
   type AlleleOutcome, type Candidate, type CasType, type Consequence, type Delivery, type NucleaseId,
   type Population, type Repair,
 } from '../lib/dna'
@@ -335,8 +335,8 @@ const STRATEGIES: { cas: CasType; repair: Repair }[] = [
   { cas: 'pe', repair: 'nhej' },
 ]
 
-const strategyLabel = (s: { cas: CasType; repair: Repair }, nuclease: NucleaseId, t: T) =>
-  s.cas === 'wt' ? `${t.pick(NUCLEASE[nuclease].name)} · ${s.repair.toUpperCase()}` : t.pick(CAS[s.cas].name)
+const toolLabel = (s: { cas: CasType; repair: Repair }, t: T) =>
+  s.cas === 'wt' ? s.repair.toUpperCase() : t.pick(CAS[s.cas].name)
 
 /** Símbolo curto do veredito, para caber numa célula da tabela. */
 const VERDICT_MARK: Record<VerdictKind, { mark: string; cls: string }> = {
@@ -351,17 +351,35 @@ export function ComparePanel() {
   const d = useDerived()
   const p = useParams()
   const set = useSim((s) => s.set)
+  const select = useSim((s) => s.select)
   const setNuclease = useSim((s) => s.setNuclease)
-  // a outra nuclease não entra na tabela: com outro PAM, os sítios disponíveis são outros
   const other: NucleaseId = p.nuclease === 'spcas9' ? 'cas12a' : 'spcas9'
   const otherSites = useMemo(() => findCandidates(p.locus, other), [p.locus, other])
-  // nickase, editores de base e prime editing deste playground são construídos sobre a Cas9
-  const rows = useMemo(
-    () => STRATEGIES
-      .filter((s) => p.nuclease === 'spcas9' || s.cas === 'wt')
-      .map((s) => ({ ...s, d: derive({ ...p, ...s }, t.lang === 'en') })),
-    [p, t.lang],
-  )
+
+  // A outra nuclease entra com os sítios dela: com outro PAM, o alvo possível é outro.
+  // Nickase, editores de base e prime editing só existem sobre a Cas9.
+  const rows = useMemo(() => {
+    const en = t.lang === 'en'
+    const build = (nuclease: NucleaseId, selected: number, guide: string) =>
+      STRATEGIES
+        .filter((st) => nuclease === 'spcas9' || st.cas === 'wt')
+        .map((st) => ({ ...st, nuclease, selected, d: derive({ ...p, ...st, nuclease, selected, guide }, en) }))
+
+    const i = otherSites.length ? (d.dis ? nearestSite(otherSites, targetPos(d.dis)) : bestSite(otherSites)) : -1
+    return [
+      ...build(p.nuclease, p.selected, p.guide),
+      ...(i >= 0 ? build(other, i, otherSites[i].protospacer) : []),
+    ]
+  }, [p, t.lang, d.dis, other, otherSites])
+
+  const applyRow = (r: (typeof rows)[number]) => {
+    if (r.nuclease !== p.nuclease) {
+      setNuclease(r.nuclease)
+      select(r.selected)
+    }
+    set({ cas: r.cas, repair: r.repair })
+  }
+
   const best = rows.reduce((a, b) => {
     const score = (r: typeof a) => (r.d.verdict === 'success' ? 1 : 0) * 10 + (r.d.eff ?? 0)
     return score(b) > score(a) ? b : a
@@ -370,15 +388,16 @@ export function ComparePanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="hud-label">{t('Comparar ferramentas neste sítio', 'Compare tools at this site')}</h3>
+        <h3 className="hud-label">{t('Comparar estratégias', 'Compare strategies')}</h3>
         <p className="mt-1 text-[11px] text-mist/70">
-          {t('Mesmo guia, mesmo corte: só muda a ferramenta. Clique numa linha para adotá-la.',
-            'Same guide, same cut: only the tool changes. Click a row to adopt it.')}
+          {t('As ferramentas da nuclease atual no sítio escolhido e, em laranja, a outra nuclease no melhor sítio que o PAM dela permite. Clique numa linha para adotá-la.',
+            'The current nuclease’s tools at the chosen site and, in amber, the other nuclease at the best site its PAM allows. Click a row to adopt it.')}
         </p>
       </div>
       <table className="w-full text-left text-xs">
         <thead className="text-[10px] uppercase tracking-wider text-mist/70">
           <tr>
+            <th scope="col" className="pb-1 font-medium">{t('Nuclease', 'Nuclease')}</th>
             <th scope="col" className="pb-1 font-medium">{t('Ferramenta', 'Tool')}</th>
             <th scope="col" className="pb-1 text-right font-medium">{t('Efic.', 'Eff.')}</th>
             <th scope="col" className="pb-1 text-right font-medium">{t('Pior OT', 'Worst OT')}</th>
@@ -387,20 +406,21 @@ export function ComparePanel() {
         </thead>
         <tbody>
           {rows.map((r) => {
-            const current = p.cas === r.cas && (r.cas !== 'wt' || p.repair === r.repair)
+            const current = r.nuclease === p.nuclease && p.cas === r.cas && (r.cas !== 'wt' || p.repair === r.repair)
             const worstOff = Math.max(0, ...(r.d.offs ?? []).map((o) => o.p))
             return (
-              <tr key={`${r.cas}-${r.repair}`}>
-                <td colSpan={4} className="p-0">
-                  <button type="button" onClick={() => set({ cas: r.cas, repair: r.repair })} aria-current={current}
-                    className={`grid w-full grid-cols-[1fr_auto_auto_auto] items-center gap-2 rounded-lg px-2 py-1.5 text-left transition ${current ? 'bg-dna/15 ring-1 ring-dna/60' : 'hover:bg-white/5'}`}>
+              <tr key={`${r.nuclease}-${r.cas}-${r.repair}`}>
+                <td colSpan={5} className="p-0">
+                  <button type="button" onClick={() => applyRow(r)} aria-current={current}
+                    className={`grid w-full grid-cols-[auto_1fr_auto_auto_auto] items-center gap-1.5 rounded-lg px-2 py-1.5 text-left transition ${current ? 'bg-dna/15 ring-1 ring-dna/60' : 'hover:bg-white/5'}`}>
+                    <span className={r.nuclease === p.nuclease ? 'text-mist' : 'text-rna'}>{t.pick(NUCLEASE[r.nuclease].name)}</span>
                     <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate">{strategyLabel(r, p.nuclease, t)}</span>
+                      <span className="truncate">{toolLabel(r, t)}</span>
                       {r === best && <span className="shrink-0 rounded bg-bio/20 px-1 text-[10px] uppercase tracking-wider text-bio">{t('melhor', 'best')}</span>}
                     </span>
-                    <span className="w-12 text-right font-mono text-bio">{pct(r.d.eff ?? 0)}</span>
-                    <span className={`w-12 text-right font-mono ${worstOff > 0.2 ? 'text-cas' : 'text-mist/60'}`}>{pct(worstOff)}</span>
-                    <span className="w-16 text-right">
+                    <span className="w-10 text-right font-mono text-bio">{pct(r.d.eff ?? 0)}</span>
+                    <span className={`w-10 text-right font-mono ${worstOff > 0.2 ? 'text-cas' : 'text-mist/60'}`}>{pct(worstOff)}</span>
+                    <span className="w-14 text-right">
                       {r.d.verdict
                         ? <b className={VERDICT_MARK[r.d.verdict].cls}>{VERDICT_MARK[r.d.verdict].mark}</b>
                         : <span className="text-[10px] uppercase tracking-wider text-mist/70">{r.d.effect ? effectLabel(r.d.effect, t) : '—'}</span>}
@@ -414,16 +434,13 @@ export function ComparePanel() {
       </table>
       <p className="text-xs leading-relaxed text-white/85">{rows.find((r) => r === best)?.d.kind}</p>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/5 p-3 text-xs">
-        <span className="text-mist">
-          {t(`Com a ${t.pick(NUCLEASE[other].name)} (PAM ${NUCLEASE[other].pam.seq}): ${otherSites.length} sítio${otherSites.length === 1 ? '' : 's'} neste locus.`,
-            `With ${t.pick(NUCLEASE[other].name)} (${NUCLEASE[other].pam.seq} PAM): ${otherSites.length} site${otherSites.length === 1 ? '' : 's'} in this locus.`)}
-        </span>
-        <button type="button" onClick={() => setNuclease(other)} disabled={!otherSites.length}
-          className="rounded-lg bg-dna/20 px-2 py-1 text-dna transition hover:bg-dna/30 disabled:opacity-40">
-          {t('trocar de nuclease', 'switch nuclease')}
-        </button>
-      </div>
+      {!otherSites.length && (
+        <p className="text-[11px] text-rna">
+          {t(`Não há PAM ${NUCLEASE[other].pam.seq} neste locus, então a ${t.pick(NUCLEASE[other].name)} não tem onde cortar.`,
+            `There is no ${NUCLEASE[other].pam.seq} PAM in this locus, so ${t.pick(NUCLEASE[other].name)} has nowhere to cut.`)}
+        </p>
+      )}
+
       <p className="text-[11px] leading-relaxed text-mist/70">
         {t('A eficiência já inclui a entrega escolhida. "Pior OT" é a maior chance de corte fora do alvo entre os sítios simulados.',
           'Efficiency already includes the chosen delivery. "Worst OT" is the highest off-target cutting chance among the simulated sites.')}

@@ -74,13 +74,13 @@ export const NUCLEASE = {
     },
   },
   cas12a: {
-    name: { pt: 'Cas12a (Cpf1)', en: 'Cas12a (Cpf1)' },
+    name: { pt: 'Cas12a', en: 'Cas12a' },
     pam: { seq: 'TTTV', re: /^TTT[ACG]$/, side: 5 },
     spacer: 20,
     cuts: { near: 18, far: 23 },
     note: {
-      pt: 'PAM rico em T, do outro lado do protoespaçador, e corte escalonado: sobram pontas coesivas de 5 nt. Também processa o próprio RNA guia, dispensando o tracrRNA.',
-      en: 'T-rich PAM, on the other side of the protospacer, and a staggered cut leaving 5-nt sticky ends. It also processes its own guide RNA, with no tracrRNA needed.',
+      pt: 'Também chamada Cpf1. PAM rico em T, do outro lado do protoespaçador, e corte escalonado: sobram pontas coesivas de 5 nt. Também processa o próprio RNA guia, dispensando o tracrRNA.',
+      en: 'Also called Cpf1. T-rich PAM, on the other side of the protospacer, and a staggered cut leaving 5-nt sticky ends. It also processes its own guide RNA, with no tracrRNA needed.',
     },
   },
 } as const

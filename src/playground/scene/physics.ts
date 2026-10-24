@@ -1,5 +1,4 @@
 // Física mínima do modo Explorar: sonda que "nada" no nucleoplasma e moléculas que ela empurra.
-// ponytail: colisão O(n·m) sem broadphase — ok até ~500 corpos; Rapier se precisar de corpos rígidos/pilhas.
 import * as THREE from 'three'
 
 export interface Body { pos: THREE.Vector3; vel: THREE.Vector3 }

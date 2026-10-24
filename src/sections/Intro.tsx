@@ -16,8 +16,10 @@ const TIMELINE: L<Event[]> = {
     { year: '2012', title: 'Uma tesoura programável', body: 'Doudna, Charpentier e colegas mostram que dá para programar a [[cas9|Cas9]], por meio de um RNA, para cortar o DNA onde se quiser. O grupo de Šikšnys chega a conclusões parecidas.', accent: true },
     { year: '2013', title: 'Edição em células humanas', body: 'A ferramenta funciona também em células humanas e de outros mamíferos.' },
     { year: '2018', title: 'O caso He Jiankui', body: 'Anúncio do nascimento de gêmeas a partir de embriões editados. A comunidade científica condenou o caso.' },
+    { year: '2019', title: 'A primeira paciente', body: 'Victoria Gray, com anemia falciforme, é a primeira pessoa tratada com CRISPR nos Estados Unidos. Suas células-tronco do sangue são editadas fora do corpo e devolvidas a ela. Anos depois, segue sem as crises de dor que marcavam sua vida.' },
     { year: '2020', title: 'Nobel de Química', body: 'Emmanuelle Charpentier e Jennifer Doudna recebem o Nobel de Química “pelo desenvolvimento de um método para edição de genoma”.', accent: true },
     { year: '2023', title: 'Primeira terapia aprovada', body: 'O Casgevy, primeira terapia com CRISPR, é aprovado no Reino Unido (nov/2023) para anemia falciforme e beta-talassemia. Nos EUA, a aprovação sai em dez/2023 para a falciforme e em jan/2024 para a beta-talassemia.', accent: true },
+    { year: '2025', title: 'Uma terapia para uma só pessoa', body: 'Um bebê com deficiência de CPS1, doença rara do ciclo da ureia, recebe um editor de bases desenhado para a mutação dele — projetado, fabricado e aplicado em cerca de seis meses. É o primeiro tratamento de edição genética feito sob medida para um único paciente.' },
   ],
   en: [
     { year: '1987', title: 'Mysterious repeats', body: 'Researchers find odd repeats in the DNA of E. coli, separated by stretches that all differ from one another. Nobody knew what they were for.' },
@@ -28,8 +30,10 @@ const TIMELINE: L<Event[]> = {
     { year: '2012', title: 'Programmable scissors', body: 'Doudna, Charpentier and colleagues show that [[cas9|Cas9]] can be programmed, through an RNA, to cut DNA wherever you choose. Šikšnys’s group reaches similar conclusions.', accent: true },
     { year: '2013', title: 'Editing human cells', body: 'The tool also works in human and other mammalian cells.' },
     { year: '2018', title: 'The He Jiankui case', body: 'The birth of twin girls from edited embryos is announced. The scientific community condemned it.' },
+    { year: '2019', title: 'The first patient', body: 'Victoria Gray, who has sickle cell disease, becomes the first person treated with CRISPR in the United States. Her blood stem cells are edited outside the body and given back to her. Years later she is still free of the pain crises that shaped her life.' },
     { year: '2020', title: 'Nobel Prize in Chemistry', body: 'Emmanuelle Charpentier and Jennifer Doudna receive the Nobel Prize in Chemistry “for the development of a method for genome editing”.', accent: true },
     { year: '2023', title: 'First approved therapy', body: 'Casgevy, the first CRISPR therapy, is approved in the UK (Nov 2023) for sickle cell disease and beta-thalassaemia. In the US it is approved for sickle cell disease in Dec 2023 and for beta-thalassaemia in Jan 2024.', accent: true },
+    { year: '2025', title: 'A therapy for one person', body: 'A baby with CPS1 deficiency, a rare urea cycle disorder, receives a base editor designed for his own mutation — conceived, manufactured and infused in about six months. It is the first gene-editing treatment tailored to a single patient.' },
   ],
 }
 
