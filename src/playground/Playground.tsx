@@ -1,11 +1,17 @@
-import { Component, Fragment, Suspense, lazy, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Component, Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { CAS, DELIVERY, FIX_RANGE, MAX_LOCUS, NAMES3, clean, diffSegments, isSeed, mismatches, type CasType, type Delivery, type Repair } from '../lib/dna'
-import { DISEASES, findDisease, type Disease } from '../content/diseases'
+import {
+  CAS, DELIVERY, FIX_RANGE, MAX_LOCUS, NAMES3, clean, diffSegments, isSeed, mismatches,
+  type AlleleOutcome, type CasType, type Consequence, type Delivery, type Population, type Repair,
+} from '../lib/dna'
+import { DISEASES, findDisease, targetPos, targetSpan, type Disease } from '../content/diseases'
 import { hasWebGL, useInView } from '../lib/hooks'
 import { report } from '../lib/monitor'
 import { useT, type T } from '../i18n'
-import { MISSIONS_KEY, SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, STEP_SECONDS, experimentUrl, useDerived, useSim, type Quality } from './store'
+import {
+  MISSIONS_KEY, SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, STEP_SECONDS, derive, experimentUrl, useDerived,
+  useParams, useSim, type Proteins, type Quality, type Verdict as VerdictKind,
+} from './store'
 import { EXHIBIT, EXHIBITS, REGIONS, type Region } from '../content/exhibits'
 import { BASES, MISSIONS, accomplished, currentMission } from '../content/missions'
 import { input } from './scene/shared'
@@ -33,11 +39,15 @@ function narration(t: T, step: number, cas: CasType, delivery: Delivery, repair:
     case 3:
       if (!acts) return t('Sem pareamento suficiente, o HNH não gira até o DNA: não há corte.', 'Without enough pairing, HNH never docks onto the DNA: no cut.')
       if (cas === 'be') return t('Editor de bases: em vez de cortar as duas fitas, a desaminase converte C em U na janela de edição (depois lido como T).', 'Base editor: instead of cutting both strands, the deaminase converts C to U in the editing window (later read as T).')
+      if (cas === 'abe') return t('Editor de adenina: a desaminase evoluída em laboratório converte A em inosina na janela de edição, que a célula lê como G. Também sem quebra de fita dupla.', 'Adenine editor: the lab-evolved deaminase converts A to inosine in the editing window, which the cell reads as G. Also without a double-strand break.')
+      if (cas === 'pe') return t('Prime editor: a nickase corta uma fita e a transcriptase reversa, fundida a ela, copia a correção escrita na própria extensão do pegRNA.', 'Prime editor: the nickase cuts one strand and the reverse transcriptase fused to it copies the edit written into the pegRNA extension itself.')
       if (cas === 'nickase') return t('Nickase D10A: o RuvC está inativo (cinza). Só o HNH corta, e só a fita-alvo: um nick, sem quebra de fita dupla.', 'D10A nickase: RuvC is inactive (grey). Only HNH cuts, and only the target strand: a nick, no double-strand break.')
       return t('O HNH gira até a fita-alvo e, junto com o RuvC, cliva as duas fitas 3 pb a montante do PAM: quebra de fita dupla (DSB), com extremidades cegas.', 'HNH swings onto the target strand and, together with RuvC, cleaves both strands 3 bp upstream of the PAM: a double-strand break (DSB) with blunt ends.')
     case 4:
       if (!acts) return t('Nada para reparar: a sequência permanece intacta.', 'Nothing to repair: the sequence stays intact.')
       if (cas === 'be') return t('O reparo/replicação fixa a mudança: C•G vira T•A. Não há molde doador nem DSB.', 'Repair/replication fixes the change: C•G becomes T•A. No donor template and no DSB.')
+      if (cas === 'abe') return t('A replicação lê a inosina como G e fixa a mudança: A•T vira G•C. Também sem molde doador nem DSB.', 'Replication reads inosine as G and fixes the change: A•T becomes G•C. Also without a donor template or DSB.')
+      if (cas === 'pe') return t('A fita recém-escrita compete com a antiga; o reparo remove a antiga e a edição fica. Sem DSB, o indel do NHEJ é muito mais raro aqui.', 'The freshly written strand competes with the old one; repair removes the old one and the edit stays. With no DSB, NHEJ indels are far rarer here.')
       if (cas === 'nickase') return t('Nicks isolados costumam ser selados com fidelidade pela ligase. Por isso nickases são usadas em pares (guias em fitas opostas) para gerar DSB com mais especificidade.', 'Isolated nicks are usually sealed faithfully by ligase. That is why nickases are used in pairs (guides on opposite strands) to make DSBs with higher specificity.')
       return repair === 'hdr'
         ? t('HDR: um molde com braços de homologia alinha-se ao sítio e é copiado. É menos eficiente e ocorre sobretudo nas fases S/G2 do ciclo celular.', 'HDR: a template with homology arms lines up at the site and is copied. It is less efficient and happens mostly in S/G2 phases of the cell cycle.')
@@ -85,6 +95,7 @@ function SequenceView() {
   const edited = useSim((s) => s.step > 4 || (s.step === 4 && s.progress > 0.55))
   if (!d.cand) return null
   const c = d.cand
+  const span = d.dis ? targetSpan(d.dis) : null
   return (
     <div className="font-mono text-[13px] leading-7 tracking-wider break-all">
       <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-mist/70">5′ → 3′ · {t('fita senso', 'sense strand')} {edited ? t('· diff (original → editado)', '· diff (original → edited)') : !d.dis && t('· clique numa base para trocá-la', '· click a base to swap it')}</div>
@@ -92,16 +103,17 @@ function SequenceView() {
         <div className="flex flex-wrap gap-[3px]" role="group" aria-label={t('Sequência do locus', 'Locus sequence')}>
           {[...locus].map((b, i) => {
             const j = i - c.start
-            const sick = i === d.dis?.pos
-            const cls = sick ? 'bg-red-500 text-white ring-1 ring-red-300'
+            const onTarget = !!span && i >= span.start && i < span.start + span.length
+            const cls = onTarget ? 'bg-red-500 text-white ring-1 ring-red-300'
               : j >= 0 && j < 20 ? 'bg-dna/20 ring-1 ring-dna/50' : j >= 20 && j < 23 ? 'bg-cas/60 text-white' : 'bg-white/5 hover:bg-white/15'
             return (
               <Fragment key={i}>
                 {i === c.cut && step >= 3 && d.cuts !== 'none' && <span className="w-[3px] rounded bg-white" aria-label={t('corte', 'cut')} />}
                 <button type="button" disabled={!!d.dis} onClick={() => setLocus(locus.slice(0, i) + NEXT_BASE[b] + locus.slice(i + 1))}
-                  aria-label={`${t('Posição', 'Position')} ${i + 1}: ${b}`} title={sick ? t('Base alterada pela doença', 'Base altered by the disease') : undefined}
+                  aria-label={`${t('Posição', 'Position')} ${i + 1}: ${b}`}
+                  title={onTarget ? (d.dis!.goal === 'disrupt' ? t('Motivo a destruir', 'Motif to destroy') : t('Região alterada pela doença', 'Region altered by the disease')) : undefined}
                   className={`h-8 w-[26px] rounded text-sm font-semibold transition enabled:hover:-translate-y-0.5 enabled:active:scale-90 ${cls}`}
-                  style={{ color: sick || (j >= 20 && j < 23) ? undefined : BASE_COLOR[b] }}>{b}</button>
+                  style={{ color: onTarget || (j >= 20 && j < 23) ? undefined : BASE_COLOR[b] }}>{b}</button>
               </Fragment>
             )
           })}
@@ -117,7 +129,7 @@ function SequenceView() {
         </p>
       )}
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-sans text-xs text-mist/80">
-        {d.dis && <span><i className="mr-1 inline-block h-2 w-2 bg-red-500" />{t('base da doença', 'disease base')}</span>}
+        {d.dis && <span><i className="mr-1 inline-block h-2 w-2 bg-red-500" />{d.dis.goal === 'disrupt' ? t('motivo-alvo', 'target motif') : t('região da doença', 'disease region')}</span>}
         <span><i className="mr-1 inline-block h-2 w-2 bg-dna" />{t('protoespaçador', 'protospacer')}</span>
         <span><i className="mr-1 inline-block h-2 w-2 bg-cas" />PAM</span>
         <span><i className="mr-1 inline-block h-2 w-2 bg-red-400" />{t('deleção', 'deletion')}</span>
@@ -129,20 +141,11 @@ function SequenceView() {
   )
 }
 
-/** Nome da variante em notação HGVS, ex.: "c.20A>T · p.Glu7Val". */
-function variantName(dis: Disease, locus: string, p?: { healthy: string; before: string }) {
-  const codon = Math.floor((dis.pos - dis.orf) / 3)
-  const prot = p ? ` · p.${NAMES3[p.healthy[codon]] ?? '?'}${codon + 1}${NAMES3[p.before[codon]] ?? '?'}` : ''
-  return `c.${dis.pos - dis.orf + 1}${dis.wt}>${locus[dis.pos]}${prot}`
-}
-
-/** Cenário clínico: carrega um alelo patogênico real e explica a doença nos dois níveis. */
+/** Cenário clínico: carrega um alvo real e explica a doença nos dois níveis. */
 function Scenario() {
   const t = useT()
-  const d = useDerived()
   const s = useSim(useShallow((s) => ({ disease: s.disease, setDisease: s.setDisease })))
   const dis = findDisease(s.disease)
-  const locus = useSim((st) => st.locus)
   return (
     <div>
       <h3 className="hud-label">{t('Cenário', 'Scenario')}</h3>
@@ -156,17 +159,21 @@ function Scenario() {
         <div className="mt-2 space-y-2 rounded-xl border border-red-400/30 bg-red-500/5 p-3">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <span className="text-xs text-white/90">{t.pick(dis.gene)}</span>
-            <span className="font-mono text-[11px] text-red-300">{variantName(dis, locus, d.protein)}</span>
+            <span className="font-mono text-[11px] text-red-300">{dis.variant}</span>
           </div>
           <p className="text-xs leading-relaxed text-white/80">{t.pick(dis.plain)}</p>
           <details className="text-[11px] text-mist">
             <summary className="cursor-pointer hover:text-white">{t('Detalhe molecular e herança', 'Molecular detail and inheritance')}</summary>
             <p className="mt-1 leading-relaxed">{t.pick(dis.tech)}</p>
             <p className="mt-1 leading-relaxed">{t.pick(dis.inherit)}</p>
+            <p className="mt-1 text-mist/70">{t('Sequência', 'Sequence')}: {dis.source}</p>
           </details>
           <p className="text-[11px] text-mist/80">
-            {t('A base doente está marcada em vermelho na sequência e na hélice 3D. Rode a simulação para ver o que a sua escolha de edição faz com ela.',
-              'The disease base is marked in red in the sequence and in the 3D helix. Run the simulation to see what your editing choice does to it.')}
+            {dis.goal === 'disrupt'
+              ? t('O motivo-alvo está marcado em vermelho na sequência e na hélice 3D. Aqui o objetivo é destruí-lo: rode a simulação e veja qual ferramenta consegue.',
+                'The target motif is marked in red in the sequence and in the 3D helix. Here the goal is to destroy it: run the simulation and see which tool manages.')
+              : t('A região alterada está marcada em vermelho na sequência e na hélice 3D. Rode a simulação para ver o que a sua escolha de edição faz com ela.',
+                'The altered region is marked in red in the sequence and in the 3D helix. Run the simulation to see what your editing choice does to it.')}
           </p>
         </div>
       )}
@@ -212,9 +219,9 @@ function GuidePanel() {
                 className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-xs transition ${i === s.selected ? 'bg-dna/15 ring-1 ring-dna/60' : 'hover:bg-white/5'}`}>
                 <span className="truncate"><span className="text-dna">{c.protospacer}</span><span className="text-cas">{c.pam}</span></span>
                 {d.dis && (
-                  <span className={`shrink-0 ${Math.abs(c.cut - d.dis.pos) <= FIX_RANGE ? 'text-bio' : 'text-mist/50'}`}
-                    title={t('Distância entre o corte e a mutação: o molde de HDR só corrige se o corte cair perto.', 'Distance between the cut and the mutation: the HDR template only corrects if the cut lands nearby.')}>
-                    {Math.abs(c.cut - d.dis.pos)} nt
+                  <span className={`shrink-0 ${Math.abs(c.cut - targetPos(d.dis)) <= FIX_RANGE ? 'text-bio' : 'text-mist/50'}`}
+                    title={t('Distância entre o corte e o alvo: molde de HDR e prime editing só alcançam o que está perto.', 'Distance between the cut and the target: the HDR template and prime editing only reach what is nearby.')}>
+                    {Math.abs(c.cut - targetPos(d.dis))} nt
                   </span>
                 )}
                 <span className="shrink-0 text-mist">GC {pct(c.gc)} · <b className="text-white">{c.score}</b></span>
@@ -328,60 +335,289 @@ function ParamsPanel() {
   )
 }
 
-type Protein = NonNullable<ReturnType<typeof useDerived>['protein']>
-
-/** Veredito do cenário clínico: o que a edição fez com a PROTEÍNA, em linguagem comum. */
-function Verdict({ dis, p }: { dis: Disease; p: Protein }) {
+/** Efeito da edição sobre a proteína, em uma palavra. */
+function EffectChip({ effect }: { effect: Consequence }) {
   const t = useT()
-  const tone = { healthy: 'border-bio/50 bg-bio/10', unchanged: 'border-white/15 bg-white/5', broken: 'border-cas/50 bg-cas/10' }[p.allele]
+  const label: Record<Consequence, string> = {
+    none: t('sem mudança', 'no change'),
+    silent: t('silenciosa', 'silent'),
+    inframe: t('em quadro', 'in-frame'),
+    missense: t('missense', 'missense'),
+    nonsense: t('nonsense · parada', 'nonsense · stop'),
+    frameshift: 'frameshift',
+  }
+  const tone: Record<Consequence, string> = {
+    none: 'bg-white/10 text-mist',
+    silent: 'bg-white/10 text-mist',
+    inframe: 'bg-rna/20 text-rna',
+    missense: 'bg-rna/20 text-rna',
+    nonsense: 'bg-cas/20 text-cas',
+    frameshift: 'bg-cas/20 text-cas',
+  }
+  return (
+    <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${tone[effect]}`}
+      title={t('Efeito da edição sobre a proteína traduzida.', 'Effect of the edit on the translated protein.')}>
+      {label[effect]}
+    </span>
+  )
+}
+
+/** As estratégias que a aba Comparar roda lado a lado, no mesmo sítio e com o mesmo guia. */
+const STRATEGIES: { cas: CasType; repair: Repair }[] = [
+  { cas: 'wt', repair: 'nhej' },
+  { cas: 'wt', repair: 'hdr' },
+  { cas: 'nickase', repair: 'nhej' },
+  { cas: 'be', repair: 'nhej' },
+  { cas: 'abe', repair: 'nhej' },
+  { cas: 'pe', repair: 'nhej' },
+]
+
+const strategyLabel = (s: { cas: CasType; repair: Repair }, t: T) =>
+  s.cas === 'wt' ? `${t.pick(CAS.wt.name)} · ${s.repair.toUpperCase()}` : t.pick(CAS[s.cas].name)
+
+/** Símbolo curto do veredito, para caber numa célula da tabela. */
+const VERDICT_MARK: Record<VerdictKind, { mark: string; cls: string }> = {
+  success: { mark: '✓', cls: 'text-bio' },
+  unchanged: { mark: '–', cls: 'text-mist/60' },
+  broken: { mark: '✗', cls: 'text-cas' },
+}
+
+/**
+ * Compara todas as ferramentas no sítio escolhido. É a resposta visual para "por que existem
+ * tantos tipos de edição": cada linha acerta um tipo de alvo diferente.
+ */
+function ComparePanel() {
+  const t = useT()
+  const d = useDerived()
+  const p = useParams()
+  const set = useSim((s) => s.set)
+  const rows = useMemo(
+    () => STRATEGIES.map((s) => ({ ...s, d: derive({ ...p, ...s }, t.lang === 'en') })),
+    [p, t.lang],
+  )
+  const best = rows.reduce((a, b) => {
+    const score = (r: typeof a) => (r.d.verdict === 'success' ? 1 : 0) * 10 + (r.d.eff ?? 0)
+    return score(b) > score(a) ? b : a
+  })
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="hud-label">{t('Comparar ferramentas neste sítio', 'Compare tools at this site')}</h3>
+        <p className="mt-1 text-[11px] text-mist/70">
+          {t('Mesmo guia, mesmo corte: só muda a ferramenta. Clique numa linha para adotá-la.',
+            'Same guide, same cut: only the tool changes. Click a row to adopt it.')}
+        </p>
+      </div>
+      <table className="w-full text-left text-xs">
+        <thead className="text-[10px] uppercase tracking-wider text-mist/70">
+          <tr>
+            <th scope="col" className="pb-1 font-medium">{t('Ferramenta', 'Tool')}</th>
+            <th scope="col" className="pb-1 text-right font-medium">{t('Efic.', 'Eff.')}</th>
+            <th scope="col" className="pb-1 text-right font-medium">{t('Pior OT', 'Worst OT')}</th>
+            <th scope="col" className="pb-1 text-right font-medium">{d.dis ? t('Alvo', 'Goal') : t('Efeito', 'Effect')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const current = p.cas === r.cas && (r.cas !== 'wt' || p.repair === r.repair)
+            const worstOff = Math.max(0, ...(r.d.offs ?? []).map((o) => o.p))
+            return (
+              <tr key={`${r.cas}-${r.repair}`}>
+                <td colSpan={4} className="p-0">
+                  <button type="button" onClick={() => set({ cas: r.cas, repair: r.repair })} aria-current={current}
+                    className={`grid w-full grid-cols-[1fr_auto_auto_auto] items-center gap-2 rounded-lg px-2 py-1.5 text-left transition ${current ? 'bg-dna/15 ring-1 ring-dna/60' : 'hover:bg-white/5'}`}>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate">{strategyLabel(r, t)}</span>
+                      {r === best && <span className="shrink-0 rounded bg-bio/20 px-1 text-[10px] uppercase tracking-wider text-bio">{t('melhor', 'best')}</span>}
+                    </span>
+                    <span className="w-12 text-right font-mono text-bio">{pct(r.d.eff ?? 0)}</span>
+                    <span className={`w-12 text-right font-mono ${worstOff > 0.2 ? 'text-cas' : 'text-mist/60'}`}>{pct(worstOff)}</span>
+                    <span className="w-16 text-right">
+                      {r.d.verdict
+                        ? <b className={VERDICT_MARK[r.d.verdict].cls}>{VERDICT_MARK[r.d.verdict].mark}</b>
+                        : <span className="text-[10px] uppercase tracking-wider text-mist/70">{r.d.effect ?? '—'}</span>}
+                    </span>
+                  </button>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <p className="text-xs leading-relaxed text-white/85">{rows.find((r) => r === best)?.d.kind}</p>
+      <p className="text-[11px] leading-relaxed text-mist/70">
+        {t('A eficiência já inclui a entrega escolhida. "Pior OT" é a maior chance de corte fora do alvo entre os sítios simulados.',
+          'Efficiency already includes the chosen delivery. "Worst OT" is the highest off-target cutting chance among the simulated sites.')}
+      </p>
+    </div>
+  )
+}
+
+/** Veredito do cenário: a edição alcançou o objetivo do caso? */
+function Verdict({ dis, verdict, proteins, effect }: { dis: Disease; verdict: VerdictKind; proteins?: Proteins; effect?: Consequence }) {
+  const t = useT()
+  const disrupt = dis.goal === 'disrupt'
+  const tone = { success: 'border-bio/50 bg-bio/10', unchanged: 'border-white/15 bg-white/5', broken: 'border-cas/50 bg-cas/10' }[verdict]
   const head = {
-    healthy: t('Alelo corrigido', 'Allele corrected'),
-    unchanged: t('Alelo inalterado', 'Allele unchanged'),
+    success: disrupt ? t('Interruptor desligado', 'Switch turned off') : t('Alelo corrigido', 'Allele corrected'),
+    unchanged: disrupt ? t('Motivo ainda intacto', 'Motif still intact') : t('Alelo inalterado', 'Allele unchanged'),
     broken: t('Gene inativado, não corrigido', 'Gene disrupted, not corrected'),
-  }[p.allele]
+  }[verdict]
   const say = {
-    healthy: t(
-      'A proteína voltou a ser idêntica à do alelo saudável: a letra trocada foi restaurada e o resto ficou intacto. Como a herança é recessiva, corrigir parte das células já costuma aliviar muito os sintomas.',
-      'The protein is identical to the healthy allele again: the swapped letter was restored and the rest is intact. Since the inheritance is recessive, correcting a share of the cells usually relieves symptoms a great deal.',
-    ),
-    unchanged: t(
-      'A proteína continua a do alelo doente: nenhuma edição chegou à mutação. Escolha um sítio cujo corte caia perto dela e use Cas9 selvagem com molde (HDR).',
-      'The protein is still the disease allele: no edit reached the mutation. Pick a site whose cut lands near it and use wild-type Cas9 with a template (HDR).',
-    ),
+    success: disrupt
+      ? t('O motivo GATA1 deixou de existir neste alelo: o BCL11A não é mais ligado nos precursores eritroides e a hemoglobina fetal volta a subir. Serve qualquer edição que quebre o motivo — inclusive o indel "bagunçado" do NHEJ, que aqui é justamente o que se quer.',
+        'The GATA1 motif no longer exists in this allele: BCL11A is no longer switched on in erythroid precursors and fetal haemoglobin rises again. Any edit that breaks the motif works — including the "messy" NHEJ indel, which here is exactly what you want.')
+      : t('A proteína voltou a ser idêntica à do alelo saudável: a sequência foi restaurada e o resto ficou intacto. Como a herança é recessiva, corrigir parte das células já costuma aliviar muito os sintomas.',
+        'The protein is identical to the healthy allele again: the sequence was restored and the rest is intact. Since the inheritance is recessive, correcting a share of the cells usually relieves symptoms a great deal.'),
+    unchanged: disrupt
+      ? t('O motivo continua legível, então o interruptor segue ligado. Use Cas9 selvagem com NHEJ e um guia cujo corte caia sobre o motivo — molde e editores de base não ajudam aqui.',
+        'The motif is still readable, so the switch stays on. Use wild-type Cas9 with NHEJ and a guide whose cut lands on the motif — a template and base editors do not help here.')
+      : t('A proteína continua a do alelo doente: nenhuma edição chegou ao alvo. Escolha um sítio cujo corte caia perto dele e use molde (HDR) ou prime editing.',
+        'The protein is still the disease allele: no edit reached the target. Pick a site whose cut lands near it and use a template (HDR) or prime editing.'),
     broken: t(
-      'A proteína saiu diferente das duas: o reparo apagou ou somou bases e desalinhou o quadro de leitura. Isso desliga o gene, não conserta a letra errada — para trocar uma letra por outra é preciso molde (HDR) ou prime editing.',
-      'The protein matches neither: repair deleted or added bases and shifted the reading frame. That switches the gene off, it does not fix the wrong letter — swapping one letter for another needs a template (HDR) or prime editing.',
+      'A proteína saiu diferente das duas: o reparo apagou ou somou bases e desalinhou o quadro de leitura. Isso desliga o gene, não conserta a sequência errada — para isso é preciso molde (HDR) ou prime editing.',
+      'The protein matches neither: repair deleted or added bases and shifted the reading frame. That switches the gene off, it does not fix the wrong sequence — that needs a template (HDR) or prime editing.',
     ),
-  }[p.allele]
-  const row = (label: string, seq: string, cls: string) => (
+  }[verdict]
+
+  const row = (label: string, seq: string, cls: string, reference: string) => (
     <div className="flex items-baseline gap-2">
       <span className="w-20 shrink-0 text-[10px] uppercase tracking-wider text-mist/70">{label}</span>
       <span className="font-mono text-xs tracking-widest">
         {[...seq.slice(0, 16)].map((a, i) => (
-          <span key={i} className={a !== p.healthy[i] ? 'bg-red-500/50 text-white' : cls} title={NAMES3[a] ?? a}>{a}</span>
+          <span key={i} className={a !== reference[i] ? 'bg-red-500/50 text-white' : cls} title={NAMES3[a] ?? a}>{a}</span>
         ))}
         {seq.length > 16 && <span className="text-mist/50">…</span>}
       </span>
     </div>
   )
+
   return (
     <div className={`space-y-3 rounded-xl border p-3 ${tone}`} role="status">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <b className="font-display text-lg text-white">{head}</b>
         <span className="font-mono text-[11px] text-mist">{t.pick(dis.name)}</span>
       </div>
-      <div className="space-y-1">
-        {row(t('saudável', 'healthy'), p.healthy, 'text-bio')}
-        {row(t('doente', 'disease'), p.before, 'text-mist/70')}
-        {row(t('editado', 'edited'), p.after, 'text-white')}
-      </div>
+      {proteins?.healthy && (
+        <div className="space-y-1">
+          {row(t('saudável', 'healthy'), proteins.healthy, 'text-bio', proteins.healthy)}
+          {row(t('doente', 'disease'), proteins.before, 'text-mist/70', proteins.healthy)}
+          {row(t('editado', 'edited'), proteins.after, 'text-white', proteins.healthy)}
+        </div>
+      )}
+      {effect && (
+        <div className="flex items-center gap-2">
+          <span className="hud-label">{t('Efeito', 'Effect')}</span>
+          <EffectChip effect={effect} />
+        </div>
+      )}
       <p className="text-xs leading-relaxed text-white/85">{say}</p>
-      {p.allele === 'healthy' && (
+      {verdict === 'success' && !disrupt && (
         <p className="text-[11px] leading-relaxed text-mist/80">
           {t('Num projeto real o molde também traria uma mutação silenciosa no PAM, para a Cas9 não voltar a cortar o alelo já corrigido.',
             'In a real design the template would also carry a silent PAM mutation, so Cas9 does not cut the corrected allele again.')}
         </p>
       )}
+    </div>
+  )
+}
+
+const OUTCOME_COLOR: Record<AlleleOutcome, string> = {
+  intended: '#7dff9b',
+  indel: '#ff4fa3',
+  unedited: '#3b4659',
+}
+
+/** Mapa de alelos: cada ponto é um alelo, desenhado em canvas por serem mil de uma vez. */
+function AlleleMap({ pop }: { pop: Population }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const cols = 40
+  const rows = Math.ceil(pop.alleles / cols)
+  useEffect(() => {
+    const ctx = ref.current?.getContext('2d')
+    if (!ctx) return
+    ctx.clearRect(0, 0, cols, rows)
+    pop.outcomes.forEach((kind, i) => {
+      ctx.fillStyle = OUTCOME_COLOR[kind]
+      ctx.fillRect(i % cols, Math.floor(i / cols), 1, 1)
+    })
+  }, [pop, rows])
+  return (
+    <canvas ref={ref} width={cols} height={rows} aria-hidden="true"
+      className="w-full rounded-lg bg-white/5 [image-rendering:pixelated]" style={{ aspectRatio: `${cols} / ${rows}` }} />
+  )
+}
+
+/**
+ * Uma rodada real não dá um desfecho só: dá uma distribuição. Este bloco roda a mesma
+ * simulação em mil alelos (quinhentas células diploides), como um sequenciamento do amplicon.
+ */
+function PopulationView() {
+  const t = useT()
+  const d = useDerived()
+  const [round, setRound] = useState(1)
+  const pop = useMemo(() => d.population?.(round), [d, round])
+  if (!pop) return null
+
+  const share = (n: number) => pct(n / pop.alleles)
+  const peak = Math.max(...pop.spectrum.map((s) => s.alleles), 1)
+  const legend: [AlleleOutcome, string][] = [
+    ['intended', t('objetivo alcançado', 'goal reached')],
+    ['indel', t('editado, sem alcançar', 'edited, goal missed')],
+    ['unedited', t('intacto', 'untouched')],
+  ]
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="hud-label">{t('Mil alelos, uma rodada', 'A thousand alleles, one run')}</h3>
+        <button type="button" onClick={() => setRound((r) => r + 1)} className="text-[11px] text-mist underline hover:text-white">
+          {t('sequenciar de novo', 'sequence again')}
+        </button>
+      </div>
+
+      <AlleleMap pop={pop} />
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-mist/80">
+        {legend.map(([kind, label]) => (
+          <span key={kind}>
+            <i className="mr-1 inline-block h-2 w-2 rounded-sm align-middle" style={{ background: OUTCOME_COLOR[kind] }} />
+            {label}: <b className="text-white">{share(pop.tally[kind])}</b>
+          </span>
+        ))}
+      </div>
+
+      {pop.spectrum.length > 0 && (
+        <div>
+          <div className="hud-label">{t('Espectro de indels', 'Indel spectrum')}</div>
+          <div className="mt-1 flex items-end gap-px" aria-hidden="true">
+            {pop.spectrum.map((s) => (
+              <div key={s.net} className="flex-1" title={`${s.net > 0 ? '+' : ''}${s.net} nt · ${s.alleles}`}>
+                <div className="rounded-sm bg-dna/70" style={{ height: `${8 + (40 * s.alleles) / peak}px` }} />
+                <div className="mt-0.5 text-center font-mono text-[9px] text-mist/60">{s.net > 0 ? `+${s.net}` : s.net}</div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-1 text-[11px] text-mist/70">
+            {t('Saldo de bases por alelo editado — é o que um sequenciamento do amplicon mostraria (ex.: CRISPResso).',
+              'Net bases per edited allele — what amplicon sequencing would show (e.g. CRISPResso).')}
+          </p>
+        </div>
+      )}
+
+      <div className="rounded-xl bg-white/5 p-3">
+        <div className="hud-label">{t('Células diploides', 'Diploid cells')}</div>
+        <p className="mt-1 text-xs leading-relaxed text-white/85">
+          {t(`Dos ${pop.alleles / 2} núcleos simulados, ${pct(pop.cells.both / (pop.alleles / 2))} ficaram com os dois alelos resolvidos, ${pct(pop.cells.one / (pop.alleles / 2))} com apenas um e ${pct(pop.cells.none / (pop.alleles / 2))} com nenhum.`,
+            `Of the ${pop.alleles / 2} simulated nuclei, ${pct(pop.cells.both / (pop.alleles / 2))} ended with both alleles resolved, ${pct(pop.cells.one / (pop.alleles / 2))} with only one and ${pct(pop.cells.none / (pop.alleles / 2))} with none.`)}
+          {' '}
+          {d.dis?.goal === 'fix'
+            ? t('Numa doença recessiva, um só alelo corrigido já costuma bastar para a célula funcionar.',
+              'In a recessive disease, a single corrected allele is usually enough for the cell to work.')
+            : t('Para elevar a hemoglobina fetal não é preciso acertar todas as células: uma fração das células-tronco já muda o quadro clínico.',
+              'Raising fetal haemoglobin does not require hitting every cell: a fraction of the stem cells already changes the clinical picture.')}
+        </p>
+      </div>
     </div>
   )
 }
@@ -393,7 +629,7 @@ function ResultPanel() {
   const risky = d.offs!.some((o) => o.p > 0.2)
   return (
     <div className="space-y-4">
-      {d.dis && d.protein && <Verdict dis={d.dis} p={d.protein} />}
+      {d.dis && d.verdict && <Verdict dis={d.dis} verdict={d.verdict} proteins={d.proteins} effect={d.effect} />}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-white/5 p-3"><div className="hud-label">{t('Eficiência simulada', 'Simulated efficiency')}</div><div className="font-display text-3xl text-bio">{pct(d.eff!)}</div></div>
         <div className="rounded-xl bg-white/5 p-3"><div className="hud-label">{t('Corte no alvo', 'On-target cut')}</div><div className="font-display text-3xl text-dna">{pct(d.pOn!)}</div></div>
@@ -412,6 +648,7 @@ function ResultPanel() {
         ))}
         {risky && <p className="mt-3 rounded-lg border border-cas/40 bg-cas/10 p-2 text-xs text-white" role="alert">⚠ {t('Risco relevante de corte off-target. Em laboratório: redesenhar o guia, usar Cas de alta fidelidade/RNP e sequenciar os sítios preditos.', 'Relevant off-target risk. In the lab: redesign the guide, use a high-fidelity Cas/RNP and sequence the predicted sites.')}</p>}
       </div>
+      <PopulationView />
       <p className="text-[11px] text-mist/60">{t('Todos os números são ilustrativos (modelo logístico simples), não previsões experimentais.', 'All numbers are illustrative (simple logistic model), not experimental predictions.')}</p>
     </div>
   )
@@ -643,7 +880,7 @@ export default function Playground() {
   const [webgl] = useState(hasWebGL)
   const [lost, setLost] = useState(false)
   const [toast, setToast] = useState('')
-  const [tab, setTab] = useState<'guia' | 'params' | 'resultado'>('guia')
+  const [tab, setTab] = useState<'guia' | 'params' | 'comparar' | 'resultado'>('guia')
   const sim = useSim(useShallow((s) => ({ step: s.step, playing: s.playing, presentation: s.presentation, cinema: s.cinema, explore: s.explore, sound: s.sound, cas: s.cas, delivery: s.delivery, repair: s.repair })))
   const d = useDerived()
   const acts = !!d.acts
@@ -786,7 +1023,12 @@ export default function Playground() {
   // no Explorar, a narração das etapas só aparece nas zonas do locus (as outras têm o próprio cartão)
   const zone = useSim((s) => s.zone)
   const showCaption = !sim.explore || !!(zone && EXHIBIT[zone].steps)
-  const TABS = [['guia', t('Guia', 'Guide')], ['params', t('Parâmetros', 'Parameters')], ['resultado', t('Resultado', 'Outcome')]] as const
+  const TABS = [
+    ['guia', t('Guia', 'Guide')],
+    ['params', t('Parâmetros', 'Parameters')],
+    ['comparar', t('Comparar', 'Compare')],
+    ['resultado', t('Resultado', 'Outcome')],
+  ] as const
   const onTabKey = (e: React.KeyboardEvent, i: number) => {
     const n = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
     if (!n) return
@@ -860,10 +1102,10 @@ export default function Playground() {
             {TABS.map(([k, label], i) => (
               <button key={k} id={`tab-${k}`} type="button" role="tab" aria-selected={tab === k} aria-controls="pg-panel" tabIndex={tab === k ? 0 : -1}
                 onClick={() => setTab(k)} onKeyDown={(e) => onTabKey(e, i)}
-                className={`flex-1 rounded-lg py-1.5 text-sm transition ${tab === k ? 'bg-white/15 text-white' : 'text-mist hover:text-white'}`}>{label}</button>
+                className={`flex-1 rounded-lg py-1.5 text-xs transition sm:text-sm ${tab === k ? 'bg-white/15 text-white' : 'text-mist hover:text-white'}`}>{label}</button>
             ))}
           </div>
-          <div id="pg-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>{tab === 'guia' ? <GuidePanel /> : tab === 'params' ? <ParamsPanel /> : <ResultPanel />}</div>
+          <div id="pg-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>{tab === 'guia' ? <GuidePanel /> : tab === 'params' ? <ParamsPanel /> : tab === 'comparar' ? <ComparePanel /> : <ResultPanel />}</div>
         </div>
       </div>
       <Tooltip />

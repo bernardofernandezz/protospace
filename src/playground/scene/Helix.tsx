@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three-stdlib'
-import { COMP } from '../../lib/dna'
+import { BASE_EDITORS, COMP, isBaseEditor } from '../../lib/dna'
+import { targetSpan } from '../../content/diseases'
 import { useT, tNow } from '../../i18n'
 import { BASE_COLOR, PALETTE } from '../colors'
 import { useSim, type Quality } from '../store'
@@ -57,9 +58,15 @@ function editKinds(d: Ready) {
 /** Resumo curto da edição para o rótulo 3D. */
 function editLabel(d: Ready, t: ReturnType<typeof useT>) {
   const { cas, repair } = useSim.getState()
-  if (d.protein?.allele === 'healthy') return t('alelo corrigido · proteína saudável', 'allele corrected · healthy protein')
-  if (d.protein?.allele === 'broken') return t('gene inativado · não corrigido', 'gene disrupted · not corrected')
-  if (cas === 'be') return t(`C→T × ${d.ops.length} · sem DSB`, `C→T × ${d.ops.length} · no DSB`)
+  if (d.verdict === 'success') return d.dis?.goal === 'disrupt'
+    ? t('motivo destruído · interruptor desligado', 'motif destroyed · switch turned off')
+    : t('alelo corrigido · proteína saudável', 'allele corrected · healthy protein')
+  if (d.verdict === 'broken') return t('gene inativado · não corrigido', 'gene disrupted · not corrected')
+  if (isBaseEditor(cas)) {
+    const { from, to } = BASE_EDITORS[cas]
+    return t(`${from}→${to} × ${d.ops.length} · sem DSB`, `${from}→${to} × ${d.ops.length} · no DSB`)
+  }
+  if (cas === 'pe') return t('prime editing · escrito pela RT', 'prime editing · written by the RT')
   if (repair === 'hdr') return t('HDR · +GAATTC (EcoRI) · PAM G→C', 'HDR · +GAATTC (EcoRI) · PAM G→C')
   const net = d.ops.reduce((a, o) => a + o.ins.length - o.del, 0)
   return `NHEJ · ${net > 0 ? '+' : '−'}${Math.abs(net)} nt${net % 3 ? ' · frameshift' : ' · in-frame'}`
@@ -78,10 +85,11 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
   }), [])
   const geo = useMemo(() => ({ plate: new RoundedBoxGeometry(0.11, 1, 0.32, 2, 0.035), phos: new THREE.SphereGeometry(0.155, 14, 10) }), [])
   const kinds = useMemo(() => editKinds(d), [d])
-  // base patogênica do cenário clínico: pulsa em vermelho no alelo doente e esverdeia quando é corrigida
-  const sick = d.dis ? d.dis.pos : -1
-  const healed = d.protein?.allele === 'healthy'
-  const beSites = useMemo(() => new Set(d.cuts === 'none' && d.acts && useSim.getState().cas === 'be' ? d.ops.map((o) => o.pos) : []), [d])
+  // alvo do cenário clínico: pulsa em vermelho enquanto está intacto e esverdeia quando é resolvido
+  const span = useMemo(() => (d.dis ? targetSpan(d.dis) : null), [d.dis])
+  const onTarget = (i: number) => !!span && i >= span.start && i < span.start + span.length
+  const healed = d.verdict === 'success'
+  const beSites = useMemo(() => new Set(d.cuts === 'none' && d.acts && isBaseEditor(useSim.getState().cas) ? d.ops.map((o) => o.pos) : []), [d])
 
   const bases = useRef<THREE.InstancedMesh>(null!)
   const phos = useRef<THREE.InstancedMesh>(null!)
@@ -173,12 +181,12 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
       if (orig && beSites.has(i) && v.deam > 0) _col.lerp(BASES.U, v.deam).multiplyScalar(1 + 1.5 * Math.sin(v.deam * Math.PI) + 0.4 * v.deam)
       if (!orig && kinds[i]) _col.multiplyScalar(1.7 + 2.2 * (1 - v.growIns))
       if (orig && L.deleted[i] && v.shrinkDel > 0) _col.lerp(MM, v.shrinkDel)
-      if (orig && i === sick) _col.copy(MM).multiplyScalar(1.5 + 0.5 * Math.sin(performance.now() / 240))
+      if (orig && onTarget(i)) _col.copy(MM).multiplyScalar(1.5 + 0.5 * Math.sin(performance.now() / 240))
       if (!orig && healed && kinds[i]) _col.lerp(HEAL, 0.7).multiplyScalar(1.4 + 1.4 * (1 - v.growIns))
       bases.current.setColorAt(i, _col)
       _col.copy(BASES[b2] ?? GREY).multiplyScalar(lit)
       if (!orig && kinds[i]) _col.multiplyScalar(1.7 + 2.2 * (1 - v.growIns))
-      if (orig && i === sick) _col.lerp(MM, 0.75).multiplyScalar(1.3)
+      if (orig && onTarget(i)) _col.lerp(MM, 0.75).multiplyScalar(1.3)
       if (!orig && healed && kinds[i]) _col.lerp(HEAL, 0.5).multiplyScalar(1.3)
       bases.current.setColorAt(n + i, _col)
     }
@@ -243,11 +251,16 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
     const b = top ? L.seq[i] : COMP[L.seq[i]]
     const j = i - v.cand.start
     let body = tNow('Fora da região-alvo.', 'Outside the target region.')
-    if (!v.edited && i === sick) body = tNow(
-      `Esta é a base trocada que causa a doença: no alelo saudável aqui há ${d.dis!.wt}. Um corte perto daqui, com molde de reparo (HDR), pode trazê-la de volta.`,
-      `This is the swapped base that causes the disease: the healthy allele has ${d.dis!.wt} here. A cut nearby, with a repair template (HDR), can bring it back.`,
-    )
-    else if (v.edited && healed && L.changed?.[i]) body = tNow('Base restaurada: este alelo voltou a codificar a proteína saudável.', 'Base restored: this allele encodes the healthy protein again.')
+    if (!v.edited && onTarget(i)) body = d.dis!.goal === 'disrupt'
+      ? tNow(
+        'Este é o motivo GATA1 que mantém o interruptor ligado. Aqui o objetivo é justamente destruí-lo: basta um indel do NHEJ sobre estas letras.',
+        'This is the GATA1 motif that keeps the switch on. Here the goal is to destroy it: an NHEJ indel over these letters is enough.',
+      )
+      : tNow(
+        'Esta é a região alterada pela doença. Um corte perto daqui, com molde de reparo (HDR) ou com prime editing, devolve a sequência saudável.',
+        'This is the region altered by the disease. A cut nearby, with a repair template (HDR) or with prime editing, brings the healthy sequence back.',
+      )
+    else if (v.edited && healed && L.changed?.[i]) body = tNow('Alvo resolvido: este alelo alcançou o objetivo do cenário.', 'Target resolved: this allele reached the scenario goal.')
     else if (v.edited && L.changed?.[i]) body = tNow('Base alterada pela edição.', 'Base changed by the edit.')
     else if (!v.edited && j >= 0 && j < 20) {
       body = tNow(
@@ -298,11 +311,12 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
       {d.dis && (
         <Label tone={PALETTE.mismatch} at={(o) => {
           const { v, L } = frame(d)
-          if (v.edited || sick < 0 || sick >= L.n) return false
-          normalAt(L.theta[sick], _N)
-          o.copy(L.center[sick]).addScaledVector(_N, 2.4)
+          const at = span?.start ?? -1
+          if (v.edited || at < 0 || at >= L.n) return false
+          normalAt(L.theta[at], _N)
+          o.copy(L.center[at]).addScaledVector(_N, 2.4)
           return true
-        }}>{t.pick(d.dis.name)} · {t('base trocada', 'swapped base')}</Label>
+        }}>{t.pick(d.dis.name)} · {d.dis.goal === 'disrupt' ? t('motivo-alvo', 'target motif') : t('região alterada', 'altered region')}</Label>
       )}
       <Label tone={PALETTE.rna} at={(o) => { const { v, L } = frame(d); if (v.step !== 0) return false; normalAt(L.theta[v.cand.start], _N); o.copy(L.rna[0]).addScaledVector(_N, 0.5); return true }}>{t('sgRNA · espaçador 5′ → 3′', 'sgRNA · spacer 5′ → 3′')}</Label>
       <Label tone="#ffffff" at={(o) => { const { v, L } = frame(d); if (v.edited || v.step !== 3 || d.cuts === 'none') return false; o.lerpVectors(L.center[v.cand.cut - 1], L.center[v.cand.cut], 0.5).y -= 2.2; return v.p > 0.35 }}>{cutLabel}</Label>

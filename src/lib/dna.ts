@@ -1,7 +1,7 @@
 // Lógica de sequência do playground. Tudo aqui é um MODELO DIDÁTICO:
 // scores e probabilidades são ilustrativos, não preditores reais.
 
-export type CasType = 'wt' | 'nickase' | 'be'
+export type CasType = 'wt' | 'nickase' | 'be' | 'abe' | 'pe'
 export type Delivery = 'rnp' | 'plasmid' | 'viral'
 export type Repair = 'nhej' | 'hdr'
 
@@ -115,6 +115,8 @@ export const CAS = {
   wt: { name: { pt: 'SpCas9 selvagem', en: 'Wild-type SpCas9' }, cuts: 'dsb' },
   nickase: { name: { pt: 'Cas9 nickase (D10A)', en: 'Cas9 nickase (D10A)' }, cuts: 'nick' },
   be: { name: { pt: 'Editor de bases (CBE)', en: 'Base editor (CBE)' }, cuts: 'none' },
+  abe: { name: { pt: 'Editor de bases (ABE)', en: 'Base editor (ABE)' }, cuts: 'none' },
+  pe: { name: { pt: 'Prime editor (PE2)', en: 'Prime editor (PE2)' }, cuts: 'nick' },
 } as const
 
 /** PRNG determinístico (mulberry32) para que cada "rodada" seja reproduzível. */
@@ -143,20 +145,33 @@ export const HDR_INSERT = 'GAATTC' // sítio EcoRI: facilita triagem por digest�
 /** Até onde o molde consegue levar a correção a partir do corte (braços de homologia curtos). */
 export const FIX_RANGE = 30
 
-/** Base a restaurar num alelo patogênico: `wt` volta para a posição `pos` do locus. */
-export interface Fix { pos: number; wt: string }
+/** Edição que devolve o alelo saudável: uma troca, uma inserção ou uma deleção no locus doente. */
+export type Fix = Op
 
 /**
- * HDR com molde. Com um alelo a corrigir e o corte perto o bastante, o molde traz a base
+ * HDR com molde. Com um alelo a corrigir e o corte perto o bastante, o molde traz a sequência
  * saudável de volta; caso contrário insere GAATTC no corte e muta o PAM (G→C) para impedir novo corte.
  */
 export function hdrOps(c: Candidate, fix?: Fix): Op[] {
-  if (fix && Math.abs(fix.pos - c.cut) <= FIX_RANGE) return [{ pos: fix.pos, del: 1, ins: fix.wt }]
+  if (fix && Math.abs(fix.pos - c.cut) <= FIX_RANGE) return [fix]
   const pamG = c.start + 21
   return [
     { pos: c.cut, del: 0, ins: HDR_INSERT },
     { pos: pamG, del: 1, ins: 'C' },
   ]
+}
+
+/** Até onde a transcriptase reversa escreve a partir do nick, sempre no sentido 3′. */
+export const PE_RANGE = 30
+
+/**
+ * Prime editing: o nick cai no mesmo ponto do corte da Cas9 e a RT copia a extensão do pegRNA
+ * a partir dele. A edição só acontece se estiver adiante do nick e dentro do alcance da extensão.
+ */
+export function primeEditOps(c: Candidate, fix?: Fix): Op[] {
+  const target = fix ?? { pos: c.cut, del: 0, ins: HDR_INSERT }
+  const reach = target.pos - c.cut
+  return reach >= 0 && reach <= PE_RANGE ? [target] : []
 }
 
 // Código genético padrão (tabela 1). Em cada posição do códon a ordem é T, C, A, G.
@@ -180,15 +195,33 @@ export function translate(seq: string, orf: number): string {
   return out
 }
 
+/** Primeiro ATG do trecho: dá um quadro de leitura mesmo ao locus fictício. -1 se não houver. */
+export const firstOrf = (seq: string) => seq.indexOf('ATG')
+
 export const NAMES3: Record<string, string> = {
   A: 'Ala', C: 'Cys', D: 'Asp', E: 'Glu', F: 'Phe', G: 'Gly', H: 'His', I: 'Ile', K: 'Lys', L: 'Leu',
   M: 'Met', N: 'Asn', P: 'Pro', Q: 'Gln', R: 'Arg', S: 'Ser', T: 'Thr', V: 'Val', W: 'Trp', Y: 'Tyr', '*': 'Stop',
 }
 
-/** Editor de bases de citosina: C→T nas posições 4–8 do protoespaçador (contadas a partir da ponta distal ao PAM). */
-export function baseEditOps(c: Candidate): Op[] {
+/** Editores de base: trocam uma letra sem cortar o DNA. CBE faz C→T; ABE faz A→G. */
+export const BASE_EDITORS = {
+  be: { from: 'C', to: 'T' },
+  abe: { from: 'A', to: 'G' },
+} as const
+
+export type BaseEditor = keyof typeof BASE_EDITORS
+
+export const isBaseEditor = (cas: CasType): cas is BaseEditor => cas in BASE_EDITORS
+
+/** Janela de edição: posições 4–8 do protoespaçador, contadas a partir da ponta distal ao PAM. */
+export const BE_WINDOW = { first: 3, last: 7 } as const
+
+export function baseEditOps(c: Candidate, editor: BaseEditor): Op[] {
+  const { from, to } = BASE_EDITORS[editor]
   const ops: Op[] = []
-  for (let k = 3; k <= 7; k++) if (c.protospacer[k] === 'C') ops.push({ pos: c.start + k, del: 1, ins: 'T' })
+  for (let k = BE_WINDOW.first; k <= BE_WINDOW.last; k++) {
+    if (c.protospacer[k] === from) ops.push({ pos: c.start + k, del: 1, ins: to })
+  }
   return ops
 }
 
@@ -231,3 +264,118 @@ export function diffSegments(seq: string, ops: Op[]): Seg[] {
 }
 
 export const netLength = (ops: Op[]) => ops.reduce((a, o) => a + o.ins.length - o.del, 0)
+
+/**
+ * Operações da ferramenta escolhida. Recebe uma semente porque o NHEJ sorteia um indel
+ * diferente a cada alelo; as demais vias são determinísticas.
+ */
+export function editOps(cas: CasType, repair: Repair, locus: string, c: Candidate, fix?: Fix): (seed: number) => Op[] {
+  if (isBaseEditor(cas)) return () => baseEditOps(c, cas)
+  if (cas === 'pe') return () => primeEditOps(c, fix)
+  if (cas === 'nickase') return () => []
+  if (repair === 'hdr') return () => hdrOps(c, fix)
+  return (seed) => nhejOps(locus, c.cut, seed)
+}
+
+/** Chance de um alelo reconhecido receber a edição pretendida, ou um indel indesejado do NHEJ. */
+export interface Odds { intended: number; indel: number }
+
+/**
+ * Frações ilustrativas por ferramenta. A HDR é a mais ingrata: mesmo quando o corte acontece,
+ * o NHEJ costuma selar a quebra antes que o molde seja copiado.
+ */
+export function repairOdds(cas: CasType, repair: Repair): Odds {
+  if (isBaseEditor(cas)) return { intended: 0.7, indel: 0 }
+  if (cas === 'pe') return { intended: 0.35, indel: 0.05 }
+  if (cas === 'nickase') return { intended: 0, indel: 0.05 }
+  if (repair === 'hdr') return { intended: 0.25, indel: 0.55 }
+  return { intended: 0.85, indel: 0 }
+}
+
+export interface PopulationArgs {
+  /** Entrega × reconhecimento: a chance de a ferramenta chegar e engatar no alelo. */
+  pEngage: number
+  odds: Odds
+  intended: (seed: number) => Op[]
+  /** Indel do NHEJ, quando ele vence a edição pretendida. */
+  unwanted: (seed: number) => Op[]
+  /** Se as operações cumpriram mesmo o objetivo — um indel nem sempre destrói o alvo. */
+  succeeded: (ops: Op[]) => boolean
+  seed: number
+  alleles?: number
+}
+
+/** Desfecho de um alelo: objetivo alcançado, editado sem alcançá-lo, ou intacto. */
+export type AlleleOutcome = 'intended' | 'indel' | 'unedited'
+
+export interface Population {
+  alleles: number
+  /** Desfecho de cada alelo, na ordem sorteada. */
+  outcomes: AlleleOutcome[]
+  /** Contagem de alelos em cada desfecho (soma `alleles`). */
+  tally: Record<AlleleOutcome, number>
+  /** Saldo de bases → alelos, como num sequenciamento do amplicon. Ordenado por saldo. */
+  spectrum: { net: number; alleles: number }[]
+  /** Células diploides por quantidade de alelos com a edição pretendida. */
+  cells: { none: number; one: number; both: number }
+}
+
+/**
+ * Simula uma população de alelos com as mesmas regras de uma rodada só, para mostrar que o
+ * resultado de um experimento é uma distribuição — não um desfecho único. Alelos aos pares
+ * formam células diploides, que é o que decide uma doença recessiva.
+ */
+export function population(a: PopulationArgs): Population {
+  const alleles = a.alleles ?? 1000
+  const r = rng(a.seed)
+  const outcomes: AlleleOutcome[] = []
+  const tally = { intended: 0, indel: 0, unedited: 0 }
+  const byNet = new Map<number, number>()
+  const cells = { none: 0, one: 0, both: 0 }
+  let fixedInPair = 0
+
+  for (let i = 0; i < alleles; i++) {
+    const engaged = r() < a.pEngage
+    const draw = r()
+    const seed = 1 + Math.floor(r() * 0xffffff)
+
+    let ops: Op[] = []
+    if (engaged && draw < a.odds.intended) ops = a.intended(seed)
+    else if (engaged && draw < a.odds.intended + a.odds.indel) ops = a.unwanted(seed)
+
+    // o que decide é o resultado, não o caminho: um indel do NHEJ pode destruir o alvo, e a
+    // ferramenta pode engatar sem resolver (sem C na janela, alvo fora de alcance, motivo intacto)
+    const kind: AlleleOutcome = !ops.length ? 'unedited' : a.succeeded(ops) ? 'intended' : 'indel'
+    tally[kind]++
+    outcomes.push(kind)
+
+    if (ops.length) {
+      const net = netLength(ops)
+      byNet.set(net, (byNet.get(net) ?? 0) + 1)
+    }
+    if (kind === 'intended') fixedInPair++
+    if (i % 2 === 1) {
+      cells[fixedInPair === 2 ? 'both' : fixedInPair === 1 ? 'one' : 'none']++
+      fixedInPair = 0
+    }
+  }
+
+  const spectrum = [...byNet].map(([net, n]) => ({ net, alleles: n })).sort((x, y) => x.net - y.net)
+  return { alleles, outcomes, tally, spectrum, cells }
+}
+
+/** Efeito da edição sobre a proteína, do mais inofensivo ao mais grave. */
+export type Consequence = 'none' | 'silent' | 'inframe' | 'missense' | 'nonsense' | 'frameshift'
+
+/**
+ * Classifica a edição comparando as proteínas traduzidas antes e depois.
+ * `ops` entra porque o deslocamento de quadro depende do saldo de bases, não do texto da proteína.
+ */
+export function consequence(before: string, after: string, ops: Op[]): Consequence {
+  if (!ops.length) return 'none'
+  if (netLength(ops) % 3) return 'frameshift'
+  if (after === before) return 'silent'
+  if (after.endsWith('*') && !before.endsWith('*')) return 'nonsense'
+  if (after.length !== before.length) return 'inframe'
+  return 'missense'
+}

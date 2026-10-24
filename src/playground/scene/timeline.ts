@@ -1,6 +1,7 @@
 // Estado visual da simulação: tudo é função pura de (parâmetros, etapa, progresso),
 // então voltar/avançar etapas sempre reproduz a mesma cena.
 import * as THREE from 'three'
+import { isBaseEditor } from '../../lib/dna'
 import { useSim, type useDerived } from '../store'
 
 // ---------- geometria do B-DNA estilizado ----------
@@ -67,7 +68,7 @@ export function visual(d: Ready, step: number, p: number) {
   const acts = !!d.acts
   const dsb = d.cuts === 'dsb'
   const nick = d.cuts === 'nick'
-  const be = cas === 'be' && acts
+  const be = isBaseEditor(cas) && acts
   const hdr = dsb && repair === 'hdr'
   const nhej = dsb && repair === 'nhej'
   const s4 = step === 4

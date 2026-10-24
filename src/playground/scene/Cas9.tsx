@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
+import { BASE_EDITORS, isBaseEditor } from '../../lib/dna'
 import { useT } from '../../i18n'
 import { PALETTE } from '../colors'
 import { useSim, type Quality } from '../store'
@@ -74,16 +75,21 @@ export default function Cas9({ d, quality }: { d: Ready; quality: Quality }) {
     mat.ruvc.uniforms.uRim.value.set(cas === 'wt' ? '#ffc0a0' : '#9aa3b5')
     mat.pi.uniforms.uGlow.value = v.path.probeAmt + 0.6 * v.rloop
     mat.rec.uniforms.uGlow.value = 0.25 * v.rloop
-    deam.current.visible = cas === 'be'
+    deam.current.visible = isBaseEditor(cas) || cas === 'pe'
     mat.deam.uniforms.uGlow.value = v.deam > 0 && v.deam < 1 ? 0.8 : 0.1
   })
 
   const casTip = (e: ThreeEvent<PointerEvent>) => {
     const c = useSim.getState().cas
     tip(e,
-      c === 'be' ? t('Editor de bases (nCas9 + desaminase)', 'Base editor (nCas9 + deaminase)') : c === 'nickase' ? t('Cas9 nickase (D10A)', 'Cas9 nickase (D10A)') : 'SpCas9',
-      c === 'be'
-        ? t('Cas9 nickase fundida a uma desaminase de citosina: converte C→T numa janela do protoespaçador sem quebra de fita dupla.', 'Cas9 nickase fused to a cytidine deaminase: converts C→T within a window of the protospacer without a double-strand break.')
+      c === 'be' ? t('Editor de bases (nCas9 + desaminase de citosina)', 'Base editor (nCas9 + cytidine deaminase)')
+        : c === 'abe' ? t('Editor de bases (nCas9 + desaminase de adenina)', 'Base editor (nCas9 + adenine deaminase)')
+        : c === 'pe' ? t('Prime editor (nCas9 + transcriptase reversa)', 'Prime editor (nCas9 + reverse transcriptase)')
+        : c === 'nickase' ? t('Cas9 nickase (D10A)', 'Cas9 nickase (D10A)') : 'SpCas9',
+      isBaseEditor(c)
+        ? t(`Cas9 nickase fundida a uma desaminase: converte ${BASE_EDITORS[c].from}→${BASE_EDITORS[c].to} numa janela do protoespaçador, sem quebra de fita dupla.`, `Cas9 nickase fused to a deaminase: converts ${BASE_EDITORS[c].from}→${BASE_EDITORS[c].to} within a window of the protospacer, with no double-strand break.`)
+        : c === 'pe'
+        ? t('Cas9 nickase fundida a uma transcriptase reversa: corta uma fita e escreve ali a sequência ditada pela extensão do pegRNA.', 'Cas9 nickase fused to a reverse transcriptase: it nicks one strand and writes there the sequence dictated by the pegRNA extension.')
         : t('Lóbulo REC (reconhecimento, magenta) acomoda o heterodúplex guia:DNA; lóbulo NUC (nuclease) contém HNH, RuvC e o domínio PI, que lê o PAM.', 'The REC lobe (recognition, magenta) holds the guide:DNA heteroduplex; the NUC lobe (nuclease) carries HNH, RuvC and the PI domain, which reads the PAM.'))
   }
   const domTip = (title: string, body: string) => (e: ThreeEvent<PointerEvent>) => tip(e, title, body)
@@ -119,7 +125,8 @@ export default function Cas9({ d, quality }: { d: Ready; quality: Quality }) {
       <Label tone={PALETTE.hnh} at={(o) => visible((s, p) => s === 3 && p < 0.9)(o, _v.copy(hnh.current?.position ?? HNH_OFF).add(_w.set(0, 0.9, 0)))}>HNH</Label>
       <Label tone={PALETTE.pi} at={(o) => visible((s, p) => s === 2 && p < 0.62)(o, _v.set(3.4, -1.7, 0.4))}>{t('PI · lê o PAM', 'PI · reads the PAM')}</Label>
       {cas !== 'wt' && <Label tone="#9aa3b5" at={(o) => visible((s) => s === 3)(o, _v.set(1.5, -2.2, 1.1))}>{t('RuvC inativo (D10A)', 'RuvC inactive (D10A)')}</Label>}
-      {cas === 'be' && <Label tone={PALETTE.deaminase} at={(o) => visible((s) => s === 3)(o, _v.set(-1.9, 1.6, 2.05))}>{t('desaminase · C→U', 'deaminase · C→U')}</Label>}
+      {isBaseEditor(cas) && <Label tone={PALETTE.deaminase} at={(o) => visible((s) => s === 3)(o, _v.set(-1.9, 1.6, 2.05))}>{t(`desaminase · ${BASE_EDITORS[cas].from}→${cas === 'be' ? 'U' : 'I'}`, `deaminase · ${BASE_EDITORS[cas].from}→${cas === 'be' ? 'U' : 'I'}`)}</Label>}
+      {cas === 'pe' && <Label tone={PALETTE.deaminase} at={(o) => visible((s) => s === 3)(o, _v.set(-1.9, 1.6, 2.05))}>{t('transcriptase reversa', 'reverse transcriptase')}</Label>}
     </group>
   )
 }
