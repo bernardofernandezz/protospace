@@ -5,6 +5,10 @@ import '@fontsource-variable/inter'
 import '@fontsource-variable/jetbrains-mono'
 import './index.css'
 import App from './App'
+import { bootDone } from './lib/boot'
+import { initMonitoring } from './lib/monitor'
+
+void bootDone.then(initMonitoring)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

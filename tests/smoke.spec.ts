@@ -1,6 +1,25 @@
 import { expect, test, type Page } from '@playwright/test'
 
 /** Coleta erros de console/página durante o teste. */
+// No CI, o projeto "iphone" (WebKit) roda sem WebGL, como o Safari no Modo de Bloqueio do iOS: o WebGL do WebKit
+// no Linux é por software e trava a página inteira, coisa que não acontece num iPhone (o 3D é coberto pelo Chromium)
+test.beforeEach(async ({ page }, info) => {
+  if (info.project.name !== 'iphone') return
+  await page.addInitScript(() => {
+    const orig = HTMLCanvasElement.prototype.getContext
+    // @ts-expect-error — simula navegador sem WebGL
+    HTMLCanvasElement.prototype.getContext = function (type: string, ...rest: unknown[]) {
+      return /webgl/.test(type) ? null : orig.call(this, type as '2d', ...(rest as []))
+    }
+  })
+})
+
+const hasWebGL = (page: Page) => page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'))
+/** O modo Explorar precisa de WebGL (o WebKit do Linux, usado no CI para simular o iPhone, não tem). */
+async function skipWithoutWebGL(page: Page) {
+  test.skip(!(await hasWebGL(page)), 'navegador sem WebGL')
+}
+
 function trackErrors(page: Page) {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
@@ -43,15 +62,18 @@ test('playground percorre as 6 etapas e mostra o resultado', async ({ page }) =>
   await expect(steps.nth(5)).toHaveAttribute('aria-current', 'step')
   await expect(page.getByRole('tab', { name: 'Resultado' })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByText('Eficiência simulada').first()).toBeVisible()
-  // a cena 3D monta (canvas WebGL) sem quebrar a página
-  await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
+  // a cena 3D monta (canvas WebGL) sem quebrar a página; sem WebGL, o fallback mantém os painéis
+  if (await hasWebGL(page)) await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
   expect(errors, errors.join('\n')).toEqual([])
 })
 
-test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page }) => {
+test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page, isMobile }) => {
+  // dois voos guiados com WebGL por software (runner do CI) passam de 60 s
+  test.setTimeout(120_000)
   const errors = trackErrors(page)
   await page.goto('/?lang=pt#playground')
   await page.locator('.stage').scrollIntoViewIfNeeded()
+  await skipWithoutWebGL(page)
   await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
   const btn = page.getByRole('toolbar', { name: 'Controles da simulação' }).getByRole('button', { name: /Explorar/ })
   await btn.click()
@@ -61,6 +83,16 @@ test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page }) =>
   await expect(snd).toHaveAttribute('aria-pressed', 'false')
   await snd.click()
   await expect(snd).toHaveAttribute('aria-pressed', 'true')
+  // missão 1: "Ir" voa até o guia e a trilha avança
+  await expect(page.getByText('Missão 1/11')).toBeVisible()
+  await page.getByRole('button', { name: 'Ir', exact: true }).click()
+  await expect(page.getByText('Missão 2/11')).toBeVisible({ timeout: 30_000 })
+  if (isMobile) {
+    // no toque o palco cobre a tela inteira e o "voar até" fica atrás do botão Mapa
+    const vp = page.viewportSize()!
+    expect(await page.locator('.stage').boundingBox()).toEqual({ x: 0, y: 0, width: vp.width, height: vp.height })
+    await page.getByRole('button', { name: 'Mapa' }).click()
+  }
   const fly = page.getByRole('group', { name: 'Voar até' })
   await fly.getByRole('button', { name: 'Corte' }).click()
   // voo guiado; com WebGL por software (CI) o quadro é lento
@@ -68,6 +100,21 @@ test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page }) =>
   await page.keyboard.press('Escape')
   await expect(btn).toHaveAttribute('aria-pressed', 'false')
   expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('missões de pilotagem mostram o progresso e podem ser puladas', async ({ page }) => {
+  // trilha já nas missões de coleta (4ª) e de carga (7ª)
+  await page.addInitScript(() => localStorage.setItem('protospace.missions', JSON.stringify(['find-guide', 'find-pam', 'find-decoy'])))
+  await page.goto('/?lang=pt#playground')
+  await page.locator('.stage').scrollIntoViewIfNeeded()
+  await skipWithoutWebGL(page)
+  await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
+  await page.getByRole('toolbar', { name: 'Controles da simulação' }).getByRole('button', { name: /Explorar/ }).click()
+  await expect(page.getByText('Missão 4/11')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ir', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Pular' }).click()
+  await expect(page.getByText('Missão 5/11')).toBeVisible()
+  expect(await page.evaluate(() => localStorage.getItem('protospace.missions'))).toContain('collect-bases')
 })
 
 test('mismatches na região seed impedem a edição', async ({ page }) => {
@@ -148,6 +195,32 @@ test('dilemas: voto recusado pelo banco é desfeito; falha de rede fica na fila'
   await pro.click()
   await expect(card.getByText(/sem conexão/)).toBeVisible()
   expect(await page.evaluate(() => localStorage.getItem('protospace-pending-votes'))).toContain('"embriao":"pro"')
+})
+
+test('dilemas: canal de tempo real recusado cai para releitura periódica', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.clock.install()
+  let votes = 1
+  await page.route('**/rest/v1/dilemma_tallies*', (r) => r.fulfill({
+    json: ['embriao', 'gene-drive', 'sus'].flatMap((d) => ['pro', 'con', 'depends'].map((stance) => ({ dilemma_id: d, stance, votes }))),
+  }))
+  // servidor recusa o canal (ex.: limite de conexões estourado num pico)
+  await page.routeWebSocket(/supabase\.co/, (ws) => ws.close())
+
+  await page.goto('/?lang=pt#bioetica')
+  const card = page.locator('article', { hasText: 'Editar embriões' })
+  await card.scrollIntoViewIfNeeded()
+  await expect(card.getByText('3 pessoas votaram ·')).toBeVisible()
+
+  votes = 2
+  await page.clock.runFor(31_000)
+  await expect(card.getByText('6 pessoas votaram ·')).toBeVisible()
+})
+
+test('link com âncora abre já na seção', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/?lang=pt#bioetica')
+  await expect(page.getByRole('heading', { name: 'O que devemos fazer com o que já podemos fazer?' })).toBeInViewport()
 })
 
 test('cabeçalhos de segurança de produção estão presentes', async ({ request }) => {

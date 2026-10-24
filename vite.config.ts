@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 // URL pública usada em canonical/Open Graph: VITE_SITE_URL explícita, senão o domínio de produção da Vercel.
 // Analytics da Vercel só existem quando o deploy é na Vercel.
@@ -51,6 +52,10 @@ function seoFiles(): Plugin {
   }
 }
 
+// Source maps para o Sentry: só quando o build tem SENTRY_AUTH_TOKEN (ex.: na Vercel). Os mapas vão para o Sentry e
+// são apagados do dist/, para não ficarem públicos.
+const SENTRY = !!process.env.SENTRY_AUTH_TOKEN
+
 export default defineConfig({
   plugins: [
     react(),
@@ -59,14 +64,24 @@ export default defineConfig({
     // offline-first: o site precisa abrir no seminário mesmo sem Wi-Fi
     VitePWA({
       registerType: 'autoUpdate',
+      // o registro do service worker não precisa bloquear a primeira pintura
+      injectRegister: 'script-defer',
       includeAssets: ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
       manifest: false,
       workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'], maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // só os subsets latinos das fontes; os demais o navegador baixa sob demanda (unicode-range)
         globIgnores: ['**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2', 'og-*.png'] },
     }),
+    SENTRY && sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      sourcemaps: { filesToDeleteAfterUpload: ['dist/**/*.map'] },
+      telemetry: false,
+    }),
   ],
   build: {
+    sourcemap: SENTRY ? 'hidden' : false,
     // o chunk do three.js (~1 MB) é carregado sob demanda, só quando o 3D entra na tela
     chunkSizeWarningLimit: 1200,
     rolldownOptions: {

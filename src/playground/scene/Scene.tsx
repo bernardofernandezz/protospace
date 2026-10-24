@@ -14,6 +14,7 @@ import { PALETTE } from '../colors'
 import Effects from './Effects'
 import { takeCaptureRequest, untip } from './shared'
 import type { Ready } from './timeline'
+import { report } from '../../lib/monitor'
 
 const DPR: Record<Quality, [number, number]> = { low: [1, 1], medium: [1, 1.5], high: [1, 2] }
 const DOWN: Record<Quality, Quality> = { high: 'medium', medium: 'low', low: 'low' }
@@ -64,7 +65,7 @@ export default function Scene({ active, onLost }: { active: boolean; onLost: () 
       gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
       onPointerMissed={untip}
       onCreated={({ gl, scene, camera }) => {
-        gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); onLost() })
+        gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); report(new Error('webglcontextlost')); onLost() })
         // checar erros de shader força compilação síncrona (travadas): só em desenvolvimento
         gl.debug.checkShaderErrors = import.meta.env.DEV
         // depuração de desempenho (renderer.info etc.), só em desenvolvimento

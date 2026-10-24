@@ -93,7 +93,7 @@ A cena 3D é **toda gerada por código**, sem modelos 3D externos, e ajusta a qu
 
 ### Qualidade e segurança
 
-- **Lighthouse (celular):** Performance 91 · Acessibilidade 100 · Boas práticas 100 · SEO 100
+- **Lighthouse (celular, com limitação real de CPU e rede):** Performance ~90 (LCP 2,2 s) · Acessibilidade 100 · Boas práticas 100 · SEO 100. O CI barra regressões (`lighthouserc.json`)
 - **Sem segredos no código:** a única chave é a pública do Supabase; o acesso é controlado no banco
 - **Votação protegida:** votos anônimos, limite por IP e nenhum voto individual exposto
 - **Cabeçalhos de segurança** (CSP, HSTS e outros) testados no CI exatamente como em produção
@@ -103,6 +103,8 @@ Detalhes em [SECURITY.md](SECURITY.md).
 ### Deploy
 
 O site é publicado na **Vercel** a cada merge na `main`. A configuração (cabeçalhos e cache) está em `vercel.json`.
+
+Erros de produção vão para o **Sentry** quando a variável `VITE_SENTRY_DSN` está definida no projeto da Vercel. Sem ela, nada é carregado. Para as stack traces apontarem para o código-fonte, defina também `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` e `SENTRY_PROJECT`: o build envia os source maps ao Sentry e os apaga do site publicado.
 
 Para regenerar as imagens de compartilhamento depois de mudar a cena, rode `node scripts/og.mjs http://localhost:5173` com o `npm run dev` ativo.
 

@@ -1,7 +1,4 @@
 import { Suspense, lazy, useEffect } from 'react'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import Lenis from 'lenis'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import Nav from './components/Nav'
@@ -19,13 +16,13 @@ import Faq from './sections/Faq'
 import Conclusion from './sections/Conclusion'
 import About from './sections/About'
 import { prefersReducedMotion } from './lib/hooks'
+import { loadMotion } from './lib/motion'
 import { useMicroInteractions } from './lib/fx'
 import { BOOT_TIMEOUT_MS, finishBoot } from './lib/boot'
 import { useT } from './i18n'
 
 const Playground = lazy(() => import('./playground/Playground'))
 
-gsap.registerPlugin(ScrollTrigger)
 
 function PlaygroundSection() {
   const t = useT()
@@ -52,6 +49,13 @@ export default function App() {
     return () => clearTimeout(id)
   }, [])
 
+  // links com âncora (ex.: /#bioetica): o conteúdo é renderizado no cliente, depois que o navegador já tentou rolar
+  useEffect(() => {
+    const id = decodeURIComponent(location.hash.slice(1))
+    const el = id ? document.getElementById(id) : null
+    if (el) requestAnimationFrame(() => el.scrollIntoView())
+  }, [])
+
   // o foco acompanha a âncora clicada (o Lenis rola, mas não move o foco; ex.: "pular para o conteúdo").
   // setTimeout: espera a gaveta do menu fechar e tirar o `inert` do <main>
   useEffect(() => {
@@ -69,12 +73,18 @@ export default function App() {
   // rolagem suave sincronizada com o ScrollTrigger (desligada com "reduzir movimento")
   useEffect(() => {
     if (prefersReducedMotion()) return
-    const lenis = new Lenis({ autoRaf: false, anchors: { offset: -64 }, lerp: 0.12 })
-    lenis.on('scroll', ScrollTrigger.update)
-    const tick = (time: number) => lenis.raf(time * 1000)
-    gsap.ticker.add(tick)
-    gsap.ticker.lagSmoothing(0)
-    return () => { gsap.ticker.remove(tick); lenis.destroy() }
+    let alive = true
+    let off = () => {}
+    void loadMotion().then(({ gsap, ScrollTrigger, Lenis }) => {
+      if (!alive) return
+      const lenis = new Lenis({ autoRaf: false, anchors: { offset: -64 }, lerp: 0.12 })
+      lenis.on('scroll', ScrollTrigger.update)
+      const tick = (time: number) => lenis.raf(time * 1000)
+      gsap.ticker.add(tick)
+      gsap.ticker.lagSmoothing(0)
+      off = () => { gsap.ticker.remove(tick); lenis.destroy() }
+    })
+    return () => { alive = false; off() }
   }, [])
 
   // revelação ao rolar: IntersectionObserver + transição CSS (não força layout, ao contrário de
@@ -91,21 +101,29 @@ export default function App() {
     document.querySelectorAll('[data-reveal]:not(.in)').forEach((el) => io.observe(el))
 
     // linha da timeline cresce conforme o scroll (único gatilho com scrub)
-    const ctx = gsap.context(() => {
-      const line = document.querySelector<HTMLElement>('[data-timeline-line]')
-      if (line) {
-        gsap.fromTo(line, { scaleY: 0 }, {
-          scaleY: 1, transformOrigin: 'top', ease: 'none',
-          scrollTrigger: { trigger: '[data-timeline]', start: 'top 60%', end: 'bottom 80%', scrub: 0.5 },
-        })
-      }
-    })
-    // alturas mudam quando o playground carrega e quando seções com content-visibility são renderizadas
+    let alive = true
+    let ctx: { revert(): void } | undefined
     let tm: ReturnType<typeof setTimeout> | undefined
-    const refresh = () => { clearTimeout(tm); tm = setTimeout(() => ScrollTrigger.refresh(), 200) }
-    const id = setTimeout(refresh, 1200)
-    document.addEventListener('contentvisibilityautostatechange', refresh, true)
-    return () => { io.disconnect(); clearTimeout(id); clearTimeout(tm); document.removeEventListener('contentvisibilityautostatechange', refresh, true); ctx.revert() }
+    let id: ReturnType<typeof setTimeout> | undefined
+    // alturas mudam quando o playground carrega e quando seções com content-visibility são renderizadas
+    let refresh = () => {}
+    void loadMotion().then(({ gsap, ScrollTrigger }) => {
+      if (!alive) return
+      ctx = gsap.context(() => {
+        const line = document.querySelector<HTMLElement>('[data-timeline-line]')
+        if (line) {
+          gsap.fromTo(line, { scaleY: 0 }, {
+            scaleY: 1, transformOrigin: 'top', ease: 'none',
+            scrollTrigger: { trigger: '[data-timeline]', start: 'top 60%', end: 'bottom 80%', scrub: 0.5 },
+          })
+        }
+      })
+      refresh = () => { clearTimeout(tm); tm = setTimeout(() => ScrollTrigger.refresh(), 200) }
+      id = setTimeout(refresh, 1200)
+    })
+    const onVis = () => refresh()
+    document.addEventListener('contentvisibilityautostatechange', onVis, true)
+    return () => { alive = false; io.disconnect(); clearTimeout(id); clearTimeout(tm); document.removeEventListener('contentvisibilityautostatechange', onVis, true); ctx?.revert() }
   }, [t.lang])
 
   return (
