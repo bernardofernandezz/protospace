@@ -4,13 +4,16 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import {
   CAS, DELIVERY, FIX_RANGE, MAX_LOCUS, NAMES3, NEXT_BASE, NUCLEASE, clean, diffSegments,
-  bestSite, findCandidates, inPam, isSeed, mismatches, nearestSite, revComp, spacerPos,
+  findCandidates, inPam, isSeed, mismatches, revComp, spacerPos,
   type AlleleOutcome, type Candidate, type CasType, type Consequence, type Delivery, type NucleaseId,
   type Population, type Repair,
 } from '../lib/dna'
 import { DISEASES, findDisease, targetPos, targetSpan, type Disease } from '../content/diseases'
 import { useT, type T } from '../i18n'
-import { derive, useDerived, useParams, useSim, type Proteins, type Quality, type Verdict as VerdictKind } from './store'
+import {
+  bestRow, compareRows, useDerived, useParams, useSim,
+  type CompareRow, type Proteins, type Quality, type Verdict as VerdictKind,
+} from './store'
 import { BASE_COLOR } from './colors'
 import { Seg } from './ui'
 import { pct } from './format'
@@ -120,16 +123,90 @@ function Scenario() {
   )
 }
 
+/** Os sítios que a nuclease atual encontra no locus, com a distância até o alvo do cenário. */
+function CandidateList() {
+  const t = useT()
+  const d = useDerived()
+  const s = useSim(useShallow((s) => ({ nuclease: s.nuclease, selected: s.selected, select: s.select })))
+  const pam = NUCLEASE[s.nuclease].pam
+
+  return (
+    <div>
+      <h3 className="hud-label">{t(`Sítios candidatos (PAM ${pam.seq}, duas fitas)`, `Candidate sites (${pam.seq} PAM, both strands)`)}</h3>
+      <div className="mt-2 max-h-44 space-y-1 overflow-auto pr-1" role="radiogroup" aria-label={t('Sítios candidatos', 'Candidate sites')}>
+        {d.candidates.map((c, i) => (
+          <button key={c.start + c.strand} type="button" role="radio" aria-checked={i === s.selected} onClick={() => s.select(i)}
+            className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-xs transition ${i === s.selected ? 'bg-dna/15 ring-1 ring-dna/60' : 'hover:bg-white/5'}`}>
+            <span className="truncate">
+              <span className="mr-1 text-mist/60" title={c.strand === 1 ? t('fita senso', 'sense strand') : t('fita antissenso', 'antisense strand')}>{c.strand === 1 ? '+' : '−'}</span>
+              <SiteSequence c={c} side={pam.side} />
+            </span>
+            {d.dis && (
+              <span className={`shrink-0 ${Math.abs(c.cut - targetPos(d.dis)) <= FIX_RANGE ? 'text-bio' : 'text-mist/50'}`}
+                title={t('Distância entre o corte e o alvo: molde de HDR e prime editing só alcançam o que está perto.', 'Distance between the cut and the target: the HDR template and prime editing only reach what is nearby.')}>
+                {Math.abs(c.cut - targetPos(d.dis))} nt
+              </span>
+            )}
+            <span className="shrink-0 text-mist">GC {pct(c.gc)} · <b className="text-white">{c.score}</b></span>
+          </button>
+        ))}
+      </div>
+      <p className="mt-1 text-[11px] text-mist/70">{t('Score ilustrativo (GC, poli-T, homopolímeros). Em projetos reais use ferramentas como CRISPOR ou CHOPCHOP.', 'Illustrative score (GC, poly-T, homopolymers). For real projects use tools such as CRISPOR or CHOPCHOP.')}</p>
+    </div>
+  )
+}
+
+/** Buscar um guia digitado e editar a sequência do locus à mão. */
+function GuideFinder() {
+  const t = useT()
+  const d = useDerived()
+  const s = useSim(useShallow((s) => ({ locus: s.locus, select: s.select, setLocus: s.setLocus })))
+  const [typed, setTyped] = useState('')
+  const [msg, setMsg] = useState('')
+  const [draft, setDraft] = useState(s.locus)
+  useEffect(() => setDraft(s.locus), [s.locus])
+
+  const findTyped = () => {
+    const g = clean(typed)
+    if (g.length !== 20) return setMsg(t('O guia precisa ter exatamente 20 nt (A, C, G, T).', 'The guide must be exactly 20 nt (A, C, G, T).'))
+    const i = d.candidates.findIndex((c) => c.protospacer === g)
+    if (i >= 0) return void (s.select(i), setMsg(t('Sítio encontrado, com PAM adjacente.', 'Site found, with an adjacent PAM.')))
+    setMsg(s.locus.includes(g) || s.locus.includes(revComp(g))
+      ? t('Sequência presente, mas sem PAM adjacente: a nuclease não cortaria aqui.', 'Sequence present, but with no adjacent PAM: the nuclease would not cut here.')
+      : t('Sequência não encontrada neste locus, em nenhuma das duas fitas.', 'Sequence not found in this locus, on either strand.'))
+  }
+
+  return (
+    <>
+      <div>
+        <label className="hud-label" htmlFor="typed">{t('Ou digite um guia de 20 nt', 'Or type a 20-nt guide')}</label>
+        <div className="mt-2 flex gap-2">
+          <input id="typed" value={typed} onChange={(e) => setTyped(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && findTyped()} maxLength={30}
+            placeholder={t('ex.: TGACCATGTCGACGTTCCAG', 'e.g. TGACCATGTCGACGTTCCAG')}
+            className="min-w-0 flex-1 rounded-lg bg-white/5 px-2 py-1.5 font-mono text-xs uppercase outline-none ring-1 ring-white/10 focus:ring-dna" />
+          <button type="button" onClick={findTyped} className="rounded-lg bg-dna/20 px-3 text-xs text-dna hover:bg-dna/30">{t('Buscar', 'Find')}</button>
+        </div>
+        {msg && <p className="mt-1 text-[11px] text-mist" role="status">{msg}</p>}
+      </div>
+
+      <details className="text-xs">
+        <summary className="cursor-pointer text-mist hover:text-white">{t('Editar a sequência do locus (fictícia)', 'Edit the locus sequence (fictional)')}</summary>
+        <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={4} aria-label={t('Sequência do locus', 'Locus sequence')}
+          className="mt-2 w-full rounded-lg bg-white/5 p-2 font-mono text-[11px] uppercase outline-none ring-1 ring-white/10 focus:ring-dna" />
+        <button type="button" className="mt-1 rounded-lg bg-white/10 px-3 py-1 hover:bg-white/20"
+          onClick={() => { const l = clean(draft).slice(0, MAX_LOCUS); setDraft(l); s.setLocus(l) }}>
+          {t('Aplicar', 'Apply')} ({t('máx.', 'max.')} {MAX_LOCUS} nt)
+        </button>
+      </details>
+    </>
+  )
+}
+
 export function GuidePanel() {
   const t = useT()
   const d = useDerived()
-  const s = useSim(useShallow((s) => ({ locus: s.locus, nuclease: s.nuclease, selected: s.selected, guide: s.guide, set: s.set, select: s.select, setLocus: s.setLocus })))
-  const pam = NUCLEASE[s.nuclease].pam.seq
-  const pamSide = NUCLEASE[s.nuclease].pam.side
-  const [typed, setTyped] = useState('')
-  const [msg, setMsg] = useState('')
-  const [locusDraft, setLocusDraft] = useState(s.locus)
-  useEffect(() => setLocusDraft(s.locus), [s.locus])
+  const s = useSim(useShallow((s) => ({ nuclease: s.nuclease, guide: s.guide, set: s.set })))
+  const { seq: pam, side: pamSide } = NUCLEASE[s.nuclease].pam
   if (!d.cand) return (
     <div className="space-y-5">
       <Scenario />
@@ -138,43 +215,10 @@ export function GuidePanel() {
   )
   const mm = mismatches(s.guide, d.cand.protospacer)
 
-  const findTyped = () => {
-    const g = clean(typed)
-    if (g.length !== 20) return setMsg(t('O guia precisa ter exatamente 20 nt (A, C, G, T).', 'The guide must be exactly 20 nt (A, C, G, T).'))
-    const i = d.candidates.findIndex((c) => c.protospacer === g)
-    if (i >= 0) { s.select(i); setMsg(t('Sítio encontrado, com PAM NGG adjacente.', 'Site found, with an adjacent NGG PAM.')) }
-    else setMsg(s.locus.includes(g) || s.locus.includes(revComp(g))
-      ? t('Sequência presente, mas sem PAM NGG adjacente: a SpCas9 não cortaria aqui.', 'Sequence present, but with no adjacent NGG PAM: SpCas9 would not cut here.')
-      : t('Sequência não encontrada neste locus, em nenhuma das duas fitas.', 'Sequence not found in this locus, on either strand.'))
-  }
-
   return (
     <div className="space-y-5">
       <Scenario />
-      <div>
-        <h3 className="hud-label">{t(`Sítios candidatos (PAM ${pam}, duas fitas)`, `Candidate sites (${pam} PAM, both strands)`)}</h3>
-        <div className="mt-2 max-h-44 space-y-1 overflow-auto pr-1" role="radiogroup" aria-label={t('Sítios candidatos', 'Candidate sites')}>
-          {d.candidates.map((c, i) => (
-            <div key={c.start}>
-              <button type="button" role="radio" aria-checked={i === s.selected} onClick={() => s.select(i)}
-                className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-xs transition ${i === s.selected ? 'bg-dna/15 ring-1 ring-dna/60' : 'hover:bg-white/5'}`}>
-                <span className="truncate">
-                  <span className="mr-1 text-mist/60" title={c.strand === 1 ? t('fita senso', 'sense strand') : t('fita antissenso', 'antisense strand')}>{c.strand === 1 ? '+' : '−'}</span>
-                  <SiteSequence c={c} side={NUCLEASE[s.nuclease].pam.side} />
-                </span>
-                {d.dis && (
-                  <span className={`shrink-0 ${Math.abs(c.cut - targetPos(d.dis)) <= FIX_RANGE ? 'text-bio' : 'text-mist/50'}`}
-                    title={t('Distância entre o corte e o alvo: molde de HDR e prime editing só alcançam o que está perto.', 'Distance between the cut and the target: the HDR template and prime editing only reach what is nearby.')}>
-                    {Math.abs(c.cut - targetPos(d.dis))} nt
-                  </span>
-                )}
-                <span className="shrink-0 text-mist">GC {pct(c.gc)} · <b className="text-white">{c.score}</b></span>
-              </button>
-            </div>
-          ))}
-        </div>
-        <p className="mt-1 text-[11px] text-mist/70">{t('Score ilustrativo (GC, poli-T, homopolímeros). Em projetos reais use ferramentas como CRISPOR ou CHOPCHOP.', 'Illustrative score (GC, poly-T, homopolymers). For real projects use tools such as CRISPOR or CHOPCHOP.')}</p>
-      </div>
+      <CandidateList />
 
       <div>
         <h3 className="hud-label">{t('Guia (clique numa base para criar mismatch)', 'Guide (click a base to create a mismatch)')}</h3>
@@ -197,23 +241,7 @@ export function GuidePanel() {
         </div>
       </div>
 
-      <div>
-        <label className="hud-label" htmlFor="typed">{t('Ou digite um guia de 20 nt', 'Or type a 20-nt guide')}</label>
-        <div className="mt-2 flex gap-2">
-          <input id="typed" value={typed} onChange={(e) => setTyped(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && findTyped()} maxLength={30} placeholder={t('ex.: TGACCATGTCGACGTTCCAG', 'e.g. TGACCATGTCGACGTTCCAG')}
-            className="min-w-0 flex-1 rounded-lg bg-white/5 px-2 py-1.5 font-mono text-xs uppercase outline-none ring-1 ring-white/10 focus:ring-dna" />
-          <button type="button" onClick={findTyped} className="rounded-lg bg-dna/20 px-3 text-xs text-dna hover:bg-dna/30">{t('Buscar', 'Find')}</button>
-        </div>
-        {msg && <p className="mt-1 text-[11px] text-mist" role="status">{msg}</p>}
-      </div>
-
-      <details className="text-xs">
-        <summary className="cursor-pointer text-mist hover:text-white">{t('Editar a sequência do locus (fictícia)', 'Edit the locus sequence (fictional)')}</summary>
-        <textarea value={locusDraft} onChange={(e) => setLocusDraft(e.target.value)} rows={4} aria-label={t('Sequência do locus', 'Locus sequence')}
-          className="mt-2 w-full rounded-lg bg-white/5 p-2 font-mono text-[11px] uppercase outline-none ring-1 ring-white/10 focus:ring-dna" />
-        <button type="button" className="mt-1 rounded-lg bg-white/10 px-3 py-1 hover:bg-white/20"
-          onClick={() => { const l = clean(locusDraft).slice(0, MAX_LOCUS); setLocusDraft(l); s.setLocus(l) }}>{t('Aplicar', 'Apply')} ({t('máx.', 'max.')} {MAX_LOCUS} nt)</button>
-      </details>
+      <GuideFinder />
     </div>
   )
 }
@@ -325,16 +353,6 @@ function EffectChip({ effect }: { effect: Consequence }) {
   )
 }
 
-/** As estratégias que a aba Comparar roda lado a lado, no mesmo sítio e com o mesmo guia. */
-const STRATEGIES: { cas: CasType; repair: Repair }[] = [
-  { cas: 'wt', repair: 'nhej' },
-  { cas: 'wt', repair: 'hdr' },
-  { cas: 'nickase', repair: 'nhej' },
-  { cas: 'be', repair: 'nhej' },
-  { cas: 'abe', repair: 'nhej' },
-  { cas: 'pe', repair: 'nhej' },
-]
-
 const toolLabel = (s: { cas: CasType; repair: Repair }, t: T) =>
   s.cas === 'wt' ? s.repair.toUpperCase() : t.pick(CAS[s.cas].name)
 
@@ -355,35 +373,16 @@ export function ComparePanel() {
   const setNuclease = useSim((s) => s.setNuclease)
   const other: NucleaseId = p.nuclease === 'spcas9' ? 'cas12a' : 'spcas9'
   const otherSites = useMemo(() => findCandidates(p.locus, other), [p.locus, other])
+  const rows = useMemo(() => compareRows(p, t.lang === 'en'), [p, t.lang])
+  const best = bestRow(rows)
 
-  // A outra nuclease entra com os sítios dela: com outro PAM, o alvo possível é outro.
-  // Nickase, editores de base e prime editing só existem sobre a Cas9.
-  const rows = useMemo(() => {
-    const en = t.lang === 'en'
-    const build = (nuclease: NucleaseId, selected: number, guide: string) =>
-      STRATEGIES
-        .filter((st) => nuclease === 'spcas9' || st.cas === 'wt')
-        .map((st) => ({ ...st, nuclease, selected, d: derive({ ...p, ...st, nuclease, selected, guide }, en) }))
-
-    const i = otherSites.length ? (d.dis ? nearestSite(otherSites, targetPos(d.dis)) : bestSite(otherSites)) : -1
-    return [
-      ...build(p.nuclease, p.selected, p.guide),
-      ...(i >= 0 ? build(other, i, otherSites[i].protospacer) : []),
-    ]
-  }, [p, t.lang, d.dis, other, otherSites])
-
-  const applyRow = (r: (typeof rows)[number]) => {
+  const applyRow = (r: CompareRow) => {
     if (r.nuclease !== p.nuclease) {
       setNuclease(r.nuclease)
       select(r.selected)
     }
     set({ cas: r.cas, repair: r.repair })
   }
-
-  const best = rows.reduce((a, b) => {
-    const score = (r: typeof a) => (r.d.verdict === 'success' ? 1 : 0) * 10 + (r.d.eff ?? 0)
-    return score(b) > score(a) ? b : a
-  })
 
   return (
     <div className="space-y-4">

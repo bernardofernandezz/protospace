@@ -11,6 +11,7 @@ import { useLang, type L } from '../i18n'
 import { EXHIBIT } from '../content/exhibits'
 import { MISSIONS } from '../content/missions'
 import { findDisease, targetPos, type Disease } from '../content/diseases'
+import { comparePlan, rank, type RowPlan } from '../lib/compare'
 import type { Preset } from './open'
 
 export const STEPS: L<string[]> = {
@@ -363,6 +364,17 @@ export function derive(p: Params, en: boolean) {
       population({ pEngage, odds, intended: build, unwanted, succeeded, seed, alleles }),
   } as const
 }
+
+export interface CompareRow extends RowPlan {
+  d: ReturnType<typeof derive>
+}
+
+/** Junta o plano de linhas (lib/compare) com o resultado de cada uma. */
+export const compareRows = (p: Params, en: boolean): CompareRow[] =>
+  comparePlan(p).map((row) => ({ ...row, d: derive({ ...p, ...row }, en) }))
+
+export const bestRow = (rows: CompareRow[]): CompareRow =>
+  rows.reduce((a, b) => (rank(b.d) > rank(a.d) ? b : a))
 
 export const useParams = () => useSim(useShallow(params))
 
