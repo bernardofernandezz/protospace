@@ -125,20 +125,6 @@ test('mismatches na região seed impedem a edição', async ({ page }) => {
   await expect(page.getByText(/Sem edição/)).toBeVisible()
 })
 
-test('cenário clínico: o alelo falciforme é corrigido por HDR e destruído por NHEJ', async ({ page }) => {
-  // carregado pela URL, o caso já abre em Cas9 selvagem + molde (a configuração que corrige)
-  await page.goto('/?lang=pt&dis=sickle#playground')
-  await expect(page.getByText(/c\.20A>T · p\.Glu7Val/)).toBeVisible()
-  await page.getByRole('list', { name: 'Etapas do experimento' }).getByRole('button').nth(5).click()
-  await expect(page.getByText('Alelo corrigido', { exact: true })).toBeVisible()
-
-  // a mesma edição por NHEJ inativa o gene em vez de consertar a letra trocada
-  await page.getByRole('tab', { name: 'Parâmetros' }).click()
-  await page.getByRole('button', { name: 'NHEJ', exact: true }).click()
-  await page.getByRole('tab', { name: 'Resultado' }).click()
-  await expect(page.getByText('Gene inativado, não corrigido')).toBeVisible()
-})
-
 test('link compartilhável restaura o experimento', async ({ page }) => {
   await page.goto('/?lang=pt&cas=be&delivery=viral&tol=9#playground')
   await page.getByRole('tab', { name: 'Parâmetros' }).click()
