@@ -204,7 +204,7 @@ export default function Ethics() {
   return (
     <section id="bioetica" className="section">
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-full bg-linear-to-b from-transparent via-violet-deep/40 to-transparent" />
-      <SectionHeader n="07" eyebrow={E.eyebrow} title={<>{E.title[0]}<span className="text-gradient">{E.title[1]}</span>{E.title[2]}</>} lead={E.lead} />
+      <SectionHeader n="08" eyebrow={E.eyebrow} title={<>{E.title[0]}<span className="text-gradient">{E.title[1]}</span>{E.title[2]}</>} lead={E.lead} />
 
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {E.topics.map((tp, i) => <TopicCard key={tp.id} t={tp} color={ACCENTS[i % ACCENTS.length]} />)}

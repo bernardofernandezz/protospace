@@ -14,7 +14,7 @@ export default function Faq() {
 
   return (
     <section id="faq" className="section">
-      <SectionHeader n="09" eyebrow={H.eyebrow} title={<>{H.title[0]}<span className="text-gradient">{H.title[1]}</span>{H.title[2]}</>} lead={H.lead} />
+      <SectionHeader n="10" eyebrow={H.eyebrow} title={<>{H.title[0]}<span className="text-gradient">{H.title[1]}</span>{H.title[2]}</>} lead={H.lead} />
 
       <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
         <nav className="flex gap-3 overflow-x-auto pb-2 lg:sticky lg:top-24 lg:flex-col lg:self-start lg:overflow-visible lg:pb-0" aria-label={t('Categorias de perguntas', 'Question categories')}>

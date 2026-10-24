@@ -70,6 +70,7 @@ interface SimState {
   set: (p: Partial<SimState>) => void
   setLocus: (s: string) => void
   setNuclease: (n: NucleaseId) => void
+  applyPreset: (p: { disease?: string | null; nuclease?: NucleaseId; cas?: CasType; repair?: Repair }) => void
   setDisease: (id: string | null) => void
   select: (i: number) => void
   goto: (step: number) => void
@@ -178,6 +179,12 @@ export const useSim = create<SimState>((set, get) => ({
     const anchor = prev?.cut ?? (dis ? targetPos(dis) : 0)
     const i = c.length ? nearestSite(c, anchor) : 0
     set({ nuclease, selected: i, guide: c[i]?.protospacer ?? '', step: 0, progress: 0, playing: false })
+  },
+  /** Abre o playground numa configuração pronta, vinda dos links do conteúdo. */
+  applyPreset: ({ disease = null, nuclease = 'spcas9', cas = 'wt', repair }) => {
+    get().setDisease(disease)
+    get().setNuclease(nuclease)
+    set({ cas, repair: repair ?? defaultRepair(findDisease(disease)) })
   },
   setDisease: (id) => {
     const dis = findDisease(id)

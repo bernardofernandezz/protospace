@@ -15,7 +15,7 @@ export default function Quiz() {
 
   return (
     <section id="quiz" className="section">
-      <SectionHeader n="08" eyebrow={Q.eyebrow} title={<>{Q.title[0]}<span className="text-gradient">{Q.title[1]}</span>{Q.title[2]}</>} lead={Q.lead} />
+      <SectionHeader n="09" eyebrow={Q.eyebrow} title={<>{Q.title[0]}<span className="text-gradient">{Q.title[1]}</span>{Q.title[2]}</>} lead={Q.lead} />
 
       <div className="grid gap-5 md:grid-cols-2">
         {qs.map((q, qi) => {

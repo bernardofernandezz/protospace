@@ -35,7 +35,7 @@ export default function Applications() {
   const t = useT()
   return (
     <section id="aplicacoes" className="section">
-      <SectionHeader n="06" eyebrow={t('Aplicações', 'Applications')}
+      <SectionHeader n="07" eyebrow={t('Aplicações', 'Applications')}
         title={t.lang === 'en' ? <>From the bench <span className="text-gradient">to the clinic</span> — and the field.</> : <>Da bancada <span className="text-gradient">à clínica</span> — e ao campo.</>}
         lead={t('Uma distinção que vale repetir em sala: parte do que está aqui já é tratamento aprovado, parte ainda está em testes clínicos e parte é ferramenta de pesquisa. Misturar os três é a forma mais fácil de exagerar o que a técnica faz hoje.',
           'A distinction worth repeating: some of what is here is already approved treatment, some is still in clinical trials and some is a research tool. Mixing the three up is the easiest way to overstate what the technique does today.')} />

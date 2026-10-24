@@ -8,6 +8,7 @@ import Hero from './sections/Hero'
 import Intro from './sections/Intro'
 import Mechanism from './sections/Mechanism'
 import Evolution from './sections/Evolution'
+import Paths from './sections/Paths'
 import Practices from './sections/Practices'
 import Applications from './sections/Applications'
 import Ethics from './sections/Ethics'
@@ -139,6 +140,7 @@ export default function App() {
         <Mechanism />
         <Evolution />
         <PlaygroundSection />
+        <Paths />
         <Practices />
         <Applications />
         <Ethics />

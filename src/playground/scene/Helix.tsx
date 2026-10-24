@@ -90,6 +90,8 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
   const onTarget = (i: number) => !!span && i >= span.start && i < span.start + span.length
   const healed = d.verdict === 'success'
   const beSites = useMemo(() => new Set(d.cuts === 'none' && d.acts && isBaseEditor(useSim.getState().cas) ? d.ops.map((o) => o.pos) : []), [d])
+  // a CBE deixa um U na fita; a ABE deixa inosina, que a célula lê como G
+  const deamColor = useSim((s) => (s.cas === 'abe' ? BASES.G : BASES.U))
 
   const bases = useRef<THREE.InstancedMesh>(null!)
   const phos = useRef<THREE.InstancedMesh>(null!)
@@ -180,7 +182,7 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
       // cores
       const lit = hl(i) ? 1 : 0.4
       _col.copy(BASES[b1] ?? GREY).multiplyScalar(lit)
-      if (orig && beSites.has(i) && v.deam > 0) _col.lerp(BASES.U, v.deam).multiplyScalar(1 + 1.5 * Math.sin(v.deam * Math.PI) + 0.4 * v.deam)
+      if (orig && beSites.has(i) && v.deam > 0) _col.lerp(deamColor, v.deam).multiplyScalar(1 + 1.5 * Math.sin(v.deam * Math.PI) + 0.4 * v.deam)
       if (!orig && kinds[i]) _col.multiplyScalar(1.7 + 2.2 * (1 - v.growIns))
       if (orig && L.deleted[i] && v.shrinkDel > 0) _col.lerp(MM, v.shrinkDel)
       if (orig && onTarget(i)) _col.copy(MM).multiplyScalar(1.5 + 0.5 * Math.sin(performance.now() / 240))

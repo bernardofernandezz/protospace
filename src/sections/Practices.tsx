@@ -141,7 +141,7 @@ export default function Practices() {
 
   return (
     <section id="boas-praticas" className="section">
-      <SectionHeader n="05" eyebrow={t('Boas práticas', 'Best practices')}
+      <SectionHeader n="06" eyebrow={t('Boas práticas', 'Best practices')}
         title={t.lang === 'en' ? <>A CRISPR experiment is only as good <span className="text-gradient">as its controls</span>.</> : <>Um experimento CRISPR é tão bom <span className="text-gradient">quanto seus controles</span>.</>}
         lead={t('A parte da técnica que não aparece nas manchetes: desenhar o guia, escolher a entrega, montar os controles e provar que a edição é real. Esta é a seção mais técnica do site — é um checklist de bancada, e cada item abre com a explicação do porquê. Se você chegou agora no assunto, leia só os títulos: eles já contam por que editar um gene dá tanto trabalho. O progresso fica salvo neste navegador.',
           'The part of the technique that never makes headlines: designing the guide, choosing delivery, setting up controls and proving the edit is real. This is the most technical section of the site — a bench checklist, where each item opens with the reasoning behind it. New to the subject? Just read the headings: they already explain why editing a gene is so much work. Progress is saved in this browser.')} />
