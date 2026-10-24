@@ -59,6 +59,13 @@ export function findCandidates(locus: string): Candidate[] {
   return out
 }
 
+/** Índice do sítio cujo corte cai mais perto de `pos` (o que um molde de HDR consegue corrigir). */
+export function nearestSite(cands: Candidate[], pos: number): number {
+  let best = 0
+  cands.forEach((c, i) => { if (Math.abs(c.cut - pos) < Math.abs(cands[best].cut - pos)) best = i })
+  return best
+}
+
 export const mismatches = (guide: string, site: string) =>
   [...guide].flatMap((b, i) => (b !== site[i] ? [i] : []))
 
@@ -133,13 +140,49 @@ export function nhejOps(locus: string, cut: number, seed: number): Op[] {
 
 export const HDR_INSERT = 'GAATTC' // sítio EcoRI: facilita triagem por digestão
 
-/** HDR com molde: insere GAATTC no corte e muta o PAM (G→C) para impedir novo corte do alelo editado. */
-export function hdrOps(c: Candidate): Op[] {
+/** Até onde o molde consegue levar a correção a partir do corte (braços de homologia curtos). */
+export const FIX_RANGE = 30
+
+/** Base a restaurar num alelo patogênico: `wt` volta para a posição `pos` do locus. */
+export interface Fix { pos: number; wt: string }
+
+/**
+ * HDR com molde. Com um alelo a corrigir e o corte perto o bastante, o molde traz a base
+ * saudável de volta; caso contrário insere GAATTC no corte e muta o PAM (G→C) para impedir novo corte.
+ */
+export function hdrOps(c: Candidate, fix?: Fix): Op[] {
+  if (fix && Math.abs(fix.pos - c.cut) <= FIX_RANGE) return [{ pos: fix.pos, del: 1, ins: fix.wt }]
   const pamG = c.start + 21
   return [
     { pos: c.cut, del: 0, ins: HDR_INSERT },
     { pos: pamG, del: 1, ins: 'C' },
   ]
+}
+
+// Código genético padrão (tabela 1). Em cada posição do códon a ordem é T, C, A, G.
+const CODE = 'FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG'
+const NT = 'TCAG'
+
+/** Aminoácido de um códon (1 letra); '*' = parada, '?' = códon incompleto. */
+export function aminoAcid(codon: string): string {
+  const i = NT.indexOf(codon[0]) * 16 + NT.indexOf(codon[1]) * 4 + NT.indexOf(codon[2])
+  return codon.length === 3 && NT.indexOf(codon[0]) >= 0 && NT.indexOf(codon[1]) >= 0 && NT.indexOf(codon[2]) >= 0 ? CODE[i] : '?'
+}
+
+/** Traduz a partir de `orf` até o códon de parada (incluído) ou o fim do trecho. */
+export function translate(seq: string, orf: number): string {
+  let out = ''
+  for (let i = orf; i + 3 <= seq.length; i += 3) {
+    const a = aminoAcid(seq.slice(i, i + 3))
+    out += a
+    if (a === '*') break
+  }
+  return out
+}
+
+export const NAMES3: Record<string, string> = {
+  A: 'Ala', C: 'Cys', D: 'Asp', E: 'Glu', F: 'Phe', G: 'Gly', H: 'His', I: 'Ile', K: 'Lys', L: 'Leu',
+  M: 'Met', N: 'Asn', P: 'Pro', Q: 'Gln', R: 'Arg', S: 'Ser', T: 'Thr', V: 'Val', W: 'Trp', Y: 'Tyr', '*': 'Stop',
 }
 
 /** Editor de bases de citosina: C→T nas posições 4–8 do protoespaçador (contadas a partir da ponta distal ao PAM). */

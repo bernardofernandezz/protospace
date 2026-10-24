@@ -19,6 +19,7 @@ const S2 = new THREE.Color(PALETTE.strand2)
 const CASC = new THREE.Color(PALETTE.cas)
 const RNAC = new THREE.Color(PALETTE.rna)
 const MM = new THREE.Color(PALETTE.mismatch)
+const HEAL = new THREE.Color(PALETTE.donor)
 const BASES = Object.fromEntries(Object.entries(BASE_COLOR).map(([k, v]) => [k, new THREE.Color(v)]))
 const GREY = new THREE.Color('#888')
 const WHITE = new THREE.Color('#ffffff')
@@ -56,6 +57,8 @@ function editKinds(d: Ready) {
 /** Resumo curto da edição para o rótulo 3D. */
 function editLabel(d: Ready, t: ReturnType<typeof useT>) {
   const { cas, repair } = useSim.getState()
+  if (d.protein?.allele === 'healthy') return t('alelo corrigido · proteína saudável', 'allele corrected · healthy protein')
+  if (d.protein?.allele === 'broken') return t('gene inativado · não corrigido', 'gene disrupted · not corrected')
   if (cas === 'be') return t(`C→T × ${d.ops.length} · sem DSB`, `C→T × ${d.ops.length} · no DSB`)
   if (repair === 'hdr') return t('HDR · +GAATTC (EcoRI) · PAM G→C', 'HDR · +GAATTC (EcoRI) · PAM G→C')
   const net = d.ops.reduce((a, o) => a + o.ins.length - o.del, 0)
@@ -75,6 +78,9 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
   }), [])
   const geo = useMemo(() => ({ plate: new RoundedBoxGeometry(0.11, 1, 0.32, 2, 0.035), phos: new THREE.SphereGeometry(0.155, 14, 10) }), [])
   const kinds = useMemo(() => editKinds(d), [d])
+  // base patogênica do cenário clínico: pulsa em vermelho no alelo doente e esverdeia quando é corrigida
+  const sick = d.dis ? d.dis.pos : -1
+  const healed = d.protein?.allele === 'healthy'
   const beSites = useMemo(() => new Set(d.cuts === 'none' && d.acts && useSim.getState().cas === 'be' ? d.ops.map((o) => o.pos) : []), [d])
 
   const bases = useRef<THREE.InstancedMesh>(null!)
@@ -167,9 +173,13 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
       if (orig && beSites.has(i) && v.deam > 0) _col.lerp(BASES.U, v.deam).multiplyScalar(1 + 1.5 * Math.sin(v.deam * Math.PI) + 0.4 * v.deam)
       if (!orig && kinds[i]) _col.multiplyScalar(1.7 + 2.2 * (1 - v.growIns))
       if (orig && L.deleted[i] && v.shrinkDel > 0) _col.lerp(MM, v.shrinkDel)
+      if (orig && i === sick) _col.copy(MM).multiplyScalar(1.5 + 0.5 * Math.sin(performance.now() / 240))
+      if (!orig && healed && kinds[i]) _col.lerp(HEAL, 0.7).multiplyScalar(1.4 + 1.4 * (1 - v.growIns))
       bases.current.setColorAt(i, _col)
       _col.copy(BASES[b2] ?? GREY).multiplyScalar(lit)
       if (!orig && kinds[i]) _col.multiplyScalar(1.7 + 2.2 * (1 - v.growIns))
+      if (orig && i === sick) _col.lerp(MM, 0.75).multiplyScalar(1.3)
+      if (!orig && healed && kinds[i]) _col.lerp(HEAL, 0.5).multiplyScalar(1.3)
       bases.current.setColorAt(n + i, _col)
     }
     bases.current.count = n * 2
@@ -233,7 +243,12 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
     const b = top ? L.seq[i] : COMP[L.seq[i]]
     const j = i - v.cand.start
     let body = tNow('Fora da região-alvo.', 'Outside the target region.')
-    if (v.edited && L.changed?.[i]) body = tNow('Base alterada pela edição.', 'Base changed by the edit.')
+    if (!v.edited && i === sick) body = tNow(
+      `Esta é a base trocada que causa a doença: no alelo saudável aqui há ${d.dis!.wt}. Um corte perto daqui, com molde de reparo (HDR), pode trazê-la de volta.`,
+      `This is the swapped base that causes the disease: the healthy allele has ${d.dis!.wt} here. A cut nearby, with a repair template (HDR), can bring it back.`,
+    )
+    else if (v.edited && healed && L.changed?.[i]) body = tNow('Base restaurada: este alelo voltou a codificar a proteína saudável.', 'Base restored: this allele encodes the healthy protein again.')
+    else if (v.edited && L.changed?.[i]) body = tNow('Base alterada pela edição.', 'Base changed by the edit.')
     else if (!v.edited && j >= 0 && j < 20) {
       body = tNow(
         `Protoespaçador, posição ${j + 1}/20${j >= 8 ? ' (região seed, proximal ao PAM: mismatches aqui pesam mais)' : ' (região distal ao PAM)'}. ${top ? 'Fita não-alvo (mesma sequência do guia, com T em vez de U).' : 'Fita-alvo: pareia com o sgRNA.'}`,
@@ -280,6 +295,15 @@ export default function Helix({ d, quality }: { d: Ready; quality: Quality }) {
 
       <Label tone={PALETTE.strand1} at={(o) => { const { v } = frame(d); below(v.cand.start + 9, o); return !v.edited && v.step !== 1 && v.step <= 2 }}>{t('protoespaçador · 20 nt', 'protospacer · 20 nt')}</Label>
       <Label tone={PALETTE.cas} at={(o) => { const { v } = frame(d); below(v.cand.start + 21, o, 1.7); return !v.edited && v.step !== 1 && v.step <= 2 }}>PAM · 5′-NGG-3′</Label>
+      {d.dis && (
+        <Label tone={PALETTE.mismatch} at={(o) => {
+          const { v, L } = frame(d)
+          if (v.edited || sick < 0 || sick >= L.n) return false
+          normalAt(L.theta[sick], _N)
+          o.copy(L.center[sick]).addScaledVector(_N, 2.4)
+          return true
+        }}>{t.pick(d.dis.name)} · {t('base trocada', 'swapped base')}</Label>
+      )}
       <Label tone={PALETTE.rna} at={(o) => { const { v, L } = frame(d); if (v.step !== 0) return false; normalAt(L.theta[v.cand.start], _N); o.copy(L.rna[0]).addScaledVector(_N, 0.5); return true }}>{t('sgRNA · espaçador 5′ → 3′', 'sgRNA · spacer 5′ → 3′')}</Label>
       <Label tone="#ffffff" at={(o) => { const { v, L } = frame(d); if (v.edited || v.step !== 3 || d.cuts === 'none') return false; o.lerpVectors(L.center[v.cand.cut - 1], L.center[v.cand.cut], 0.5).y -= 2.2; return v.p > 0.35 }}>{cutLabel}</Label>
       <Label tone={PALETTE.edit} at={(o) => {

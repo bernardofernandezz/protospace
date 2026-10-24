@@ -3,11 +3,12 @@ import { useShallow } from 'zustand/react/shallow'
 import { useMemo } from 'react'
 import {
   CAS, DEFAULT_LOCUS, DELIVERY, applyOps, baseEditOps, clean, cutProbability, findCandidates, hdrOps,
-  MAX_LOCUS, netLength, nhejOps, offTargetSites, type CasType, type Delivery, type Op, type Repair,
+  MAX_LOCUS, nearestSite, netLength, nhejOps, offTargetSites, translate, type CasType, type Delivery, type Fix, type Op, type Repair,
 } from '../lib/dna'
 import { useLang, type L } from '../i18n'
 import { EXHIBIT } from '../content/exhibits'
 import { MISSIONS } from '../content/missions'
+import { findDisease } from '../content/diseases'
 
 export const STEPS: L<string[]> = {
   pt: ['Design do guia', 'Entrega', 'Busca e reconhecimento', 'Clivagem', 'Reparo', 'Resultado'],
@@ -26,6 +27,8 @@ export type ZoneId = string
 
 interface SimState {
   locus: string
+  /** Cenário clínico carregado (src/content/diseases.ts); null = locus fictício. */
+  disease: string | null
   selected: number
   guide: string
   delivery: Delivery
@@ -62,6 +65,7 @@ interface SimState {
   sound: boolean
   set: (p: Partial<SimState>) => void
   setLocus: (s: string) => void
+  setDisease: (id: string | null) => void
   select: (i: number) => void
   goto: (step: number) => void
   reset: () => void
@@ -79,22 +83,26 @@ function load(key: string, valid: (id: string) => boolean): string[] {
 const isCoarse = () => typeof matchMedia !== 'undefined' && (matchMedia('(pointer: coarse)').matches || innerWidth < 768)
 
 // ---------- estado do experimento na URL (links compartilháveis) ----------
-const PARAM_KEYS = ['locus', 'site', 'guide', 'cas', 'delivery', 'repair', 'tol', 'seed'] as const
+const PARAM_KEYS = ['locus', 'dis', 'site', 'guide', 'cas', 'delivery', 'repair', 'tol', 'seed'] as const
 
 function fromUrl() {
   const q = typeof location === 'undefined' ? new URLSearchParams() : new URLSearchParams(location.search)
-  const locus = clean(q.get('locus') ?? '').slice(0, MAX_LOCUS) || DEFAULT_LOCUS
+  const dis = findDisease(q.get('dis'))
+  const locus = clean(q.get('locus') ?? '').slice(0, MAX_LOCUS) || dis?.locus || DEFAULT_LOCUS
   const cands = findCandidates(locus)
-  const site = Math.min(Math.max(0, Number(q.get('site') ?? (locus === DEFAULT_LOCUS ? 1 : 0)) || 0), Math.max(0, cands.length - 1))
+  const fallback = dis ? nearestSite(cands, dis.pos) : locus === DEFAULT_LOCUS ? 1 : 0
+  const site = Math.min(Math.max(0, Number(q.get('site') ?? fallback) || 0), Math.max(0, cands.length - 1))
   const g = clean(q.get('guide') ?? '')
   const pick = <T extends string>(v: string | null, ok: readonly T[], def: T): T => (ok.includes(v as T) ? (v as T) : def)
   return {
     locus,
+    disease: dis?.id ?? null,
     selected: site,
     guide: g.length === 20 ? g : cands[site]?.protospacer ?? '',
     cas: pick(q.get('cas'), ['wt', 'nickase', 'be'] as const, 'wt'),
     delivery: pick(q.get('delivery'), ['rnp', 'plasmid', 'viral'] as const, 'rnp'),
-    repair: pick(q.get('repair'), ['nhej', 'hdr'] as const, 'nhej'),
+    // num cenário clínico a via que corrige é a HDR: já abre o caso na configuração que tem chance
+    repair: pick(q.get('repair'), ['nhej', 'hdr'] as const, dis ? 'hdr' : 'nhej'),
     tolerance: Math.min(3, Math.max(0, Number(q.get('tol') ?? 0.5) || 0)),
     seed: Number(q.get('seed') ?? 7) || 7,
   }
@@ -105,7 +113,9 @@ export function experimentUrl() {
   const s = useSim.getState()
   const url = new URL(location.href)
   PARAM_KEYS.forEach((k) => url.searchParams.delete(k))
-  if (s.locus !== DEFAULT_LOCUS) url.searchParams.set('locus', s.locus)
+  const dis = findDisease(s.disease)
+  if (dis) url.searchParams.set('dis', dis.id)
+  if (s.locus !== DEFAULT_LOCUS && s.locus !== dis?.locus) url.searchParams.set('locus', s.locus)
   const cand = findCandidates(s.locus)[s.selected]
   url.searchParams.set('site', String(s.selected))
   if (cand && s.guide !== cand.protospacer) url.searchParams.set('guide', s.guide)
@@ -141,7 +151,23 @@ export const useSim = create<SimState>((set, get) => ({
   set: (p) => set(p),
   setLocus: (locus) => {
     const c = findCandidates(locus)
-    set({ locus, selected: 0, guide: c[0]?.protospacer ?? '', step: 0, progress: 0, playing: false })
+    const prev = findCandidates(get().locus)[get().selected]
+    // mantém o sítio mais próximo do anterior: trocar uma base não deve pular a seleção
+    const i = prev ? nearestSite(c, prev.cut) : 0
+    // editar a sequência à mão invalida o alelo marcado pelo cenário
+    set({ locus, disease: null, selected: i, guide: c[i]?.protospacer ?? '', step: 0, progress: 0, playing: false })
+  },
+  setDisease: (id) => {
+    const dis = findDisease(id)
+    const locus = dis?.locus ?? DEFAULT_LOCUS
+    const c = findCandidates(locus)
+    const i = dis ? nearestSite(c, dis.pos) : 1
+    set({
+      disease: dis?.id ?? null, locus, selected: i, guide: c[i]?.protospacer ?? '',
+      // o caso começa na única configuração capaz de corrigir uma troca de base: DSB + molde
+      ...(dis ? { cas: 'wt' as const, repair: 'hdr' as const } : {}),
+      step: 0, progress: 0, playing: false, camTick: get().camTick + 1,
+    })
   },
   select: (i) => {
     const c = findCandidates(get().locus)[i]
@@ -159,15 +185,17 @@ export const useSim = create<SimState>((set, get) => ({
 
 /** Tudo que deriva dos parâmetros: candidatos, probabilidades, resultado da edição. */
 export function useDerived() {
-  const { locus, selected, guide, delivery, cas, repair, tolerance, seed } = useSim(
-    useShallow((s) => ({ locus: s.locus, selected: s.selected, guide: s.guide, delivery: s.delivery, cas: s.cas, repair: s.repair, tolerance: s.tolerance, seed: s.seed })),
+  const { locus, disease, selected, guide, delivery, cas, repair, tolerance, seed } = useSim(
+    useShallow((s) => ({ locus: s.locus, disease: s.disease, selected: s.selected, guide: s.guide, delivery: s.delivery, cas: s.cas, repair: s.repair, tolerance: s.tolerance, seed: s.seed })),
   )
   const lang = useLang((s) => s.lang)
   return useMemo(() => {
     const en = lang === 'en'
     const candidates = findCandidates(locus)
     const cand = candidates[selected] ?? candidates[0]
-    if (!cand) return { candidates, cand: undefined } as const
+    const dis = findDisease(disease)
+    const fix: Fix | undefined = dis && locus[dis.pos] !== dis.wt ? { pos: dis.pos, wt: dis.wt } : undefined
+    if (!cand) return { candidates, cand: undefined, dis } as const
     const d = DELIVERY[delivery]
     const pOn = cutProbability(guide, cand.protospacer, tolerance)
     const offs = offTargetSites(cand.protospacer).map((o) => ({
@@ -192,8 +220,13 @@ export function useDerived() {
         : 'Nick em uma única fita: geralmente reparado sem erro. Para DSB, use um par de nickases com guias opostos.'
       eff = pOn * d.eff * 0.05
     } else if (repair === 'hdr') {
-      ops = hdrOps(cand)
-      kind = en ? 'HDR with template: GAATTC (EcoRI site) inserted + PAM mutated.' : 'HDR com molde: inserção de GAATTC (sítio EcoRI) + mutação do PAM.'
+      ops = hdrOps(cand, fix)
+      const corrects = !!fix && ops[0]?.pos === fix.pos
+      kind = corrects
+        ? en ? `HDR with template: the healthy base is restored at position ${fix!.pos + 1} (${locus[fix!.pos]}→${fix!.wt}).` : `HDR com molde: a base saudável volta na posição ${fix!.pos + 1} (${locus[fix!.pos]}→${fix!.wt}).`
+        : fix
+          ? en ? `HDR with template, but the cut is ${Math.abs(fix.pos - cand.cut)} nt from the mutation: too far for these homology arms, so the template only leaves its GAATTC tag. Choose a site closer to the mutation.` : `HDR com molde, mas o corte está a ${Math.abs(fix.pos - cand.cut)} nt da mutação: longe demais para estes braços de homologia, e o molde só deixa a marca GAATTC. Escolha um sítio mais perto da mutação.`
+          : en ? 'HDR with template: GAATTC (EcoRI site) inserted + PAM mutated.' : 'HDR com molde: inserção de GAATTC (sítio EcoRI) + mutação do PAM.'
       eff = pOn * d.eff * 0.22
     } else {
       ops = nhejOps(locus, cand.cut, seed)
@@ -204,8 +237,17 @@ export function useDerived() {
       eff = pOn * d.eff * 0.75
     }
     const applied = applyOps(locus, ops)
-    return { candidates, cand, pOn, offs, ops, kind, eff, applied, acts, cuts: acts ? CAS[cas].cuts : 'none' } as const
-  }, [locus, selected, guide, delivery, cas, repair, tolerance, seed, lang])
+    // veredito do alelo: comparar a PROTEÍNA, e não a sequência, é o que distingue
+    // corrigir de inativar o gene (um indel perto da mutação também "muda" o DNA)
+    let protein
+    if (dis) {
+      const healthy = translate(locus.slice(0, dis.pos) + dis.wt + locus.slice(dis.pos + 1), dis.orf)
+      const before = translate(locus, dis.orf)
+      const after = translate(applied.seq, dis.orf)
+      protein = { healthy, before, after, allele: after === healthy ? 'healthy' : after === before ? 'unchanged' : 'broken' } as const
+    }
+    return { candidates, cand, pOn, offs, ops, kind, eff, applied, acts, dis, fix, protein, cuts: acts ? CAS[cas].cuts : 'none' } as const
+  }, [locus, disease, selected, guide, delivery, cas, repair, tolerance, seed, lang])
 }
 
 // depuração/testes automatizados (somente em desenvolvimento)

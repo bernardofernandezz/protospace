@@ -1,6 +1,16 @@
 // Autoverificação da lógica de sequência: `npm test`
 import assert from 'node:assert/strict'
-import { DEFAULT_LOCUS, applyOps, baseEditOps, cutProbability, diffSegments, findCandidates, hdrOps, nhejOps } from './dna.ts'
+import { DEFAULT_LOCUS, aminoAcid, applyOps, baseEditOps, cutProbability, diffSegments, findCandidates, hdrOps, nhejOps, translate } from './dna.ts'
+
+// código genético: âncoras conhecidas em cada bloco da tabela
+for (const [codon, aa] of [['ATG', 'M'], ['GAG', 'E'], ['GTG', 'V'], ['TTT', 'F'], ['TGG', 'W'], ['TAA', '*'], ['TAG', '*'], ['TGA', '*'], ['CCC', 'P'], ['AAA', 'K'], ['GGG', 'G']] as const) {
+  assert.equal(aminoAcid(codon), aa, `códon ${codon}`)
+}
+assert.equal(aminoAcid('AT'), '?')
+assert.equal(aminoAcid('ANG'), '?')
+// a tradução começa no quadro pedido e para no primeiro stop (incluído)
+assert.equal(translate('CCATGGAGTAACCCATG', 2), 'ME*')
+assert.equal(translate('ATGGA', 0), 'M')
 
 const cands = findCandidates(DEFAULT_LOCUS)
 assert.ok(cands.length >= 3, 'locus padrão deve ter ≥3 sítios NGG')
