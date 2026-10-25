@@ -73,7 +73,7 @@ export default function Scene({ active, onLost }: { active: boolean; onLost: () 
         // checar erros de shader força compilação síncrona (travadas): só em desenvolvimento
         gl.debug.checkShaderErrors = import.meta.env.DEV
         // depuração de desempenho (renderer.info etc.), só em desenvolvimento
-        if (import.meta.env.DEV) (window as unknown as { __three: unknown }).__three = { gl, scene, camera }
+        if (import.meta.env.DEV) Object.assign(window, { __three: { gl, scene, camera } })
       }}
     >
       <fog attach="fog" args={['#04070f', 38, 150]} />

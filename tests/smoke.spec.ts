@@ -1,23 +1,27 @@
 import { expect, test, type Page } from '@playwright/test'
 
-/** Coleta erros de console/página durante o teste. */
+/** Simula um navegador sem WebGL: getContext devolve null para qualquer contexto webgl. */
+const disableWebGL = (page: Page) =>
+  page.addInitScript(() => {
+    const orig = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+      return /webgl/.test(type) ? null : Reflect.apply(orig, this, [type, ...rest])
+    } as typeof orig
+  })
+
 // No CI, o projeto "iphone" (WebKit) roda sem WebGL, como o Safari no Modo de Bloqueio do iOS: o WebGL do WebKit
 // no Linux é por software e trava a página inteira, coisa que não acontece num iPhone (o 3D é coberto pelo Chromium)
 test.beforeEach(async ({ page }, info) => {
   if (info.project.name !== 'iphone') return
-  await page.addInitScript(() => {
-    const orig = HTMLCanvasElement.prototype.getContext
-    // @ts-expect-error — simula navegador sem WebGL
-    HTMLCanvasElement.prototype.getContext = function (type: string, ...rest: unknown[]) {
-      return /webgl/.test(type) ? null : orig.call(this, type as '2d', ...(rest as []))
-    }
-    // pelo mesmo motivo, sem o blur do .glass: rasterizado por software, cada frame com a página rolada leva > 2 s
+  await disableWebGL(page)
+  // pelo mesmo motivo, sem o blur do .glass: rasterizado por software, cada frame com a página rolada leva > 2 s
+  await page.addInitScript(() =>
     document.addEventListener('DOMContentLoaded', () => {
       const s = document.createElement('style')
       s.textContent = '*{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}'
       document.head.append(s)
-    })
-  })
+    }),
+  )
 })
 
 const hasWebGL = (page: Page) => page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'))
@@ -26,6 +30,7 @@ async function skipWithoutWebGL(page: Page) {
   test.skip(!(await hasWebGL(page)), 'navegador sem WebGL')
 }
 
+/** Coleta erros de console/página durante o teste. */
 function trackErrors(page: Page) {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
@@ -158,13 +163,7 @@ test('link compartilhável restaura o experimento', async ({ page }) => {
 })
 
 test('sem WebGL, o playground continua funcional', async ({ page }) => {
-  await page.addInitScript(() => {
-    const orig = HTMLCanvasElement.prototype.getContext
-    // @ts-expect-error — simula navegador sem WebGL
-    HTMLCanvasElement.prototype.getContext = function (type: string, ...rest: unknown[]) {
-      return /webgl/.test(type) ? null : orig.call(this, type as '2d', ...(rest as []))
-    }
-  })
+  await disableWebGL(page)
   await page.goto('/?lang=pt#playground')
   await expect(page.getByText('WebGL indisponível neste navegador')).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Parâmetros' })).toBeVisible()

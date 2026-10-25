@@ -12,7 +12,7 @@ import { casPose, centerAt, easeInOut, focus, frame, type Ready } from './timeli
  * suaviza as transições. Ao arrastar, o usuário assume; C ou trocar de etapa devolve o controle.
  */
 export default function CameraRig({ d }: { d: Ready }) {
-  const controls = useThree((s) => s.controls) as unknown as OrbitImpl | null
+  const controls = useThree((s) => s.controls as OrbitImpl | null)
   const camera = useThree((s) => s.camera)
   const auto = useRef(true)
   const camTick = useSim((s) => s.camTick)
