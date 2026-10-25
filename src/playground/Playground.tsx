@@ -693,7 +693,7 @@ export default function Playground() {
     const onKey = (e: KeyboardEvent) => {
       const st = useSim.getState()
       if (!inView && !st.presentation) return
-      if ((e.target as HTMLElement).closest('input, textarea, select, [role="tab"]')) return
+      if ((e.target as HTMLElement).closest('input, textarea, select, [role="tab"], [role="radio"]')) return
       if (e.metaKey || e.ctrlKey || e.altKey) return
       const k = e.key.toLowerCase()
       if (k === 'arrowright') st.goto(st.step + 1)

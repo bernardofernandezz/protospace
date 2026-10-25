@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitImpl } from 'three-stdlib'
+import { prefersReducedMotion } from '../../lib/hooks'
 import { useSim } from '../store'
 import { casPose, centerAt, easeInOut, focus, frame, type Ready } from './timeline'
 
@@ -27,6 +28,7 @@ export default function CameraRig({ d }: { d: Ready }) {
     controls.addEventListener('start', off)
     return () => controls.removeEventListener('start', off)
   }, [controls])
+  const still = useMemo(prefersReducedMotion, [])
   const goal = useMemo(() => ({ pos: new THREE.Vector3(), tgt: new THREE.Vector3(), a: new THREE.Vector3(), b: new THREE.Vector3() }), [])
 
   useFrame(({ clock }, dt) => {
@@ -86,9 +88,11 @@ export default function CameraRig({ d }: { d: Ready }) {
         pos.set(Math.sin(ang) * 27, 7, Math.cos(ang) * 27)
       }
     }
-    // respiração sutil de câmera na mão
-    pos.x += Math.sin(t * 0.37) * 0.12
-    pos.y += Math.sin(t * 0.29) * 0.1
+    // respiração sutil de câmera na mão (o resto do movimento segue o play do usuário)
+    if (!still) {
+      pos.x += Math.sin(t * 0.37) * 0.12
+      pos.y += Math.sin(t * 0.29) * 0.1
+    }
     focus.copy(tgt)
     if (!auto.current || !controls) return
     const k = 1 - Math.exp(-dt * 2.4)
