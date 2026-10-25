@@ -4,7 +4,7 @@
       "startServerCommand": "node scripts/serve.mjs 4174",
       "startServerReadyPattern": "4174",
       "url": ["http://localhost:4174/"],
-      "numberOfRuns": 3,
+      "numberOfRuns": 5,
       "settings": { "chromeFlags": "--no-sandbox --headless=new" }
     },
     "assert": {

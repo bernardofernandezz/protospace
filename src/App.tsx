@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import Nav from './components/Nav'
@@ -16,7 +16,7 @@ import Quiz from './sections/Quiz'
 import Faq from './sections/Faq'
 import Conclusion from './sections/Conclusion'
 import About from './sections/About'
-import { prefersReducedMotion } from './lib/hooks'
+import { prefersReducedMotion, useInView } from './lib/hooks'
 import { loadMotion } from './lib/motion'
 import { useMicroInteractions } from './lib/fx'
 import { BOOT_TIMEOUT_MS, finishBoot } from './lib/boot'
@@ -29,8 +29,17 @@ const ANCHOR_SETTLE_MS = 3000
 
 function PlaygroundSection() {
   const t = useT()
+  const ref = useRef<HTMLElement>(null)
+  // o código do playground só baixa quando a seção se aproxima, para não competir com a primeira pintura;
+  // depois de montado fica montado, senão o experimento em andamento se perderia ao rolar para longe
+  const near = useInView(ref, '1500px')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    if (near) setMounted(true)
+  }, [near])
+  const loading = <div className="glass grid h-[74vh] place-items-center rounded-3xl text-mist">{t('Carregando playground…', 'Loading playground…')}</div>
   return (
-    <section id="playground" className="section">
+    <section id="playground" ref={ref} className="section">
       <SectionHeader
         n="04"
         eyebrow={t('Playground 3D', '3D Playground')}
@@ -50,11 +59,13 @@ function PlaygroundSection() {
           'Pick the target site, Cas type, delivery route and repair pathway; introduce mismatches and watch the effect on cutting and off-targets. Use ← → to navigate, M for cinema mode and P for presentation mode.',
         )}
       />
-      <Suspense
-        fallback={<div className="glass grid h-[74vh] place-items-center rounded-3xl text-mist">{t('Carregando playground…', 'Loading playground…')}</div>}
-      >
-        <Playground />
-      </Suspense>
+      {mounted ? (
+        <Suspense fallback={loading}>
+          <Playground />
+        </Suspense>
+      ) : (
+        loading
+      )}
     </section>
   )
 }
@@ -165,10 +176,8 @@ export default function App() {
     // linha da timeline cresce conforme o scroll (único gatilho com scrub)
     let alive = true
     let ctx: { revert(): void } | undefined
+    let ro: ResizeObserver | undefined
     let tm: ReturnType<typeof setTimeout> | undefined
-    let id: ReturnType<typeof setTimeout> | undefined
-    // alturas mudam quando o playground carrega e quando seções com content-visibility são renderizadas
-    let refresh = () => {}
     void loadMotion().then(({ gsap, ScrollTrigger }) => {
       if (!alive) return
       ctx = gsap.context(() => {
@@ -186,20 +195,19 @@ export default function App() {
           )
         }
       })
-      refresh = () => {
+      // a altura da página muda depois (playground montando, seções com content-visibility renderizando):
+      // recalcula o gatilho quando ela assenta
+      ro = new ResizeObserver(() => {
         clearTimeout(tm)
         tm = setTimeout(() => ScrollTrigger.refresh(), 200)
-      }
-      id = setTimeout(refresh, 1200)
+      })
+      ro.observe(document.body)
     })
-    const onVis = () => refresh()
-    document.addEventListener('contentvisibilityautostatechange', onVis, true)
     return () => {
       alive = false
       io.disconnect()
-      clearTimeout(id)
+      ro?.disconnect()
       clearTimeout(tm)
-      document.removeEventListener('contentvisibilityautostatechange', onVis, true)
       ctx?.revert()
     }
   }, [t.lang])
