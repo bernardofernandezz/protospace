@@ -11,6 +11,12 @@ test.beforeEach(async ({ page }, info) => {
     HTMLCanvasElement.prototype.getContext = function (type: string, ...rest: unknown[]) {
       return /webgl/.test(type) ? null : orig.call(this, type as '2d', ...(rest as []))
     }
+    // pelo mesmo motivo, sem o blur do .glass: rasterizado por software, cada frame com a página rolada leva > 2 s
+    document.addEventListener('DOMContentLoaded', () => {
+      const s = document.createElement('style')
+      s.textContent = '*{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}'
+      document.head.append(s)
+    })
   })
 })
 
@@ -103,6 +109,8 @@ test('modo Explorar liga, mostra "voar até" e sai com Esc', async ({ page, isMo
 })
 
 test('missões de pilotagem mostram o progresso e podem ser puladas', async ({ page }) => {
+  // entrar no Explorar com WebGL por software (runner do CI) passa de 60 s, como no teste acima
+  test.setTimeout(120_000)
   // trilha já nas missões de coleta (4ª) e de carga (7ª)
   await page.addInitScript(() => localStorage.setItem('protospace.missions', JSON.stringify(['find-guide', 'find-pam', 'find-decoy'])))
   await page.goto('/?lang=pt#playground')
