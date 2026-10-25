@@ -36,7 +36,7 @@ export function spacerPos(c: Candidate, i: number): number {
   return k >= 0 && k < 20 ? k : -1
 }
 
-export const inPam = (c: Candidate, i: number) => i >= c.pamStart && i < c.pamStart + 3
+export const inPam = (c: Candidate, i: number) => i >= c.pamStart && i < c.pamStart + c.pam.length
 
 export const revComp = (s: string) =>
   [...s]
@@ -155,16 +155,19 @@ export const withMismatches = (guide: string, at: number[]) => [...guide].map((b
 
 export const mismatches = (guide: string, site: string) => [...guide].flatMap((b, i) => (b !== site[i] ? [i] : []))
 
-/** Posições 0–19 (19 = adjacente ao PAM). "Seed" = 12 nt proximais ao PAM, onde mismatches pesam mais. */
-export const isSeed = (i: number) => i >= 8
+/**
+ * Posições 0–19 do guia, 5′→3′. "Seed" = trecho proximal ao PAM, onde mismatches pesam mais:
+ * os 12 nt da ponta 3′ na SpCas9 (PAM a 3′) e os 8 nt da ponta 5′ na Cas12a (PAM a 5′).
+ */
+export const isSeed = (i: number, n: NucleaseId = 'spcas9') => (NUCLEASE[n].pam.side === 3 ? i >= 8 : i < 8)
 
 /**
  * Probabilidade ilustrativa de corte num sítio. Cada mismatch pesa 2,5 na região seed
  * (proximal ao PAM) e 1 na distal; `tolerance` desloca o centro da logística, imitando
  * desde variantes de alta fidelidade (0) até excesso de enzima / exposição prolongada (3).
  */
-export function cutProbability(guide: string, site: string, tolerance: number): number {
-  const w = mismatches(guide, site).reduce((a, i) => a + (isSeed(i) ? 2.5 : 1), 0)
+export function cutProbability(guide: string, site: string, tolerance: number, n: NucleaseId = 'spcas9'): number {
+  const w = mismatches(guide, site).reduce((a, i) => a + (isSeed(i, n) ? 2.5 : 1), 0)
   return 1 / (1 + Math.exp(2.5 * (w - (0.8 + 1.1 * tolerance))))
 }
 
@@ -178,10 +181,17 @@ export interface OffTargetSite {
 }
 
 /** Dois sítios "em outro ponto do genoma" (fictícios), parecidos com o alvo: 2 mm distais e 1 distal + 1 seed. */
-export function offTargetSites(protospacer: string): OffTargetSite[] {
+export function offTargetSites(protospacer: string, n: NucleaseId = 'spcas9'): OffTargetSite[] {
+  // as posições são contadas a partir da ponta distal ao PAM, que na Cas12a é a 3′
+  const at = (ks: number[]) => (NUCLEASE[n].pam.side === 3 ? ks : ks.map((k) => 19 - k))
+  const [pam1, pam2] = n === 'cas12a' ? ['TTTA', 'TTTC'] : ['AGG', 'TGG']
   return [
-    { label: { pt: 'Sítio OT-1 · cromossomo ilustrativo 7', en: 'Site OT-1 · illustrative chromosome 7' }, site: mutateAt(protospacer, [1, 4]), pam: 'AGG' },
-    { label: { pt: 'Sítio OT-2 · cromossomo ilustrativo 12', en: 'Site OT-2 · illustrative chromosome 12' }, site: mutateAt(protospacer, [2, 13]), pam: 'TGG' },
+    { label: { pt: 'Sítio OT-1 · cromossomo ilustrativo 7', en: 'Site OT-1 · illustrative chromosome 7' }, site: mutateAt(protospacer, at([1, 4])), pam: pam1 },
+    {
+      label: { pt: 'Sítio OT-2 · cromossomo ilustrativo 12', en: 'Site OT-2 · illustrative chromosome 12' },
+      site: mutateAt(protospacer, at([2, 13])),
+      pam: pam2,
+    },
   ]
 }
 
@@ -519,8 +529,9 @@ export type Consequence = 'none' | 'silent' | 'inframe' | 'missense' | 'nonsense
  */
 export function consequence(before: string, after: string, ops: Op[]): Consequence {
   if (!ops.length) return 'none'
-  if (netLength(ops) % 3) return 'frameshift'
+  // proteína igual = a edição caiu fora do trecho codificante (ou foi sinônima), mesmo com saldo fora de múltiplo de 3
   if (after === before) return 'silent'
+  if (netLength(ops) % 3) return 'frameshift'
   if (after.endsWith('*') && !before.endsWith('*')) return 'nonsense'
   if (after.length !== before.length) return 'inframe'
   return 'missense'

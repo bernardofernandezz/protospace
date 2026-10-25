@@ -149,7 +149,8 @@ function fromUrl() {
     nuclease,
     selected: site,
     guide: g.length === 20 ? g : (cands[site]?.protospacer ?? ''),
-    cas: pick(q.get('cas'), ['wt', 'nickase', 'be', 'abe', 'pe'] as const, 'wt'),
+    // as ferramentas derivadas do playground são construídas sobre a Cas9
+    cas: nuclease === 'cas12a' ? 'wt' : pick(q.get('cas'), ['wt', 'nickase', 'be', 'abe', 'pe'] as const, 'wt'),
     delivery: pick(q.get('delivery'), ['rnp', 'plasmid', 'viral'] as const, 'rnp'),
     repair: pick(q.get('repair'), ['nhej', 'hdr'] as const, defaultRepair(dis)),
     tolerance: Math.min(3, Math.max(0, Number(q.get('tol') ?? 0.5) || 0)),
@@ -222,7 +223,7 @@ export const useSim = create<SimState>((set, get) => ({
     // mantém o sítio mais próximo do anterior; sem candidato antigo, volta para o alvo do cenário
     const anchor = prev?.cut ?? (dis ? targetPos(dis) : 0)
     const i = c.length ? nearestSite(c, anchor) : 0
-    set({ nuclease, selected: i, guide: c[i]?.protospacer ?? '', step: 0, progress: 0, playing: false })
+    set({ nuclease, selected: i, guide: c[i]?.protospacer ?? '', step: 0, progress: 0, playing: false, ...(nuclease === 'cas12a' && { cas: 'wt' }) })
   },
   applyPreset: ({ disease = null, nuclease = 'spcas9', cas = 'wt', repair, mismatches = [] }) => {
     get().setDisease(disease)
@@ -323,12 +324,13 @@ function outcomeText(p: Params, c: Candidate, ops: Op[], fix: Fix | undefined, e
 
   if (p.cas === 'pe') {
     if (ops.length) {
-      const reach = ops[0].pos - c.cut
+      // adiante do nick segue a fita do guia (ver primeEditOps)
+      const reach = (ops[0].pos - c.cut) * c.strand
       return en
         ? `Prime editing: the reverse transcriptase writes the edit ${reach} nt downstream of the nick — no double-strand break and no donor template.`
         : `Prime editing: a transcriptase reversa escreve a edição ${reach} nt adiante do nick — sem quebra de fita dupla e sem molde doador.`
     }
-    const behind = fix ? c.cut - fix.pos : 0
+    const behind = fix ? (c.cut - fix.pos) * c.strand : 0
     return en
       ? `The pegRNA extension only writes forward, up to ${PE_RANGE} nt from the nick, and the target sits ${behind > 0 ? `${behind} nt behind it` : 'too far ahead'}. Pick a site whose nick falls just before the target.`
       : `A extensão do pegRNA só escreve para a frente, até ${PE_RANGE} nt do nick, e o alvo está ${behind > 0 ? `${behind} nt atrás dele` : 'longe demais à frente'}. Escolha um sítio cujo nick caia logo antes do alvo.`
@@ -378,10 +380,10 @@ export function derive(p: Params, en: boolean) {
   // o cenário só vale enquanto o locus é o dele: editar a sequência desfaz o alelo marcado
   const fix = dis?.goal === 'fix' && p.locus === dis.locus ? dis.fix : undefined
   const delivery = DELIVERY[p.delivery]
-  const pOn = cutProbability(p.guide, cand.protospacer, p.tolerance)
-  const offs = offTargetSites(cand.protospacer).map((o) => ({
+  const pOn = cutProbability(p.guide, cand.protospacer, p.tolerance, p.nuclease)
+  const offs = offTargetSites(cand.protospacer, p.nuclease).map((o) => ({
     ...o,
-    p: Math.min(0.99, cutProbability(p.guide, o.site, p.tolerance) * delivery.offMult),
+    p: Math.min(0.99, cutProbability(p.guide, o.site, p.tolerance, p.nuclease) * delivery.offMult),
   }))
   const acts = pOn >= 0.3
 

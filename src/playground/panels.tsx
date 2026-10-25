@@ -224,13 +224,27 @@ function CandidateList() {
   return (
     <div>
       <h3 className="hud-label">{t(`Sítios candidatos (PAM ${pam.seq}, duas fitas)`, `Candidate sites (${pam.seq} PAM, both strands)`)}</h3>
-      <div className="mt-2 max-h-44 space-y-1 overflow-auto pr-1" role="radiogroup" aria-label={t('Sítios candidatos', 'Candidate sites')}>
+      <div
+        className="mt-2 max-h-44 space-y-1 overflow-auto pr-1"
+        role="radiogroup"
+        aria-label={t('Sítios candidatos', 'Candidate sites')}
+        onKeyDown={(e) => {
+          // padrão ARIA de radiogroup: as setas movem a seleção e o foco juntos
+          const dir = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key]
+          if (!dir) return
+          e.preventDefault()
+          const i = (s.selected + dir + d.candidates.length) % d.candidates.length
+          s.select(i)
+          ;(e.currentTarget.children[i] as HTMLElement | undefined)?.focus()
+        }}
+      >
         {d.candidates.map((c, i) => (
           <button
             key={c.start + c.strand}
             type="button"
             role="radio"
             aria-checked={i === s.selected}
+            tabIndex={i === s.selected ? 0 : -1}
             onClick={() => s.select(i)}
             className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-xs transition ${i === s.selected ? 'bg-dna/15 ring-1 ring-dna/60' : 'hover:bg-white/5'}`}
           >
@@ -350,17 +364,12 @@ export function GuidePanel() {
   const t = useT()
   const d = useDerived()
   const s = useSim(useShallow((s) => ({ nuclease: s.nuclease, guide: s.guide, set: s.set })))
-  const { seq: pam, side: pamSide } = NUCLEASE[s.nuclease].pam
+  const { side: pamSide } = NUCLEASE[s.nuclease].pam
   if (!d.cand)
     return (
       <div className="space-y-5">
         <Scenario />
-        <p className="text-sm text-red-300">
-          {t(
-            `Nenhum PAM ${pam} neste locus. Troque de nuclease (em Parâmetros) ou edite a sequência.`,
-            `No ${pam} PAM in this locus. Switch nuclease (in Parameters) or edit the sequence.`,
-          )}
-        </p>
+        <NoPam />
       </div>
     )
   const mm = mismatches(s.guide, d.cand.protospacer)
@@ -382,7 +391,7 @@ export function GuidePanel() {
                 type="button"
                 aria-label={`${t('Posição', 'Position')} ${i + 1}: ${b}${isMm ? ', mismatch' : ''}`}
                 onClick={() => s.set({ guide: s.guide.slice(0, i) + NEXT_BASE[b] + s.guide.slice(i + 1) })}
-                className={`h-7 w-[22px] rounded font-mono text-xs font-semibold transition ${isMm ? 'bg-red-500/80 text-white' : 'bg-white/5 hover:bg-white/15'} ${isSeed(i) ? 'border-b-2 border-rna/70' : ''}`}
+                className={`h-7 w-[22px] rounded font-mono text-xs font-semibold transition ${isMm ? 'bg-red-500/80 text-white' : 'bg-white/5 hover:bg-white/15'} ${isSeed(i, s.nuclease) ? 'border-b-2 border-rna/70' : ''}`}
                 style={{ color: isMm ? undefined : BASE_COLOR[b] }}
               >
                 {b}
@@ -393,7 +402,10 @@ export function GuidePanel() {
         </div>
         <div className="mt-1 flex justify-between text-[11px] text-mist/70">
           <span>
-            5′ distal · <span className="text-rna">{t('sublinhado = seed (12 nt)', 'underlined = seed (12 nt)')}</span>
+            {pamSide === 3 ? '5′ distal' : '5′ · PAM'} ·{' '}
+            <span className="text-rna">
+              {pamSide === 3 ? t('sublinhado = seed (12 nt)', 'underlined = seed (12 nt)') : t('sublinhado = seed (8 nt)', 'underlined = seed (8 nt)')}
+            </span>
           </span>
           <button type="button" className="underline hover:text-white" onClick={() => s.set({ guide: d.cand!.protospacer })}>
             {t('limpar mismatches', 'clear mismatches')}
@@ -438,11 +450,11 @@ export function ParamsPanel() {
           ))}
         </div>
         <p className="mt-1 text-[11px] text-mist/80">{t.pick(NUCLEASE[s.nuclease].note)}</p>
-        {s.nuclease === 'cas12a' && s.cas !== 'wt' && (
+        {s.nuclease === 'cas12a' && (
           <p className="mt-1 text-[11px] text-rna">
             {t(
-              'Nickase, editores de base e prime editing deste playground são construídos sobre a Cas9; com a Cas12a, use a nuclease selvagem.',
-              'The nickase, base editors and prime editing in this playground are built on Cas9; with Cas12a, use the wild-type nuclease.',
+              'Nickase, editores de base e prime editing deste playground são construídos sobre a Cas9: com a Cas12a, só a nuclease selvagem.',
+              'The nickase, base editors and prime editing in this playground are built on Cas9: with Cas12a, only the wild-type nuclease.',
             )}
           </p>
         )}
@@ -451,7 +463,13 @@ export function ParamsPanel() {
         <legend className="hud-label">{t('Tipo de Cas', 'Cas type')}</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {(Object.keys(CAS) as CasType[]).map((k) => (
-            <Seg key={k} onClick={() => s.set({ cas: k })} on={s.cas === k} cls="bg-cas/25 text-white ring-1 ring-cas/60">
+            <Seg
+              key={k}
+              onClick={() => s.set({ cas: k })}
+              on={s.cas === k}
+              disabled={s.nuclease === 'cas12a' && k !== 'wt'}
+              cls="bg-cas/25 text-white ring-1 ring-cas/60"
+            >
               {t.pick(CAS[k].name)}
             </Seg>
           ))}
@@ -880,10 +898,24 @@ function PopulationView() {
   )
 }
 
+/** Sem PAM não há sítio, e sem sítio não há experimento: dito igual na aba Guia e na Resultado. */
+function NoPam() {
+  const t = useT()
+  const pam = useSim((s) => NUCLEASE[s.nuclease].pam.seq)
+  return (
+    <p className="text-sm text-red-300">
+      {t(
+        `Nenhum PAM ${pam} neste locus. Troque de nuclease (em Parâmetros) ou edite a sequência.`,
+        `No ${pam} PAM in this locus. Switch nuclease (in Parameters) or edit the sequence.`,
+      )}
+    </p>
+  )
+}
+
 export function ResultPanel() {
   const t = useT()
   const d = useDerived()
-  if (!d.cand) return null
+  if (!d.cand) return <NoPam />
   const risky = d.offs!.some((o) => o.p > 0.2)
   return (
     <div className="space-y-4">

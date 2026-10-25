@@ -13,7 +13,9 @@ import {
   diffSegments,
   findCandidates,
   hdrOps,
+  inPam,
   nhejOps,
+  offTargetSites,
   population,
   primeEditOps,
   repairOdds,
@@ -152,6 +154,15 @@ assert.equal(consequence('MVHLTPEEK', 'MVHLTPVEK', [{ pos: 0, del: 1, ins: 'T' }
 assert.equal(consequence('MVHLTPEEK', 'MVHLT*', [{ pos: 0, del: 1, ins: 'T' }]), 'nonsense')
 assert.equal(consequence('MVHLTPEEK', 'MVHLTPEK', [{ pos: 0, del: 3, ins: '' }]), 'inframe')
 assert.equal(consequence('MVHLTPEEK', 'MVHGH', [{ pos: 0, del: 1, ins: '' }]), 'frameshift')
+assert.equal(consequence('MVHLTPEEK', 'MVHLTPEEK', [{ pos: 0, del: 1, ins: '' }]), 'silent', 'indel fora da ORF não é frameshift')
+
+// Cas12a: PAM de 4 nt a 5′, então o seed fica na ponta 5′ do guia e os off-targets usam TTTV
+const c12 = findCandidates(DEFAULT_LOCUS, 'cas12a')[0]
+assert.equal([...DEFAULT_LOCUS].filter((_, i) => inPam(c12, i)).length, 4, 'o V do TTTV também é PAM')
+const near = c12.protospacer.replace(/^./, (b) => (b === 'A' ? 'C' : 'A'))
+const far = c12.protospacer.slice(0, 19) + (c12.protospacer[19] === 'A' ? 'C' : 'A')
+assert.ok(cutProbability(near, c12.protospacer, 0, 'cas12a') < cutProbability(far, c12.protospacer, 0, 'cas12a'), 'seed da Cas12a é a 5′')
+for (const o of offTargetSites(c12.protospacer, 'cas12a')) assert.match(o.pam, /^TTT[ACG]$/)
 
 // população: as contagens fecham, a semente reproduz o resultado e sem corte nada é editado
 const popArgs = {
