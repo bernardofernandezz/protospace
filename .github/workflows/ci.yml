@@ -29,7 +29,7 @@ jobs:
       - run: npm run test:e2e
       # gate de desempenho no perfil celular (metas em lighthouserc.json)
       - run: npx -y @lhci/cli@0.15.1 autorun
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: reports
