@@ -55,11 +55,6 @@ const Ext = ({ href, children }: { href: string; children: React.ReactNode }) =>
 export default function About() {
   const t = useT()
   const { author } = SITE
-  const initials = author.name
-    .split(' ')
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
   return (
     <section id="sobre" className="section">
       <SectionHeader
@@ -86,12 +81,13 @@ export default function About() {
         <aside className="glass relative overflow-hidden rounded-3xl p-7" data-reveal>
           <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-dna/20 blur-3xl" />
           <div className="flex items-center gap-4">
-            <span className="grid h-16 w-16 place-items-center rounded-2xl bg-linear-to-br from-dna via-bio to-cas font-display text-2xl font-bold text-ink">
-              {initials}
+            {/* o logo é só a máscara: as cores vêm do gradiente da marca do site */}
+            <span className="grid h-16 w-16 place-items-center rounded-2xl bg-white/5 ring-1 ring-white/10">
+              <span aria-hidden="true" className="h-14 w-14 bg-linear-to-br from-dna via-bio to-cas [mask:url(/logo-bf.webp)_center/contain_no-repeat]" />
             </span>
             <div>
               <p className="font-display text-2xl font-semibold">{author.name}</p>
-              <p className="text-sm text-mist">{t('Conteúdo, design e desenvolvimento', 'Content, design and development')}</p>
+              <p className="text-sm text-mist">{t('Desenvolvedor de software, estudante de biotecnologia', 'Software developer, biotechnology student')}</p>
             </div>
           </div>
           <div className="mt-6 flex flex-wrap gap-2">
