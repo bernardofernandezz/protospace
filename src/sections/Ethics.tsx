@@ -4,6 +4,7 @@ import { Rich } from '../components/Term'
 import { ETHICS, type Dilemma, type EthicsTopic, type Stance } from '../content/ethics'
 import { useT } from '../i18n'
 import { useInView } from '../lib/hooks'
+import { readJSON, writeJSON } from '../lib/storage'
 import { EMPTY, castVote, fetchTallies, isNetworkError, subscribeTallies, type Tallies, type Tally } from '../lib/votes'
 
 const ACCENTS = ['#ff4fa3', '#ffb547', '#7dff9b', '#4cc9ff', '#b98cff', '#ff7a59', '#3ef0d0']
@@ -18,20 +19,8 @@ type Mine = Record<string, Stance>
 // meu voto por dilema (para destacar a escolha) e votos que falharam por falta de rede (reenviados depois)
 const MINE_KEY = 'protospace-my-votes'
 const PENDING_KEY = 'protospace-pending-votes'
-const read = (k: string): Mine => {
-  try {
-    return JSON.parse(localStorage.getItem(k) ?? '{}')
-  } catch {
-    return {}
-  }
-}
-const write = (k: string, v: Mine) => {
-  try {
-    localStorage.setItem(k, JSON.stringify(v))
-  } catch {
-    /* armazenamento indisponível */
-  }
-}
+const read = (k: string) => readJSON<Mine>(k, {})
+const write = (k: string, v: Mine) => writeJSON(k, v)
 
 function TopicCard({ t, color }: { t: EthicsTopic; color: string }) {
   return (

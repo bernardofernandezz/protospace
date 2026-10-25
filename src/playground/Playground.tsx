@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { DELIVERY, type CasType, type Delivery, type NucleaseId, type Repair } from '../lib/dna'
 import { hasWebGL, useInView } from '../lib/hooks'
 import { report } from '../lib/monitor'
+import { writeJSON, writeText } from '../lib/storage'
 import { useT, type T } from '../i18n'
 import { MISSIONS_KEY, SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, experimentUrl, useDerived, useSim } from './store'
 import { EXHIBIT, EXHIBITS, REGIONS, type Region } from '../content/exhibits'
@@ -292,11 +293,7 @@ function MissionPill() {
   const m = currentMission(done)
   const save = (v: string[]) => {
     useSim.getState().set({ missionsDone: v, bases: '', cargo: false })
-    try {
-      localStorage.setItem(MISSIONS_KEY, JSON.stringify(v))
-    } catch {
-      /* sem armazenamento: vale só nesta visita */
-    }
+    writeJSON(MISSIONS_KEY, v)
   }
   const share = async () => {
     const url = new URL(t.lang === 'en' ? '/en/' : '/', location.origin).toString()
@@ -561,6 +558,12 @@ export default function Playground() {
   const [webgl] = useState(hasWebGL)
   const [lost, setLost] = useState(false)
   const [toast, setToast] = useState('')
+  // cada aviso novo reinicia a contagem, para um aviso antigo não apagar o atual antes da hora
+  useEffect(() => {
+    if (!toast) return
+    const id = setTimeout(() => setToast(''), 2200)
+    return () => clearTimeout(id)
+  }, [toast])
   const [tab, setTab] = useState<'guia' | 'params' | 'comparar' | 'resultado'>('guia')
   const sim = useSim(
     useShallow((s) => ({
@@ -584,15 +587,7 @@ export default function Playground() {
     const on = !useSim.getState().sound
     sound.unlock()
     useSim.getState().set({ sound: on })
-    try {
-      localStorage.setItem(SOUND_KEY, on ? 'on' : 'off')
-    } catch {
-      /* sem armazenamento: vale só nesta visita */
-    }
-  }
-  const flash = (m: string) => {
-    setToast(m)
-    setTimeout(() => setToast(''), 2200)
+    writeText(SOUND_KEY, on ? 'on' : 'off')
   }
   const togglePlay = () => {
     const st = useSim.getState()
@@ -611,9 +606,9 @@ export default function Playground() {
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(experimentUrl())
-      flash(t('Link do experimento copiado', 'Experiment link copied'))
+      setToast(t('Link do experimento copiado', 'Experiment link copied'))
     } catch {
-      flash(t('Não foi possível copiar', 'Could not copy'))
+      setToast(t('Não foi possível copiar', 'Could not copy'))
     }
   }
   const capture = async () => {
@@ -622,7 +617,7 @@ export default function Playground() {
     a.href = url
     a.download = `crispr-${useSim.getState().step + 1}.png`
     a.click()
-    flash(t('Imagem salva', 'Image saved'))
+    setToast(t('Imagem salva', 'Image saved'))
   }
 
   useSimClock(inView)
@@ -650,27 +645,16 @@ export default function Playground() {
   useEffect(
     () =>
       useSim.subscribe((s, prev) => {
-        const save = (key: string, v: string[]) => {
-          try {
-            localStorage.setItem(key, JSON.stringify(v))
-          } catch {
-            /* sem armazenamento: vale só nesta visita */
-          }
-        }
-        const say = (m: string) => {
-          setToast(m)
-          setTimeout(() => setToast(''), 2200)
-        }
         // missão da trilha cumprida (ao entrar na zona ou quando a etapa assistida ali termina)
         const m = s.explore ? currentMission(s.missionsDone) : undefined
         const won = !!m && accomplished(m, s)
         if (won) {
           const missionsDone = [...s.missionsDone, m.id]
           s.set({ missionsDone, bases: '', cargo: false })
-          save(MISSIONS_KEY, missionsDone)
+          writeJSON(MISSIONS_KEY, missionsDone)
           sound.chime(true)
           navigator.vibrate?.(30)
-          say(
+          setToast(
             missionsDone.length === MISSIONS.length
               ? `🧬 ${t('Trilha completa!', 'Trail complete!')}`
               : `✓ ${t('Missão cumprida', 'Mission complete')} · ${missionsDone.length}/${MISSIONS.length}`,
@@ -682,8 +666,8 @@ export default function Playground() {
         if (!fresh) return
         const seen = [...s.seen, s.zone]
         s.set({ seen })
-        save(SEEN_KEY, seen)
-        if (!won) say(`✦ ${t('Nova descoberta', 'New discovery')} · ${seen.length}/${EXHIBITS.length}`)
+        writeJSON(SEEN_KEY, seen)
+        if (!won) setToast(`✦ ${t('Nova descoberta', 'New discovery')} · ${seen.length}/${EXHIBITS.length}`)
       }),
     [t],
   )
