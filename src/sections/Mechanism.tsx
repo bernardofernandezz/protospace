@@ -20,7 +20,7 @@ const STEPS: L<{ k: string; t: string; b: string }[]> = {
     {
       k: 'reconhecimento',
       t: 'A procura',
-      b: 'A Cas9 não varre o genoma de ponta a ponta. Ela esbarra no DNA ao acaso e, a cada esbarrão, confere se ali existe um PAM. Não existindo, solta quase na hora. Existindo, segura o DNA por alguns segundos e testa o guia a partir das letras vizinhas ao PAM, a região [[seed|seed]] — e um erro logo aí costuma encerrar a tentativa. Um trecho idêntico ao guia, mas sem PAM ao lado, é simplesmente ignorado.',
+      b: 'A Cas9 esbarra no DNA ao acaso e, a cada esbarrão, procura um PAM. Sem PAM, solta na hora — mesmo que o trecho seja idêntico ao guia. Com PAM, testa o guia a partir das letras vizinhas, a região [[seed|seed]], e um erro logo aí costuma encerrar a tentativa.',
     },
     {
       k: 'abertura',
@@ -57,7 +57,7 @@ const STEPS: L<{ k: string; t: string; b: string }[]> = {
     {
       k: 'reconhecimento',
       t: 'The search',
-      b: 'Cas9 does not sweep the genome end to end. It bumps into DNA at random and, at each bump, checks whether a PAM is there. If there is none, it lets go almost at once. If there is, it holds the DNA for a few seconds and tests the guide starting from the letters next to the PAM, the [[seed|seed]] region — and an error right there usually ends the attempt. A stretch identical to the guide but with no PAM beside it is simply ignored.',
+      b: 'Cas9 bumps into DNA at random and, at each bump, looks for a PAM. No PAM, and it lets go at once — even if the stretch matches the guide. With a PAM, it tests the guide from the neighbouring letters, the [[seed|seed]] region, and an error right there usually ends the attempt.',
     },
     {
       k: 'abertura',

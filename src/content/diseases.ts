@@ -16,7 +16,7 @@ export interface Disease {
   /** Notação do alvo (HGVS para variantes), como aparece na literatura. */
   variant: string
   /** De onde veio a sequência, para quem quiser conferir. */
-  source: string
+  source: L<string>
   goal: Goal
   /** Cenários `fix`: a edição que restaura o alelo saudável. */
   fix?: Fix
@@ -39,7 +39,7 @@ export const DISEASES: Disease[] = [
     gene: { pt: 'HBB · β-globina (éxon 1)', en: 'HBB · β-globin (exon 1)' },
     locus: 'ACATTTGCTTCTGACACAACTGTGTTCACTAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAGAAGTCTGCCGTTACTGCCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGG',
     variant: 'c.20A>T · p.Glu7Val (HbS)',
-    source: 'NM_000518.5 (HBB), nt 1–123',
+    source: { pt: 'NM_000518.5 (HBB), nt 1–123', en: 'NM_000518.5 (HBB), nt 1–123' },
     goal: 'fix',
     fix: { pos: 69, del: 1, ins: 'A' },
     orf: 50,
@@ -48,8 +48,8 @@ export const DISEASES: Disease[] = [
       en: 'A single swapped letter in the haemoglobin gene makes the protein clump when oxygen runs low. The red blood cell loses its disc shape, turns into a sickle, blocks small vessels and causes pain crises and anaemia.',
     },
     tech: {
-      pt: 'HBB c.20A>T: o códon 6 passa de GAG (Glu) para GTG (Val). A valina é hidrofóbica e cria um ponto de adesão entre moléculas de hemoglobina desoxigenada, que polimerizam em fibras. É a troca que define a HbS.',
-      en: 'HBB c.20A>T: codon 6 changes from GAG (Glu) to GTG (Val). Valine is hydrophobic and creates a sticky patch between deoxygenated haemoglobin molecules, which polymerise into fibres. This is the substitution that defines HbS.',
+      pt: 'HBB c.20A>T: o códon 6 (7 na numeração HGVS, que conta a metionina inicial) passa de GAG (Glu) para GTG (Val). A valina é hidrofóbica e cria um ponto de adesão entre moléculas de hemoglobina desoxigenada, que polimerizam em fibras. É a troca que define a HbS.',
+      en: 'HBB c.20A>T: codon 6 (7 in HGVS numbering, which counts the initial methionine) changes from GAG (Glu) to GTG (Val). Valine is hydrophobic and creates a sticky patch between deoxygenated haemoglobin molecules, which polymerise into fibres. This is the substitution that defines HbS.',
     },
     inherit: {
       pt: 'Herança recessiva: quem tem só um alelo alterado (traço falciforme) costuma ser assintomático. A doença aparece com os dois alelos alterados — por isso a terapia precisa corrigir (ou compensar) os dois.',
@@ -62,7 +62,7 @@ export const DISEASES: Disease[] = [
     gene: { pt: 'CFTR · éxon 11 (F508del)', en: 'CFTR · exon 11 (F508del)' },
     locus: 'ATTTCATTCTGTTCTCAGTTTTCCTGGATTATGCCTGGCACCATTAAAGAAAATATCATTGGTGTTTCCTATGATGAATATAGATACAGAAGCGTCATCAAAGCATGCCAACTAGAAGAGGACATC',
     variant: 'c.1521_1523delCTT · p.Phe508del',
-    source: 'NM_000492.4 (CFTR), região do códon 508',
+    source: { pt: 'NM_000492.4 (CFTR), região do códon 508', en: 'NM_000492.4 (CFTR), codon 508 region' },
     goal: 'fix',
     fix: { pos: 59, del: 0, ins: 'CTT' },
     orf: 30,
@@ -84,8 +84,8 @@ export const DISEASES: Disease[] = [
     name: { pt: 'Hemoglobina fetal (Casgevy)', en: 'Fetal haemoglobin (Casgevy)' },
     gene: { pt: 'BCL11A · enhancer eritroide +58', en: 'BCL11A · +58 erythroid enhancer' },
     locus: 'GGCCAGAAAAGAGATATGGCATCTACTCTTAGACATAACACACCAGGGTCAATACAACTTTGAAGCTAGTCTAGTGCAAGCTAACAGTTGCTTTTATCACAGGCTCCAGGAAGGGTTTGGCCTCTGATTAGGGTGGGGGC',
-    variant: 'motivo GATA1 · DHS +58',
-    source: 'hg38 chr2:60.495.223–60.495.363 (fita do gene)',
+    variant: 'GATA1 · DHS +58',
+    source: { pt: 'hg38 chr2:60.495.223–60.495.363 (fita do gene)', en: 'hg38 chr2:60,495,223–60,495,363 (gene strand)' },
     goal: 'disrupt',
     motif: 'TTATCA',
     plain: {

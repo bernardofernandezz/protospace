@@ -63,7 +63,7 @@ export const QUIZ: L<QuizContent> = {
       },
       {
         id: 'q5',
-        question: 'O que um editor de bases (CBE) faz?',
+        question: 'O que um editor de bases de citosina (CBE) faz?',
         options: [
           'Corta as duas fitas e insere uma base nova',
           'Converte C em T (via U) numa janela do alvo, sem quebra de fita dupla',

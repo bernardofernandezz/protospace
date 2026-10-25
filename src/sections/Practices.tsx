@@ -316,8 +316,8 @@ export default function Practices() {
           )
         }
         lead={t(
-          'A parte da técnica que não aparece nas manchetes: desenhar o guia, escolher a entrega, montar os controles e provar que a edição é real. Esta é a seção mais técnica do site — é um checklist de bancada, e cada item abre com a explicação do porquê. Se você chegou agora no assunto, leia só os títulos: eles já contam por que editar um gene dá tanto trabalho. O progresso fica salvo neste navegador.',
-          'The part of the technique that never makes headlines: designing the guide, choosing delivery, setting up controls and proving the edit is real. This is the most technical section of the site — a bench checklist, where each item opens with the reasoning behind it. New to the subject? Just read the headings: they already explain why editing a gene is so much work. Progress is saved in this browser.',
+          'O que não aparece nas manchetes: desenhar o guia, escolher a entrega, montar os controles e provar que a edição é real. É a seção mais técnica, um checklist de bancada. Chegou agora? Leia só os títulos: eles já contam por que editar um gene dá tanto trabalho. O progresso fica salvo neste navegador.',
+          'What never makes headlines: designing the guide, choosing delivery, setting up controls and proving the edit is real. This is the most technical section, a bench checklist. New to the subject? Just read the headings: they already explain why editing a gene is so much work. Progress is saved in this browser.',
         )}
       />
 

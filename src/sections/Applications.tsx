@@ -11,7 +11,7 @@ const APPS: L<App[]> = {
       t: 'Terapia somática — doenças genéticas',
       c: '#ff4fa3',
       span: 'md:col-span-2',
-      b: 'No Casgevy, as células da medula do próprio paciente são retiradas, editadas em laboratório e devolvidas — uma terapia [[exvivo|ex vivo]]. A edição religa a produção da hemoglobina fetal, aquela que usamos antes de nascer, e ela compensa a hemoglobina defeituosa. Não é um procedimento simples: antes da devolução, o paciente passa por quimioterapia para abrir espaço na medula. Já existem também abordagens que editam células dentro do corpo ([[invivo|in vivo]]), ainda em fase de testes clínicos.',
+      b: 'No Casgevy, as células da medula do próprio paciente são retiradas, editadas em laboratório e devolvidas — uma terapia [[exvivo|ex vivo]]. A edição religa a hemoglobina fetal, a que usamos antes de nascer, e ela compensa a defeituosa. O preço: quimioterapia antes da devolução, para abrir espaço na medula. Terapias que editam dentro do corpo ([[invivo|in vivo]]) ainda estão em testes clínicos.',
       tag: 'ex vivo · in vivo',
     },
     {
@@ -51,7 +51,7 @@ const APPS: L<App[]> = {
       t: 'Somatic therapy — genetic diseases',
       c: '#ff4fa3',
       span: 'md:col-span-2',
-      b: 'With Casgevy, the patient’s own bone-marrow cells are removed, edited in the lab and returned — an [[exvivo|ex vivo]] therapy. The edit switches fetal haemoglobin — the kind we make before birth — back on, and it compensates for the faulty haemoglobin. It is not a simple procedure: before the cells go back, the patient undergoes chemotherapy to make room in the marrow. Approaches that edit cells inside the body ([[invivo|in vivo]]) also exist, still in clinical trials.',
+      b: 'With Casgevy, the patient’s own bone-marrow cells are removed, edited in the lab and returned — an [[exvivo|ex vivo]] therapy. The edit switches fetal haemoglobin — the kind we make before birth — back on, and it makes up for the faulty one. The cost: chemotherapy before the cells go back, to make room in the marrow. Therapies that edit inside the body ([[invivo|in vivo]]) are still in clinical trials.',
       tag: 'ex vivo · in vivo',
     },
     {

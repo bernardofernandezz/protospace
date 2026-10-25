@@ -186,7 +186,7 @@ export const REFERENCES: Reference[] = [
     group: CLINIC,
     authors: 'Stein R',
     year: '2021',
-    title: 'First sickle cell patient treated with CRISPR gene editing still thriving (Victoria Gray, tratada em 2019)',
+    title: 'First sickle cell patient treated with CRISPR gene editing still thriving',
     source: 'NPR — Shots',
     link: 'https://www.npr.org/sections/health-shots/2021/12/31/1067400512/first-sickle-cell-patient-treated-with-crispr-gene-editing-still-thriving',
   },

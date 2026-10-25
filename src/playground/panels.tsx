@@ -28,6 +28,7 @@ import {
   type Repair,
 } from '../lib/dna'
 import { DISEASES, findDisease, targetPos, targetSpan, type Disease } from '../content/diseases'
+import { Rich } from '../components/Term'
 import { useT, type T } from '../i18n'
 import { bestRow, compareRows, useDerived, useParams, useSim, type CompareRow, type Proteins, type Quality, type Verdict as VerdictKind } from './store'
 import { BASE_COLOR } from './colors'
@@ -194,7 +195,7 @@ function Scenario() {
             <p className="mt-1 leading-relaxed">{t.pick(dis.tech)}</p>
             <p className="mt-1 leading-relaxed">{t.pick(dis.inherit)}</p>
             <p className="mt-1 text-mist/70">
-              {t('Sequência', 'Sequence')}: {dis.source}
+              {t('Sequência', 'Sequence')}: {t.pick(dis.source)}
             </p>
           </details>
           <p className="text-[11px] text-mist/80">
@@ -687,7 +688,9 @@ export function ComparePanel() {
           })}
         </tbody>
       </table>
-      <p className="text-xs leading-relaxed text-white/85">{rows.find((r) => r === best)?.d.kind}</p>
+      <p className="text-xs leading-relaxed text-white/85">
+        <Rich>{rows.find((r) => r === best)?.d.kind ?? ''}</Rich>
+      </p>
 
       {!otherSites.length && (
         <p className="text-[11px] text-rna">
@@ -930,7 +933,9 @@ export function ResultPanel() {
           <div className="font-display text-3xl text-dna">{pct(d.pOn!)}</div>
         </div>
       </div>
-      <p className="text-sm text-white/90">{d.kind}</p>
+      <p className="text-sm text-white/90">
+        <Rich>{d.kind!}</Rich>
+      </p>
       <div>
         <div className="hud-label">Off-targets</div>
         {d.offs!.map((o) => (

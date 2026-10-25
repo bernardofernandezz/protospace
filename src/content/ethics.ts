@@ -173,7 +173,7 @@ export const ETHICS: L<EthicsContent> = {
       items: [
         {
           label: 'Lei de Biossegurança (11.105/2005)',
-          text: 'Proíbe a engenharia genética em célula germinal humana, zigoto e embrião humanos (art. 6º, III) e tipifica a prática como crime, com pena de reclusão de 1 a 4 anos e multa (art. 25). Também cria a CTNBio e o sistema de CIBios.',
+          text: 'Proíbe a engenharia genética em célula germinal humana, zigoto e embrião humanos (art. 6º, III) e tipifica a prática como crime, com pena de reclusão de 1 a 4 anos e multa (art. 25). Também cria a CTNBio e as CIBios, comissões internas de biossegurança de cada instituição.',
         },
         {
           label: 'CTNBio · RN nº 16/2018',
@@ -181,7 +181,7 @@ export const ETHICS: L<EthicsContent> = {
         },
         {
           label: 'Pesquisa clínica e terapias avançadas',
-          text: 'Ensaios em humanos passam pelo sistema CEP/Conep; produtos de terapia gênica e celular são regulados pela Anvisa como terapias avançadas.',
+          text: 'Ensaios em humanos passam pelos comitês de ética em pesquisa (sistema CEP/Conep); produtos de terapia gênica e celular são regulados pela Anvisa como terapias avançadas.',
         },
       ],
       notes: ['Resumo didático — consulte o texto legal vigente antes de citar em trabalhos.'],
@@ -207,7 +207,7 @@ export const ETHICS: L<EthicsContent> = {
         title: 'Safety and uncertainty',
         summary: 'Off-targets, mosaicism and large changes that simple methods miss.',
         details: [
-          'Even a well-designed guide can cut sites that resemble the target. On top of that, a double-strand break can cause large deletions and chromosomal rearrangements that a short PCR cannot see.',
+          'Even a well-designed guide can cut stretches that resemble the target, the [[offtarget|off-targets]]. On top of that, the [[dsb|double-strand break]] can cause large deletions and shuffle pieces of the chromosome — changes that routine tests cannot see.',
           'In embryos there is also [[mosaicismo|mosaicism]]: the edit happens after the first division and only some cells are changed. Long-term effects are only known after years of follow-up — which requires registries and transparency.',
         ],
         notes: ['E.g. Kosicki et al., 2018, on large deletions after Cas9 cuts.'],

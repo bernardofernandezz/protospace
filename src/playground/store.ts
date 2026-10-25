@@ -327,8 +327,8 @@ function outcomeText(p: Params, c: Candidate, ops: Op[], fix: Fix | undefined, e
       // adiante do nick segue a fita do guia (ver primeEditOps)
       const reach = (ops[0].pos - c.cut) * c.strand
       return en
-        ? `Prime editing: the reverse transcriptase writes the edit ${reach} nt downstream of the nick — no double-strand break and no donor template.`
-        : `Prime editing: a transcriptase reversa escreve a edição ${reach} nt adiante do nick — sem quebra de fita dupla e sem molde doador.`
+        ? `Prime editing: the reverse transcriptase copies the [[pegrna|pegRNA]] tail ${reach} nt downstream of the nick — no double-strand break and no donor template.`
+        : `Prime editing: a transcriptase reversa copia a cauda do [[pegrna|pegRNA]] ${reach} nt adiante do nick — sem quebra de fita dupla e sem molde doador.`
     }
     const behind = fix ? (c.cut - fix.pos) * c.strand : 0
     return en
@@ -338,15 +338,15 @@ function outcomeText(p: Params, c: Candidate, ops: Op[], fix: Fix | undefined, e
 
   if (p.cas === 'nickase') {
     return en
-      ? 'Single-strand nick: usually repaired without error. For a DSB, use a pair of nickases with opposite guides.'
-      : 'Nick em uma única fita: geralmente reparado sem erro. Para DSB, use um par de nickases com guias opostos.'
+      ? '[[nickase|Single-strand nick]]: usually repaired without error. For a DSB, use a pair of nickases with opposite guides.'
+      : '[[nickase|Nick em uma única fita]]: geralmente reparado sem erro. Para DSB, use um par de nickases com guias opostos.'
   }
 
   if (p.repair === 'hdr') {
     if (fix && Math.abs(fix.pos - c.cut) <= FIX_RANGE) {
       return en
-        ? `HDR with template: the healthy allele comes back — ${fixText(p.locus, fix, en)}.`
-        : `HDR com molde: o alelo saudável volta — ${fixText(p.locus, fix, en)}.`
+        ? `[[hdr|HDR]] with template: the healthy [[alelo|allele]] comes back — ${fixText(p.locus, fix, en)}.`
+        : `[[hdr|HDR]] com molde: o [[alelo|alelo]] saudável volta — ${fixText(p.locus, fix, en)}.`
     }
     if (fix) {
       return en
@@ -358,8 +358,8 @@ function outcomeText(p: Params, c: Candidate, ops: Op[], fix: Fix | undefined, e
 
   const n = netLength(ops)
   return en
-    ? `NHEJ: ${n > 0 ? `${n}-nt insertion` : `${-n}-nt deletion`}${n % 3 ? ' → frameshift (likely knockout if in a coding exon)' : ' → in-frame (may not inactivate the gene)'}.`
-    : `NHEJ: ${n > 0 ? `inserção de ${n} nt` : `deleção de ${-n} nt`}${n % 3 ? ' → frameshift (provável knockout, se em éxon codificante)' : ' → in-frame (pode não inativar o gene)'}.`
+    ? `[[nhej|NHEJ]]: ${n > 0 ? `${n}-nt insertion` : `${-n}-nt deletion`}${n % 3 ? ' → [[frameshift|frameshift]] ([[knockout|knockout]] likely if in a coding [[exon|exon]])' : ' → in-frame (may not inactivate the gene)'}.`
+    : `[[nhej|NHEJ]]: ${n > 0 ? `inserção de ${n} nt` : `deleção de ${-n} nt`}${n % 3 ? ' → [[frameshift|frameshift]] (provável [[knockout|knockout]], se em [[exon|éxon]] codificante)' : ' → in-frame (pode não inativar o gene)'}.`
 }
 
 /** Compara a PROTEÍNA, não a sequência: é isso que distingue corrigir de inativar o gene. */
@@ -398,8 +398,8 @@ export function derive(p: Params, en: boolean) {
   const kind = acts
     ? outcomeText(p, cand, ops, fix, en)
     : en
-      ? 'No edit: the guide does not recognise the target well (too many mismatches).'
-      : 'Sem edição: o guia não reconhece bem o alvo (mismatches demais).'
+      ? 'No edit: the guide does not recognise the target well (too many [[mismatch|mismatches]]).'
+      : 'Sem edição: o guia não reconhece bem o alvo ([[mismatch|mismatches]] demais).'
 
   const applied = applyOps(p.locus, ops)
   // sem cenário, o primeiro ATG dá um quadro de leitura ao locus fictício; num cenário

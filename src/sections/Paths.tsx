@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
+import { Rich } from '../components/Term'
 import { PATHS, type Path } from '../content/paths'
 import { useT } from '../i18n'
 import { openInPlayground } from '../playground/open'
@@ -46,9 +47,11 @@ export default function Paths() {
               0{i + 1}
             </span>
             <h3 className="mt-2 text-xl font-semibold">{t.pick(p.name)}</h3>
-            <p className="mt-3 leading-relaxed text-mist">{t.pick(p.plain)}</p>
+            <p className="mt-3 leading-relaxed text-mist">
+              <Rich>{t.pick(p.plain)}</Rich>
+            </p>
             <p className="mt-3 rounded-xl border-l-2 bg-white/5 p-3 text-sm leading-relaxed text-white/85" style={{ borderColor: p.color }}>
-              {t.pick(p.result)}
+              <Rich>{t.pick(p.result)}</Rich>
             </p>
             <button
               type="button"

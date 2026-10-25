@@ -108,7 +108,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 's1',
           q: 'A sequência mostrada é de um gene real?',
           a: [
-            'Não. É uma sequência fictícia, escrita para conter vários PAMs NGG em posições convenientes para a demonstração. Usar um gene real sugeriria que os números da tela valem para aquele gene, o que não é o caso.',
+            'Depende. A sequência inicial é fictícia, escrita para ter PAMs das duas nucleases em posições convenientes. Os casos clínicos (anemia falciforme, fibrose cística, BCL11A) usam trechos reais dos genes. Em todos, as porcentagens são ilustrativas: não preveem o que aconteceria no laboratório.',
             'A sequência pode ser trocada no painel "Editar a sequência do locus": ao aplicar, o sistema varre a nova sequência e lista os sítios candidatos encontrados nela.',
           ],
         },
@@ -116,7 +116,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 's2',
           q: 'A busca por sítios-alvo é de verdade ou é animação?',
           a: [
-            'Essa parte é cálculo real sobre a sequência. O programa percorre a fita senso procurando 20 letras seguidas de NGG e, para cada ocorrência, marca o ponto de corte três pares de base antes do PAM. Na cena 3D, a Cas9 para justamente nos PAMs encontrados antes de chegar ao alvo escolhido.',
+            'Essa parte é cálculo real sobre a sequência. O programa lê as duas fitas procurando 20 letras ao lado do PAM da nuclease escolhida (NGG depois do alvo na SpCas9, TTTV antes dele na Cas12a) e marca onde cada uma corta. Na cena 3D, a enzima para justamente nos PAMs encontrados antes de chegar ao alvo escolhido.',
             'O mesmo vale para o resultado da edição: inserções, deleções e trocas de base são aplicadas à sequência, mostradas no diff colorido e refletidas na hélice 3D. O que você lê no painel é a sequência realmente modificada, não uma figura pré-pronta.',
           ],
         },
@@ -287,7 +287,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 's1',
           q: 'Is the sequence shown from a real gene?',
           a: [
-            'No. It is a fictional sequence written to contain several NGG PAMs at convenient positions for the demo. Using a real gene would suggest that the numbers on screen apply to that gene, which is not the case.',
+            'It depends. The starting sequence is fictional, written to hold PAMs for both nucleases at convenient positions. The clinical cases (sickle cell, cystic fibrosis, BCL11A) use real stretches of those genes. In every case the percentages are illustrative: they do not predict what would happen in a lab.',
             'You can replace the sequence in the "Edit the locus sequence" panel: on apply, the app scans the new sequence and lists the candidate sites it finds.',
           ],
         },
@@ -295,7 +295,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 's2',
           q: 'Is the target-site search real or just animation?',
           a: [
-            'That part is real computation on the sequence. The program scans the sense strand for 20 letters followed by NGG and, for each hit, marks the cut site three base pairs before the PAM. In the 3D scene, Cas9 stops at exactly those PAMs before reaching the chosen target.',
+            "That part is real computation on the sequence. The program reads both strands for 20 letters next to the chosen nuclease's PAM (NGG after the target for SpCas9, TTTV before it for Cas12a) and marks where each one cuts. In the 3D scene, the enzyme stops at exactly those PAMs before reaching the chosen target.",
             'The same goes for the edit: insertions, deletions and base swaps are applied to the sequence, shown in the coloured diff and reflected in the 3D helix. What you read in the panel is the actually modified sequence, not a canned picture.',
           ],
         },

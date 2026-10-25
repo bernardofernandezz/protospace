@@ -75,8 +75,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   seed: {
     what: {
-      pt: 'A metade do alvo mais próxima do PAM, onde a conferência do guia começa. Erros aí atrapalham muito mais do que erros na ponta oposta.',
-      en: 'The half of the target closest to the PAM, where checking of the guide begins. Errors there matter far more than errors at the opposite end.',
+      pt: 'As 8 a 12 letras do alvo mais próximas do PAM, onde a conferência do guia começa. Erros aí atrapalham muito mais do que erros na ponta oposta.',
+      en: 'The 8 to 12 letters of the target closest to the PAM, where checking of the guide begins. Errors there matter far more than errors at the opposite end.',
     },
   },
   rloop: {
@@ -184,6 +184,19 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     what: {
       pt: 'Duas letras que se encaixam, uma em cada fita do DNA (A com T, C com G). É a unidade usada para medir distâncias ao longo da molécula.',
       en: 'Two letters that fit together, one on each DNA strand (A with T, C with G). It is the unit used to measure distances along the molecule.',
+    },
+  },
+  alelo: {
+    what: {
+      pt: 'Cada uma das duas cópias de um gene: uma veio da mãe, a outra do pai. Basta uma cópia diferente para mudar o resultado, conforme a doença.',
+      en: 'Each of the two copies of a gene: one came from the mother, the other from the father. A single different copy can change the outcome, depending on the disease.',
+    },
+  },
+  pegrna: {
+    full: { pt: 'RNA guia de prime editing', en: 'prime editing guide RNA' },
+    what: {
+      pt: 'Um RNA guia com uma cauda extra: a cauda traz, escrita, a correção que a enzima vai copiar para o DNA.',
+      en: 'A guide RNA with an extra tail: the tail carries, written out, the fix the enzyme will copy into the DNA.',
     },
   },
   locus: {
