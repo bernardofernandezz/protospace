@@ -30,8 +30,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   genoma: {
     what: {
-      pt: 'O conjunto completo do DNA de um organismo. O humano tem cerca de 3,1 bilhões de pares de letras — e os genes ocupam só uma pequena parte disso.',
-      en: 'The complete set of an organism’s DNA. The human genome has about 3.1 billion letter pairs — and genes take up only a small part of it.',
+      pt: 'O conjunto completo do DNA de um organismo. O humano tem cerca de 3,1 bilhões de pares de letras, e os genes ocupam só uma pequena parte disso.',
+      en: 'The complete set of an organism’s DNA. The human genome has about 3.1 billion letter pairs, and genes take up only a small part of it.',
     },
   },
   proteina: {
@@ -54,23 +54,23 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     },
   },
   sgrna: {
-    full: { pt: 'single guide RNA — RNA guia único', en: 'single guide RNA' },
+    full: { pt: 'single guide RNA (RNA guia único)', en: 'single guide RNA' },
     what: {
       pt: 'O RNA que diz à Cas9 onde cortar. As 20 primeiras letras são escolhidas por quem faz o experimento; o resto só serve para encaixar na proteína.',
       en: 'The RNA that tells Cas9 where to cut. Its first 20 letters are chosen by the experimenter; the rest just docks into the protein.',
     },
   },
   pam: {
-    full: { pt: 'Protospacer Adjacent Motif — motivo adjacente ao protoespaçador', en: 'Protospacer Adjacent Motif' },
+    full: { pt: 'Protospacer Adjacent Motif (motivo adjacente ao protoespaçador)', en: 'Protospacer Adjacent Motif' },
     what: {
-      pt: 'Uma marca curta de letras que precisa estar logo ao lado do alvo. A Cas9 confere essa marca antes de testar o guia: sem ela, não há corte. Para a SpCas9 a marca é NGG — duas letras G depois de qualquer letra.',
-      en: 'A short mark of letters that must sit right next to the target. Cas9 checks it before testing the guide: without it, no cut. For SpCas9 the mark is NGG — two Gs after any letter.',
+      pt: 'Uma marca curta de letras que precisa estar logo ao lado do alvo. A Cas9 confere essa marca antes de testar o guia: sem ela, não há corte. Para a SpCas9 a marca é NGG: duas letras G depois de qualquer letra.',
+      en: 'A short mark of letters that must sit right next to the target. Cas9 checks it before testing the guide: without it, no cut. For SpCas9 the mark is NGG: two Gs after any letter.',
     },
   },
   protoespacador: {
     what: {
-      pt: 'As 20 letras do DNA que o guia reconhece — o alvo propriamente dito. Fica sempre imediatamente antes do PAM.',
-      en: 'The 20 letters of DNA the guide recognises — the target itself. It always sits immediately before the PAM.',
+      pt: 'As 20 letras do DNA que o guia reconhece, ou seja, o alvo em si. Fica sempre imediatamente antes do PAM.',
+      en: 'The 20 letters of DNA the guide recognises, in other words the target itself. It always sits immediately before the PAM.',
     },
   },
   seed: {
@@ -86,21 +86,21 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     },
   },
   dsb: {
-    full: { pt: 'double-strand break — quebra de fita dupla', en: 'double-strand break' },
+    full: { pt: 'double-strand break (quebra de fita dupla)', en: 'double-strand break' },
     what: {
-      pt: 'O DNA partido nas duas fitas, ou seja, em dois pedaços. É o estrago que a Cas9 faz — e que obriga a célula a entrar em ação para consertar.',
-      en: 'DNA broken on both strands, that is, in two pieces. It is the damage Cas9 does — and what forces the cell to step in and repair it.',
+      pt: 'O DNA partido nas duas fitas, ou seja, em dois pedaços. É o estrago que a Cas9 faz, e que obriga a célula a entrar em ação para consertar.',
+      en: 'DNA broken on both strands, that is, in two pieces. It is the damage Cas9 does, and what forces the cell to step in and repair it.',
     },
   },
   nhej: {
-    full: { pt: 'non-homologous end joining — junção de extremidades não homólogas', en: 'non-homologous end joining' },
+    full: { pt: 'non-homologous end joining (junção de extremidades não homólogas)', en: 'non-homologous end joining' },
     what: {
       pt: 'O conserto rápido: a célula cola as pontas partidas sem consultar molde. Funciona quase sempre, mas costuma perder ou ganhar algumas letras no caminho.',
       en: 'The quick fix: the cell glues the broken ends back without consulting a template. It almost always works, but usually loses or gains a few letters along the way.',
     },
   },
   hdr: {
-    full: { pt: 'homology-directed repair — reparo dirigido por homologia', en: 'homology-directed repair' },
+    full: { pt: 'homology-directed repair (reparo dirigido por homologia)', en: 'homology-directed repair' },
     what: {
       pt: 'O conserto fiel: a célula copia um molde com a sequência certa. É assim que se corrige uma mutação, mas acontece bem menos vezes e só quando a célula está se dividindo.',
       en: 'The faithful fix: the cell copies a template carrying the right sequence. That is how a mutation gets corrected, but it happens far less often and only in dividing cells.',
@@ -145,8 +145,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   plasmideo: {
     what: {
-      pt: 'Um anel de DNA que se coloca dentro da célula para que ela mesma produza o que está escrito nele — aqui, a Cas9 e o guia.',
-      en: 'A ring of DNA put inside the cell so that the cell itself makes whatever is written on it — here, Cas9 and the guide.',
+      pt: 'Um anel de DNA que se coloca dentro da célula para que ela mesma produza o que está escrito nele. Aqui, a Cas9 e o guia.',
+      en: 'A ring of DNA put inside the cell so that the cell itself makes whatever is written on it. Here, Cas9 and the guide.',
     },
   },
   vetorviral: {
@@ -157,8 +157,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   somatica: {
     what: {
-      pt: 'Edição feita nas células do corpo de alguém já nascido — sangue, fígado, olho. O efeito termina naquela pessoa e não passa aos filhos.',
-      en: 'Editing done in the body cells of someone already born — blood, liver, eye. The effect ends with that person and is not passed to their children.',
+      pt: 'Edição feita nas células do corpo de alguém já nascido, como as do sangue, do fígado ou dos olhos. O efeito termina naquela pessoa e não passa aos filhos.',
+      en: 'Editing done in the body cells of someone already born, such as blood, liver or eye cells. The effect ends with that person and is not passed to their children.',
     },
   },
   germinativa: {
@@ -218,10 +218,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     },
   },
   dcas9: {
-    full: { pt: 'dead Cas9 — Cas9 “morta”', en: 'dead Cas9' },
+    full: { pt: 'dead Cas9 (Cas9 “morta”)', en: 'dead Cas9' },
     what: {
-      pt: 'Uma Cas9 com as duas tesouras desativadas. Não corta nada, mas continua sabendo achar o endereço — então serve de carona para outras enzimas.',
-      en: 'A Cas9 with both scissors disabled. It cuts nothing, but still knows how to find the address — so it serves as a ride for other enzymes.',
+      pt: 'Uma Cas9 com as duas tesouras desativadas. Não corta nada, mas continua sabendo achar o endereço. Por isso serve de carona para outras enzimas.',
+      en: 'A Cas9 with both scissors disabled. It cuts nothing, but still knows how to find the address, so it serves as a ride for other enzymes.',
     },
   },
   sequenciamento: {

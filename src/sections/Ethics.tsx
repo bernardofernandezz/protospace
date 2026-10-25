@@ -145,7 +145,7 @@ function DilemmaCard({
               )}
               {status === 'offline' && (
                 <span className="text-rna">
-                  {t('sem conexão — seu voto será enviado quando a rede voltar', 'offline — your vote will be sent when you reconnect')}
+                  {t('sem conexão. Seu voto será enviado quando a rede voltar', 'offline. Your vote will be sent when you reconnect')}
                 </span>
               )}
             </div>

@@ -10,17 +10,17 @@ const STEPS: L<{ k: string; t: string; b: string }[]> = {
     {
       k: 'sgRNA',
       t: 'O RNA guia',
-      b: 'É o endereço. Suas primeiras 20 letras são escolhidas por quem faz o experimento e definem onde a [[cas9|Cas9]] vai agir; o resto do [[rna|RNA]] só serve para encaixar na proteína. Trocando essas 20 letras, muda-se o alvo — é isso que torna a ferramenta programável.',
+      b: 'É o endereço. Suas primeiras 20 letras são escolhidas por quem faz o experimento e definem onde a [[cas9|Cas9]] vai agir; o resto do [[rna|RNA]] só serve para encaixar na proteína. Trocando essas 20 letras, muda-se o alvo. É isso que torna a ferramenta programável.',
     },
     {
       k: 'alvo',
       t: 'O alvo e a marca PAM',
-      b: 'O alvo são 20 letras do [[dna|DNA]] que combinam com o guia: o [[protoespacador|protoespaçador]]. Logo depois delas precisa haver o [[pam|PAM]]: duas letras G, precedidas de qualquer letra (NGG). Sem essa marca não há corte, mesmo com o guia perfeito — por isso nem todo ponto do [[genoma|genoma]] pode ser editado.',
+      b: 'O alvo são 20 letras do [[dna|DNA]] que combinam com o guia: o [[protoespacador|protoespaçador]]. Logo depois delas precisa haver o [[pam|PAM]]: duas letras G, precedidas de qualquer letra (NGG). Sem essa marca não há corte, mesmo com o guia perfeito. Por isso nem todo ponto do [[genoma|genoma]] pode ser editado.',
     },
     {
       k: 'reconhecimento',
       t: 'A procura',
-      b: 'A Cas9 esbarra no DNA ao acaso e, a cada esbarrão, procura um PAM. Sem PAM, solta na hora — mesmo que o trecho seja idêntico ao guia. Com PAM, testa o guia a partir das letras vizinhas, a região [[seed|seed]], e um erro logo aí costuma encerrar a tentativa.',
+      b: 'A Cas9 esbarra no DNA ao acaso e, a cada esbarrão, procura um PAM. Sem PAM, solta na hora, mesmo que o trecho seja idêntico ao guia. Com PAM, testa o guia a partir das letras vizinhas, a região [[seed|seed]], e um erro logo aí costuma encerrar a tentativa.',
     },
     {
       k: 'abertura',
@@ -30,34 +30,34 @@ const STEPS: L<{ k: string; t: string; b: string }[]> = {
     {
       k: 'dsb',
       t: 'O corte',
-      b: 'Com o DNA aberto, as duas tesouras da proteína entram em ação: cada uma corta uma fita, três [[pb|pares de letras]] antes do PAM. O resultado é o DNA partido em dois — o que os textos chamam de [[dsb|quebra de fita dupla]], ou DSB.',
+      b: 'Com o DNA aberto, as duas tesouras da proteína entram em ação: cada uma corta uma fita, três [[pb|pares de letras]] antes do PAM. O resultado é o DNA partido em dois, o que os textos chamam de [[dsb|quebra de fita dupla]], ou DSB.',
     },
     {
       k: 'nhej',
       t: 'Reparo rápido: NHEJ',
-      b: 'Um DNA partido é perigoso, então a célula corre para colar as pontas. Essa colagem, o [[nhej|NHEJ]], é rápida mas desleixada: costuma perder ou ganhar algumas letras no caminho, um [[indel|indel]]. Se isso acontece dentro de um [[gene|gene]], a leitura dele sai embaralhada — o [[frameshift|frameshift]] — e a proteína deixa de ser produzida. É assim que se desliga um gene de propósito, o chamado [[knockout|knockout]].',
+      b: 'Um DNA partido é perigoso, então a célula corre para colar as pontas. Essa colagem, o [[nhej|NHEJ]], é rápida mas desleixada: costuma perder ou ganhar algumas letras no caminho, um [[indel|indel]]. Se isso acontece dentro de um [[gene|gene]], a leitura dele sai embaralhada (o [[frameshift|frameshift]]) e a proteína deixa de ser produzida. É assim que se desliga um gene de propósito, o chamado [[knockout|knockout]].',
     },
     {
       k: 'hdr',
       t: 'Reparo fiel: HDR',
-      b: 'Se o pesquisador fornecer um molde — um pedaço de DNA com a sequência desejada e pontas iguais às da região — a célula pode copiar esse molde ao consertar a quebra. É o [[hdr|HDR]], o caminho para corrigir uma mutação ou inserir algo novo. Funciona bem menos vezes que a colagem rápida, e só quando a célula está se dividindo.',
+      b: 'Se o pesquisador fornecer um molde (um pedaço de DNA com a sequência desejada e pontas iguais às da região), a célula pode copiar esse molde ao consertar a quebra. É o [[hdr|HDR]], o caminho para corrigir uma mutação ou inserir algo novo. Funciona bem menos vezes que a colagem rápida, e só quando a célula está se dividindo.',
     },
   ],
   en: [
     {
       k: 'sgRNA',
       t: 'The guide RNA',
-      b: 'It is the address. Its first 20 letters are chosen by the experimenter and define where [[cas9|Cas9]] will act; the rest of the [[rna|RNA]] just docks into the protein. Swap those 20 letters and the target changes — that is what makes the tool programmable.',
+      b: 'It is the address. Its first 20 letters are chosen by the experimenter and define where [[cas9|Cas9]] will act; the rest of the [[rna|RNA]] just docks into the protein. Swap those 20 letters and the target changes. That is what makes the tool programmable.',
     },
     {
       k: 'alvo',
       t: 'The target and the PAM',
-      b: 'The target is 20 letters of [[dna|DNA]] that match the guide: the [[protoespacador|protospacer]]. Right after them there must be a [[pam|PAM]]: two Gs preceded by any letter (NGG). Without that mark there is no cut, even with a perfect guide — which is why not every spot in the [[genoma|genome]] can be edited.',
+      b: 'The target is 20 letters of [[dna|DNA]] that match the guide: the [[protoespacador|protospacer]]. Right after them there must be a [[pam|PAM]]: two Gs preceded by any letter (NGG). Without that mark there is no cut, even with a perfect guide. That is why not every spot in the [[genoma|genome]] can be edited.',
     },
     {
       k: 'reconhecimento',
       t: 'The search',
-      b: 'Cas9 bumps into DNA at random and, at each bump, looks for a PAM. No PAM, and it lets go at once — even if the stretch matches the guide. With a PAM, it tests the guide from the neighbouring letters, the [[seed|seed]] region, and an error right there usually ends the attempt.',
+      b: 'Cas9 bumps into DNA at random and, at each bump, looks for a PAM. No PAM, and it lets go at once, even if the stretch matches the guide. With a PAM, it tests the guide from the neighbouring letters, the [[seed|seed]] region, and an error right there usually ends the attempt.',
     },
     {
       k: 'abertura',
@@ -67,17 +67,17 @@ const STEPS: L<{ k: string; t: string; b: string }[]> = {
     {
       k: 'dsb',
       t: 'The cut',
-      b: 'With the DNA open, the protein’s two scissors go to work: each cuts one strand, three [[pb|letter pairs]] before the PAM. The result is DNA broken in two — what textbooks call a [[dsb|double-strand break]], or DSB.',
+      b: 'With the DNA open, the protein’s two scissors go to work: each cuts one strand, three [[pb|letter pairs]] before the PAM. The result is DNA broken in two, what textbooks call a [[dsb|double-strand break]], or DSB.',
     },
     {
       k: 'nhej',
       t: 'Quick repair: NHEJ',
-      b: 'Broken DNA is dangerous, so the cell rushes to glue the ends back. That gluing, [[nhej|NHEJ]], is fast but sloppy: it often loses or gains a few letters along the way, an [[indel|indel]]. If this happens inside a [[gene|gene]], its reading comes out scrambled — a [[frameshift|frameshift]] — and the protein is no longer made. That is how a gene is switched off on purpose, a so-called [[knockout|knockout]].',
+      b: 'Broken DNA is dangerous, so the cell rushes to glue the ends back. That gluing, [[nhej|NHEJ]], is fast but sloppy: it often loses or gains a few letters along the way, an [[indel|indel]]. If this happens inside a [[gene|gene]], its reading comes out scrambled (a [[frameshift|frameshift]]) and the protein is no longer made. That is how a gene is switched off on purpose, a so-called [[knockout|knockout]].',
     },
     {
       k: 'hdr',
       t: 'Faithful repair: HDR',
-      b: 'If the researcher supplies a template — a piece of DNA with the desired sequence and ends matching the region — the cell can copy it while fixing the break. This is [[hdr|HDR]], the route to correcting a mutation or inserting something new. It works far less often than quick gluing, and only when the cell is dividing.',
+      b: 'If the researcher supplies a template (a piece of DNA with the desired sequence and ends matching the region), the cell can copy it while fixing the break. This is [[hdr|HDR]], the route to correcting a mutation or inserting something new. It works far less often than quick gluing, and only when the cell is dividing.',
     },
   ],
 }
@@ -103,11 +103,11 @@ export default function Mechanism() {
         title={
           t.lang === 'en' ? (
             <>
-              Search, unwind, <span className="text-gradient">cut</span> — and let the cell repair.
+              Search, unwind, <span className="text-gradient">cut</span>, then let the cell repair.
             </>
           ) : (
             <>
-              Procurar, abrir, <span className="text-gradient">cortar</span> — e deixar a célula reparar.
+              Procurar, abrir, <span className="text-gradient">cortar</span> e deixar a célula reparar.
             </>
           )
         }
@@ -159,8 +159,8 @@ export default function Mechanism() {
 
       <WhatIf
         question={t(
-          'o guia tiver só dois erros, mas bem na região seed, colada no PAM? A Cas9 acha o PAM, começa a abrir a dupla-fita — e desiste.',
-          'the guide has just two errors, but right in the seed region next to the PAM? Cas9 finds the PAM, starts unwinding the duplex — and gives up.',
+          'o guia tiver só dois erros, mas bem na região seed, colada no PAM? A Cas9 acha o PAM, começa a abrir a dupla-fita, mas desiste.',
+          'the guide has just two errors, but right in the seed region next to the PAM? Cas9 finds the PAM, starts unwinding the duplex, then gives up.',
         )}
         preset={{ mismatches: [12, 14] }}
       />

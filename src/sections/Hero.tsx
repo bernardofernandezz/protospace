@@ -124,8 +124,8 @@ export default function Hero() {
         </h1>
         <p className="lead mt-8" data-hero-rise>
           {t(
-            'CRISPR-Cas9: como uma defesa bacteriana virou a ferramenta mais versátil da biologia — e o que significa usá-la com rigor científico e responsabilidade ética.',
-            'CRISPR-Cas9: how a bacterial defence became biology’s most versatile tool — and what it means to use it with scientific rigour and ethical responsibility.',
+            'CRISPR-Cas9: como uma defesa bacteriana virou a ferramenta mais versátil da biologia, e o que significa usá-la com rigor científico e responsabilidade ética.',
+            'CRISPR-Cas9: how a bacterial defence became biology’s most versatile tool, and what it means to use it with scientific rigour and ethical responsibility.',
           )}
         </p>
         <div className="mt-10 flex flex-wrap gap-4" data-hero-fade>

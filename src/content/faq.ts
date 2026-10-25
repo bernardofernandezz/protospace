@@ -37,7 +37,7 @@ export const FAQ: L<FaqGroup[]> = {
     {
       id: 'conceitos',
       title: 'Dúvidas conceituais',
-      summary: 'Do começo de tudo — o que é um gene, por que editar — às dúvidas que aparecem logo depois da explicação do mecanismo.',
+      summary: 'Do começo de tudo (o que é um gene, por que editar) às dúvidas que aparecem logo depois da explicação do mecanismo.',
       color: '#3ef0d0',
       items: [
         {
@@ -45,7 +45,7 @@ export const FAQ: L<FaqGroup[]> = {
           q: 'Nunca ouvi falar de CRISPR. Dá para entender isso aqui sem saber biologia?',
           a: [
             'Dá. Três ideias bastam para o resto fazer sentido. Primeira: dentro de quase toda célula sua existe um [[dna|DNA]], um texto escrito com quatro letras que funciona como manual de instruções. Segunda: trechos desse texto são os [[gene|genes]], e cada um descreve como montar uma peça do corpo. Terceira: desde 2012 existe uma forma barata e precisa de ir até um ponto escolhido desse texto e alterá-lo.',
-            'CRISPR é essa forma. O resto do site detalha como ela funciona, o que ainda dá errado e quem decide até onde ir. Ao longo dos textos, palavras sublinhadas com tracinhos abrem uma explicação curta quando você clica nelas — use sempre que travar numa delas.',
+            'CRISPR é essa forma. O resto do site detalha como ela funciona, o que ainda dá errado e quem decide até onde ir. Ao longo dos textos, palavras sublinhadas com tracinhos abrem uma explicação curta quando você clica nelas. Use sempre que travar em alguma.',
           ],
         },
         {
@@ -69,7 +69,7 @@ export const FAQ: L<FaqGroup[]> = {
           q: 'A Cas9 corta o DNA ou reescreve o gene?',
           a: [
             'Apenas corta. Toda a mudança de sequência é feita pela célula, quando ela conserta a quebra. Por isso o mesmo corte pode gerar resultados diferentes em células diferentes.',
-            'As exceções são as ferramentas derivadas: editores de bases e prime editing alteram a sequência sem depender do reparo por colagem — e, nos dois casos, sem partir as duas fitas.',
+            'As exceções são as ferramentas derivadas: editores de bases e prime editing alteram a sequência sem depender do reparo por colagem e, nos dois casos, sem partir as duas fitas.',
           ],
         },
         {
@@ -84,7 +84,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 'c4',
           q: 'A edição é herdada pelos filhos?',
           a: [
-            'Depende do tipo de célula. Editar células do corpo de uma pessoa já nascida — sangue, fígado, músculo — afeta só ela: é a edição somática, usada nas terapias aprovadas.',
+            'Depende do tipo de célula. Editar células do corpo de uma pessoa já nascida, como as do sangue, do fígado ou dos músculos, afeta só ela: é a edição somática, usada nas terapias aprovadas.',
             'Editar um embrião, um óvulo ou um espermatozoide muda também o que será transmitido às próximas gerações. É a edição germinativa, que hoje não é aceita para uso clínico e, no Brasil, é vedada por lei.',
           ],
         },
@@ -92,7 +92,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 'c5',
           q: 'Qual a diferença entre CRISPR e transgenia?',
           a: [
-            'Na transgenia clássica insere-se um gene, muitas vezes de outra espécie, em um ponto não escolhido do genoma. Com CRISPR é possível alterar um ponto definido — inclusive apenas desligando um gene, sem acrescentar nada.',
+            'Na transgenia clássica insere-se um gene, muitas vezes de outra espécie, em um ponto não escolhido do genoma. Com CRISPR é possível alterar um ponto escolhido, ou até só desligar um gene, sem acrescentar nada.',
             'As duas coisas podem se combinar: CRISPR também serve para inserir sequências novas, e nesse caso o resultado é um organismo geneticamente modificado como qualquer outro, com as mesmas exigências regulatórias.',
           ],
         },
@@ -124,7 +124,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 's3',
           q: 'E o "score" do guia? Posso usar esse número?',
           a: [
-            'Não. Ele está rotulado como ilustrativo na própria tela. É uma conta simples que penaliza conteúdo GC fora da faixa usual, quatro T seguidos e homopolímeros longos — critérios reais de desenho de guia, mas longe de um preditor validado.',
+            'Não. Ele está rotulado como ilustrativo na própria tela. É uma conta simples que penaliza proporção de G e C fora da faixa usual, quatro T seguidos e longas repetições da mesma letra. São critérios reais de desenho de guia, mas a conta está longe de ser um preditor validado.',
             'Para um experimento de verdade, os escores precisam vir de ferramentas como CRISPOR ou CHOPCHOP, que consideram o genoma inteiro e foram calibradas com dados experimentais.',
           ],
         },
@@ -132,9 +132,9 @@ export const FAQ: L<FaqGroup[]> = {
           id: 's4',
           q: 'Como o simulador calcula a chance de corte e os off-targets?',
           a: [
-            'Por uma curva logística sobre o número de mismatches entre o guia e o sítio, com peso maior para os erros próximos ao PAM — 2,5 contra 1,0 para os distais. Esse peso reflete um fato bem estabelecido: errar perto do PAM compromete muito mais o reconhecimento.',
+            'Por uma curva logística sobre o número de mismatches entre o guia e o sítio, com peso maior para os erros próximos ao PAM: 2,5 contra 1,0 para os mais distantes. Esse peso reflete um fato bem estabelecido: errar perto do PAM compromete muito mais o reconhecimento.',
             'O controle "mismatches tolerados" desloca essa curva. Valores baixos imitam variantes de alta fidelidade; valores altos imitam excesso de enzima ou exposição prolongada. Os dois sítios off-target mostrados na cena são fictícios, construídos a partir do alvo com mismatches propositais, para que o efeito do ajuste fique visível.',
-            'Os números resultantes são comparativos, não previsões. Servem para mostrar a direção do efeito — mais mismatches, mais risco —, não a magnitude esperada em bancada.',
+            'Os números resultantes são comparativos, não previsões. Servem para mostrar a direção do efeito (mais mismatches, mais risco), não o tamanho esperada em bancada.',
           ],
         },
         {
@@ -158,7 +158,7 @@ export const FAQ: L<FaqGroup[]> = {
           q: 'O que a simulação deliberadamente não mostra?',
           a: [
             'Cromatina e nucleossomos aparecem só como cenário, sem efeito sobre o acesso ao DNA; a busca da enzima é uma coreografia simplificada (saltos e paradas em PAMs), não a cinética real; a forma das proteínas é estilizada, não a estrutura cristalográfica; e eventos como grandes deleções e rearranjos não são simulados.',
-            'O aviso no canto da tela existe por isso: é uma simulação didática simplificada, não um protocolo nem um preditor. Vale dizer isso em voz alta na apresentação — a honestidade sobre o modelo é parte da aula.',
+            'O aviso no canto da tela existe por isso: é uma simulação didática simplificada, não um protocolo nem um preditor. Vale dizer isso em voz alta na apresentação: a honestidade sobre o modelo é parte da aula.',
           ],
         },
       ],
@@ -197,7 +197,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 'a4',
           q: 'Os votos dos dilemas são compartilhados?',
           a: [
-            'Sim. A votação é aberta a todos os visitantes: cada navegador tem um voto por dilema (dá para mudar de ideia) e os resultados aparecem ao vivo depois que você escolhe sua posição — ótimo para a plateia votar pelo celular durante a apresentação.',
+            'Sim. A votação é aberta a todos os visitantes: cada navegador tem um voto por dilema (dá para mudar de ideia) e os resultados aparecem ao vivo depois que você escolhe sua posição. É ótimo para a plateia votar pelo celular durante a apresentação.',
             'Os votos são anônimos: o site guarda só um identificador aleatório do navegador, sem nome, e-mail ou login. Já o checklist de boas práticas fica salvo apenas no seu navegador.',
           ],
         },
@@ -206,7 +206,7 @@ export const FAQ: L<FaqGroup[]> = {
           q: 'Posso compartilhar um experimento específico?',
           a: [
             'Sim. O botão de link no playground copia uma URL com o locus, o sítio, o guia (incluindo mismatches), o tipo de Cas, a entrega, o reparo e a semente do indel. Quem abrir o link vê exatamente o mesmo experimento. O botão de câmera salva uma imagem PNG da cena.',
-            'Os textos ficam separados do código, em src/content, nas duas línguas — o que permite adaptar perguntas e exemplos para outras turmas sem mexer na interface.',
+            'Os textos ficam separados do código, em src/content, nas duas línguas. Isso permite adaptar perguntas e exemplos para outras turmas sem mexer na interface.',
           ],
         },
       ],
@@ -216,7 +216,7 @@ export const FAQ: L<FaqGroup[]> = {
     {
       id: 'conceitos',
       title: 'Concepts',
-      summary: 'From the very beginning — what a gene is, why edit one — to the questions that come up right after the mechanism is explained.',
+      summary: 'From the very beginning (what a gene is, why edit one) to the questions that come up right after the mechanism is explained.',
       color: '#3ef0d0',
       items: [
         {
@@ -224,7 +224,7 @@ export const FAQ: L<FaqGroup[]> = {
           q: 'I have never heard of CRISPR. Can I follow this without a biology background?',
           a: [
             'Yes. Three ideas are enough for the rest to make sense. First: inside almost every one of your cells there is [[dna|DNA]], a text written with four letters that works as an instruction manual. Second: stretches of that text are [[gene|genes]], each describing how to build one part of the body. Third: since 2012 there has been a cheap, precise way to go to a chosen point in that text and change it.',
-            'CRISPR is that way. The rest of the site covers how it works, what still goes wrong and who decides how far to go. Throughout the text, words with a dashed underline open a short explanation when you click them — use them whenever one trips you up.',
+            'CRISPR is that way. The rest of the site covers how it works, what still goes wrong and who decides how far to go. Throughout the text, words with a dashed underline open a short explanation when you click them. Use them whenever one trips you up.',
           ],
         },
         {
@@ -248,7 +248,7 @@ export const FAQ: L<FaqGroup[]> = {
           q: 'Does Cas9 cut DNA or rewrite the gene?',
           a: [
             'It only cuts. Any sequence change is made by the cell as it repairs the break. That is why the same cut can lead to different outcomes in different cells.',
-            'The exceptions are the derived tools: base editors and prime editors change the sequence without relying on end-joining — and, in both cases, without breaking both strands.',
+            'The exceptions are the derived tools: base editors and prime editors change the sequence without relying on end-joining and, in both cases, without breaking both strands.',
           ],
         },
         {
@@ -263,7 +263,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 'c4',
           q: 'Is the edit inherited by children?',
           a: [
-            'It depends on the cell type. Editing body cells of someone already born — blood, liver, muscle — affects only that person: this is somatic editing, used in approved therapies.',
+            'It depends on the cell type. Editing body cells of someone already born, such as blood, liver or muscle cells, affects only that person: this is somatic editing, used in approved therapies.',
             'Editing an embryo, an egg or a sperm cell also changes what is passed on to future generations. This is germline editing, which is not accepted for clinical use today and is prohibited by law in Brazil.',
           ],
         },
@@ -271,7 +271,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 'c5',
           q: 'How is CRISPR different from transgenics?',
           a: [
-            'Classic transgenics inserts a gene, often from another species, at an unchosen spot in the genome. With CRISPR you can change a defined spot — even just switch a gene off without adding anything.',
+            'Classic transgenics inserts a gene, often from another species, at an unchosen spot in the genome. With CRISPR you can change a chosen spot, or even just switch a gene off without adding anything.',
             'The two can be combined: CRISPR can also insert new sequences, and in that case the result is a genetically modified organism like any other, with the same regulatory requirements.',
           ],
         },
@@ -303,7 +303,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 's3',
           q: 'What about the guide "score"? Can I use that number?',
           a: [
-            'No. It is labelled as illustrative on screen. It is a simple formula that penalises GC content outside the usual range, runs of four Ts and long homopolymers — real guide-design criteria, but far from a validated predictor.',
+            'No. It is labelled as illustrative on screen. It is a simple formula that penalises a G and C share outside the usual range, runs of four Ts and long runs of the same letter. These are real guide-design criteria, but the formula is far from a validated predictor.',
             'For a real experiment, scores must come from tools such as CRISPOR or CHOPCHOP, which consider the whole genome and are calibrated on experimental data.',
           ],
         },
@@ -311,9 +311,9 @@ export const FAQ: L<FaqGroup[]> = {
           id: 's4',
           q: 'How does the simulator compute cut probability and off-targets?',
           a: [
-            'With a logistic curve over the number of mismatches between guide and site, weighting errors near the PAM more heavily — 2.5 versus 1.0 for distal ones. That weighting reflects a well-established fact: errors near the PAM hurt recognition far more.',
+            'With a logistic curve over the number of mismatches between guide and site, weighting errors near the PAM more heavily: 2.5 versus 1.0 for those further away. That weighting reflects a well-established fact: errors near the PAM hurt recognition far more.',
             'The "tolerated mismatches" control shifts the curve. Low values mimic high-fidelity variants; high values mimic excess enzyme or prolonged exposure. The two off-target sites in the scene are fictional, built from the target with deliberate mismatches so the effect of the setting is visible.',
-            'The resulting numbers are comparative, not predictions. They show the direction of the effect — more mismatches, more risk — not the magnitude you would see at the bench.',
+            'The resulting numbers are comparative, not predictions. They show the direction of the effect (more mismatches, more risk), not the size you would see at the bench.',
           ],
         },
         {
@@ -337,7 +337,7 @@ export const FAQ: L<FaqGroup[]> = {
           q: 'What does the simulation deliberately leave out?',
           a: [
             'Chromatin and nucleosomes appear only as scenery, with no effect on DNA access; the enzyme’s search is simplified choreography (hops and stops at PAMs), not real kinetics; protein shapes are stylised, not the crystal structure; and events such as large deletions and rearrangements are not simulated.',
-            'That is why the notice in the corner exists: this is a simplified teaching simulation, not a protocol or a predictor. It is worth saying out loud during the talk — honesty about the model is part of the lesson.',
+            'That is why the notice in the corner exists: this is a simplified teaching simulation, not a protocol or a predictor. It is worth saying out loud during the talk: honesty about the model is part of the lesson.',
           ],
         },
       ],
@@ -376,7 +376,7 @@ export const FAQ: L<FaqGroup[]> = {
           id: 'a4',
           q: 'Are dilemma votes shared?',
           a: [
-            'Yes. Voting is open to every visitor: each browser gets one vote per dilemma (you can change your mind) and results appear live once you pick a position — great for letting the audience vote from their phones during a talk.',
+            'Yes. Voting is open to every visitor: each browser gets one vote per dilemma (you can change your mind) and results appear live once you pick a position. It is great for letting the audience vote from their phones during a talk.',
             'Votes are anonymous: the site only stores a random browser identifier, with no name, email or login. The best-practice checklist, on the other hand, stays in your browser only.',
           ],
         },
@@ -385,7 +385,7 @@ export const FAQ: L<FaqGroup[]> = {
           q: 'Can I share a specific experiment?',
           a: [
             'Yes. The link button in the playground copies a URL with the locus, site, guide (mismatches included), Cas type, delivery, repair and indel seed. Anyone opening it sees exactly the same experiment. The camera button saves a PNG of the scene.',
-            'All text lives apart from the code, in src/content, in both languages — so questions and examples can be adapted for other classes without touching the interface.',
+            'All text lives apart from the code, in src/content, in both languages, so questions and examples can be adapted for other classes without touching the interface.',
           ],
         },
       ],

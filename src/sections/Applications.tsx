@@ -8,10 +8,10 @@ type App = { t: string; c: string; span?: string; b: string; tag: string }
 const APPS: L<App[]> = {
   pt: [
     {
-      t: 'Terapia somática — doenças genéticas',
+      t: 'Terapia somática: doenças genéticas',
       c: '#ff4fa3',
       span: 'md:col-span-2',
-      b: 'No Casgevy, as células da medula do próprio paciente são retiradas, editadas em laboratório e devolvidas — uma terapia [[exvivo|ex vivo]]. A edição religa a hemoglobina fetal, a que usamos antes de nascer, e ela compensa a defeituosa. O preço: quimioterapia antes da devolução, para abrir espaço na medula. Terapias que editam dentro do corpo ([[invivo|in vivo]]) ainda estão em testes clínicos.',
+      b: 'No Casgevy, as células da medula do próprio paciente são retiradas, editadas em laboratório e devolvidas: é uma terapia [[exvivo|ex vivo]]. A edição religa a hemoglobina fetal, a que usamos antes de nascer, e ela compensa a defeituosa. O preço: quimioterapia antes da devolução, para abrir espaço na medula. Terapias que editam dentro do corpo ([[invivo|in vivo]]) ainda estão em testes clínicos.',
       tag: 'ex vivo · in vivo',
     },
     {
@@ -23,7 +23,7 @@ const APPS: L<App[]> = {
     {
       t: 'Agricultura',
       c: '#7dff9b',
-      b: 'Como a edição pode produzir uma planta sem [[dna|DNA]] de outra espécie, o resultado se aproxima do que o melhoramento tradicional faria — só que em menos tempo. Isso mudou a forma como alguns países avaliam esses alimentos. Exemplos já descritos: um tomate com mais GABA e um cogumelo que escurece menos.',
+      b: 'Como a edição pode produzir uma planta sem [[dna|DNA]] de outra espécie, o resultado se aproxima do que o melhoramento tradicional faria, só que em menos tempo. Isso mudou a forma como alguns países avaliam esses alimentos. Exemplos já descritos: um tomate com mais GABA e um cogumelo que escurece menos.',
       tag: 'melhoramento de precisão',
     },
     {
@@ -48,10 +48,10 @@ const APPS: L<App[]> = {
   ],
   en: [
     {
-      t: 'Somatic therapy — genetic diseases',
+      t: 'Somatic therapy: genetic diseases',
       c: '#ff4fa3',
       span: 'md:col-span-2',
-      b: 'With Casgevy, the patient’s own bone-marrow cells are removed, edited in the lab and returned — an [[exvivo|ex vivo]] therapy. The edit switches fetal haemoglobin — the kind we make before birth — back on, and it makes up for the faulty one. The cost: chemotherapy before the cells go back, to make room in the marrow. Therapies that edit inside the body ([[invivo|in vivo]]) are still in clinical trials.',
+      b: 'With Casgevy, the patient’s own bone-marrow cells are removed, edited in the lab and returned: an [[exvivo|ex vivo]] therapy. The edit switches fetal haemoglobin (the kind we make before birth) back on, and it makes up for the faulty one. The cost: chemotherapy before the cells go back, to make room in the marrow. Therapies that edit inside the body ([[invivo|in vivo]]) are still in clinical trials.',
       tag: 'ex vivo · in vivo',
     },
     {
@@ -63,7 +63,7 @@ const APPS: L<App[]> = {
     {
       t: 'Agriculture',
       c: '#7dff9b',
-      b: 'Because editing can produce a plant without [[dna|DNA]] from another species, the result is close to what conventional breeding would achieve — only faster. That has changed how some countries assess these foods. Published examples: a tomato with more GABA and a mushroom that browns less.',
+      b: 'Because editing can produce a plant without [[dna|DNA]] from another species, the result is close to what conventional breeding would achieve, only faster. That has changed how some countries assess these foods. Published examples: a tomato with more GABA and a mushroom that browns less.',
       tag: 'precision breeding',
     },
     {
@@ -98,11 +98,11 @@ export default function Applications() {
         title={
           t.lang === 'en' ? (
             <>
-              From the bench <span className="text-gradient">to the clinic</span> — and the field.
+              From the bench <span className="text-gradient">to the clinic</span>, and to the field.
             </>
           ) : (
             <>
-              Da bancada <span className="text-gradient">à clínica</span> — e ao campo.
+              Da bancada <span className="text-gradient">à clínica</span> e ao campo.
             </>
           )
         }

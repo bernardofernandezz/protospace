@@ -61,7 +61,7 @@ const TIMELINE: L<Event[]> = {
     {
       year: '2025',
       title: 'Uma terapia para uma só pessoa',
-      body: 'Um bebê com deficiência de CPS1, doença rara do ciclo da ureia, recebe um editor de bases desenhado para a mutação dele — projetado, fabricado e aplicado em cerca de seis meses. É o primeiro tratamento de edição genética feito sob medida para um único paciente.',
+      body: 'Um bebê com deficiência de CPS1, doença rara do ciclo da ureia, recebe um editor de bases desenhado para a mutação dele, projetado, fabricado e aplicado em cerca de seis meses. É o primeiro tratamento de edição genética feito sob medida para um único paciente.',
     },
   ],
   en: [
@@ -74,14 +74,14 @@ const TIMELINE: L<Event[]> = {
     {
       year: '2005',
       title: 'Spacers come from viruses',
-      body: 'Three groups independently discover that the stretches between repeats are pieces of viral DNA — the first hint of a defence system.',
+      body: 'Three groups independently discover that the stretches between repeats are pieces of viral DNA, the first hint of a defence system.',
     },
     {
       year: '2007',
       title: 'Experimental proof',
       body: 'An experiment confirms the hypothesis: a bacterium that stores a piece of a virus becomes resistant to it.',
     },
-    { year: '2011', title: 'The missing piece', body: 'tracrRNA is described — a second RNA the system needs in order to work.' },
+    { year: '2011', title: 'The missing piece', body: 'tracrRNA is described: a second RNA the system needs in order to work.' },
     {
       year: '2012',
       title: 'Programmable scissors',
@@ -110,7 +110,7 @@ const TIMELINE: L<Event[]> = {
     {
       year: '2025',
       title: 'A therapy for one person',
-      body: 'A baby with CPS1 deficiency, a rare urea cycle disorder, receives a base editor designed for his own mutation — conceived, manufactured and infused in about six months. It is the first gene-editing treatment tailored to a single patient.',
+      body: 'A baby with CPS1 deficiency, a rare urea cycle disorder, receives a base editor designed for his own mutation, conceived, manufactured and infused in about six months. It is the first gene-editing treatment tailored to a single patient.',
     },
   ],
 }
@@ -251,8 +251,8 @@ function CrisprArray() {
         </p>
         <p className="mt-3 text-sm leading-relaxed text-mist">
           {t(
-            `Se o fago ${phage.name} voltar, este RNA guia leva a proteína Cas até esse mesmo trecho do DNA dele — e o corte neutraliza o ataque.`,
-            `If phage ${phage.name} comes back, this guide RNA leads the Cas protein to that same stretch of its DNA — and the cut neutralises the attack.`,
+            `Se o fago ${phage.name} voltar, este RNA guia leva a proteína Cas até esse mesmo trecho do DNA dele, e o corte neutraliza o ataque.`,
+            `If phage ${phage.name} comes back, this guide RNA leads the Cas protein to that same stretch of its DNA, and the cut neutralises the attack.`,
           )}
         </p>
       </div>
@@ -281,14 +281,14 @@ export default function Intro() {
         lead={
           t.lang === 'en' ? (
             <>
-              Bacteria get attacked by viruses too. To defend themselves, some keep a piece of every virus that has infected them in their own DNA — a kind of{' '}
+              Bacteria get attacked by viruses too. To defend themselves, some keep a piece of every virus that has infected them in their own DNA, a kind of{' '}
               <strong className="text-white">photo archive of invaders</strong>. If the virus returns, the bacterium uses that archive to recognise it and cut
               its <Term k="dna">DNA</Term>. That region of the bacterial <Term k="genoma">genome</Term> is <Term k="crispr">CRISPR</Term>, and the scissors that
               make the cut are the <Term k="cas9">Cas</Term> proteins.
             </>
           ) : (
             <>
-              Bactérias também são atacadas por vírus. Para se defender, algumas guardam no próprio DNA um pedaço de cada vírus que já as infectou — uma espécie
+              Bactérias também são atacadas por vírus. Para se defender, algumas guardam no próprio DNA um pedaço de cada vírus que já as infectou, uma espécie
               de <strong className="text-white">arquivo de fotos dos invasores</strong>. Se o vírus voltar, a bactéria usa esse arquivo para reconhecê-lo e
               cortar o <Term k="dna">DNA</Term> dele. Essa região do <Term k="genoma">genoma</Term> bacteriano é o <Term k="crispr">CRISPR</Term>, e as tesouras
               que fazem o corte são as <Term k="proteina">proteínas</Term> Cas.
@@ -324,7 +324,7 @@ export default function Intro() {
               <Term k="pam">PAM</Term>
             </strong>{' '}
             sits right next to the target. It is present in the viral DNA and absent from the bacterial archive. That is how the system tells “invader” from
-            “memory” — and the PAM is still required when we use CRISPR in the lab.
+            “memory”, and the PAM is still required when we use CRISPR in the lab.
           </>
         ) : (
           <>
@@ -333,7 +333,7 @@ export default function Intro() {
             <strong className="text-white">
               <Term k="pam">PAM</Term>
             </strong>
-            . Ela está presente no DNA do vírus e ausente no arquivo da bactéria. É assim que o sistema diferencia “invasor” de “memória” — e o PAM continua
+            . Ela está presente no DNA do vírus e ausente no arquivo da bactéria. É assim que o sistema diferencia “invasor” de “memória”, e o PAM continua
             sendo exigido quando usamos CRISPR em laboratório.
           </>
         )}

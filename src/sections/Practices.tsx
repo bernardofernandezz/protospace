@@ -15,7 +15,7 @@ const GROUPS: L<Group[]> = {
       items: [
         [
           'Definir o objetivo antes do guia',
-          'Para desligar o gene ([[knockout|knockout]]): cortar em [[exon|éxons]] iniciais ou em domínios essenciais comuns a todas as versões da proteína — assim o estrago atinge qualquer uma delas. Para corrigir ou inserir algo: cortar o mais perto possível do ponto a editar, porque a cópia do molde perde precisão com a distância.',
+          'Para desligar o gene ([[knockout|knockout]]): cortar em [[exon|éxons]] iniciais ou em domínios essenciais comuns a todas as versões da proteína. Assim o estrago atinge qualquer uma delas. Para corrigir ou inserir algo: cortar o mais perto possível do ponto a editar, porque a cópia do molde perde precisão com a distância.',
         ],
         [
           'Usar ferramentas de predição',
@@ -24,7 +24,7 @@ const GROUPS: L<Group[]> = {
         ['Testar 2–3 guias por alvo', 'A eficiência real varia muito entre guias com escores parecidos.'],
         [
           'Conferir a sequência na sua linhagem/organismo',
-          'Duas pessoas (ou duas linhagens de células) não têm DNA idêntico. Uma única letra diferente no alvo pode anular o pareamento do guia ou destruir o [[pam|PAM]] — e aí nada acontece.',
+          'Duas pessoas (ou duas linhagens de células) não têm DNA idêntico. Uma única letra diferente no alvo pode anular o pareamento do guia ou destruir o [[pam|PAM]], e aí nada acontece.',
         ],
         [
           'Evitar quatro T seguidos no guia',
@@ -65,7 +65,7 @@ const GROUPS: L<Group[]> = {
         ['Controle de entrega', 'Repórter (ex.: GFP) para estimar a eficiência de transfecção/transdução.'],
         [
           'Guias independentes',
-          'Se dois guias diferentes para o mesmo [[gene|gene]] produzem o mesmo resultado, é pouco provável que o efeito venha de um corte [[offtarget|fora do alvo]] — que seria diferente para cada guia.',
+          'Se dois guias diferentes para o mesmo [[gene|gene]] produzem o mesmo resultado, é pouco provável que o efeito venha de um corte [[offtarget|fora do alvo]], que seria diferente para cada guia.',
         ],
       ],
     },
@@ -76,7 +76,7 @@ const GROUPS: L<Group[]> = {
       items: [
         [
           'Predição in silico dos sítios mais prováveis',
-          'Liste os trechos do genoma que diferem do guia em poucas letras ([[mismatch|mismatches]]), sobretudo quando as diferenças ficam longe do PAM — fora da região [[seed|seed]], elas atrapalham menos e o corte continua possível.',
+          'Liste os trechos do genoma que diferem do guia em poucas letras ([[mismatch|mismatches]]), sobretudo quando as diferenças ficam longe do PAM. Fora da região [[seed|seed]], elas atrapalham menos e o corte continua possível.',
         ],
         ['Métodos empíricos quando o risco importa', 'Ex.: GUIDE-seq, CIRCLE-seq, DISCOVER-seq identificam cortes sem depender só da predição.'],
         [
@@ -133,7 +133,7 @@ const GROUPS: L<Group[]> = {
       items: [
         ['Relatar sequências e condições completas', 'Guias, Cas, entrega, doses, linhagem, passagem, tempos de coleta.'],
         ['Compartilhar dados e materiais', 'Dados brutos de sequenciamento em repositórios públicos; plasmídeos em repositórios como o Addgene.'],
-        ['Reportar eficiência e off-targets — inclusive negativos', 'Resultados nulos e limitações evitam viés de publicação.'],
+        ['Reportar eficiência e off-targets, inclusive negativos', 'Resultados nulos e limitações evitam viés de publicação.'],
         ['Seguir diretrizes de relato', 'Ex.: ARRIVE para experimentos com animais.'],
       ],
     },
@@ -146,7 +146,7 @@ const GROUPS: L<Group[]> = {
       items: [
         [
           'Define the goal before the guide',
-          'To switch the gene off (a [[knockout|knockout]]): cut in early [[exon|exons]] or in essential domains shared by every version of the protein — that way the damage hits all of them. To correct or insert something: cut as close as possible to the spot being edited, because copying from the template loses accuracy with distance.',
+          'To switch the gene off (a [[knockout|knockout]]): cut in early [[exon|exons]] or in essential domains shared by every version of the protein. That way the damage hits all of them. To correct or insert something: cut as close as possible to the spot being edited, because copying from the template loses accuracy with distance.',
         ],
         [
           'Use prediction tools',
@@ -155,7 +155,7 @@ const GROUPS: L<Group[]> = {
         ['Test 2–3 guides per target', 'Real efficiency varies a lot between guides with similar scores.'],
         [
           'Check the sequence in your cell line/organism',
-          'No two people (or two cell lines) have identical DNA. A single different letter in the target can abolish the guide’s pairing or destroy the [[pam|PAM]] — and then nothing happens.',
+          'No two people (or two cell lines) have identical DNA. A single different letter in the target can abolish the guide’s pairing or destroy the [[pam|PAM]], and then nothing happens.',
         ],
         [
           'Avoid four Ts in a row in the guide',
@@ -196,7 +196,7 @@ const GROUPS: L<Group[]> = {
         ['Delivery control', 'A reporter (e.g. GFP) to estimate transfection/transduction efficiency.'],
         [
           'Independent guides',
-          'If two different guides for the same [[gene|gene]] give the same result, the effect is unlikely to come from an [[offtarget|off-target]] cut — which would differ for each guide.',
+          'If two different guides for the same [[gene|gene]] give the same result, the effect is unlikely to come from an [[offtarget|off-target]] cut, which would differ for each guide.',
         ],
       ],
     },
@@ -207,7 +207,7 @@ const GROUPS: L<Group[]> = {
       items: [
         [
           'In silico prediction of the likeliest sites',
-          'List the genome stretches that differ from the guide by only a few letters ([[mismatch|mismatches]]), especially when those differences sit far from the PAM — outside the [[seed|seed]] region they matter less, so a cut is still possible.',
+          'List the genome stretches that differ from the guide by only a few letters ([[mismatch|mismatches]]), especially when those differences sit far from the PAM. Outside the [[seed|seed]] region they matter less, so a cut is still possible.',
         ],
         ['Empirical methods when risk matters', 'E.g. GUIDE-seq, CIRCLE-seq and DISCOVER-seq find cuts without relying on prediction alone.'],
         [
@@ -267,7 +267,7 @@ const GROUPS: L<Group[]> = {
       items: [
         ['Report full sequences and conditions', 'Guides, Cas, delivery, doses, cell line, passage, harvest times.'],
         ['Share data and materials', 'Raw sequencing data in public repositories; plasmids in repositories such as Addgene.'],
-        ['Report efficiency and off-targets — including negatives', 'Null results and limitations prevent publication bias.'],
+        ['Report efficiency and off-targets, including negatives', 'Null results and limitations prevent publication bias.'],
         ['Follow reporting guidelines', 'E.g. ARRIVE for animal experiments.'],
       ],
     },

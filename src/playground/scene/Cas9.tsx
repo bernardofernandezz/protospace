@@ -182,8 +182,8 @@ export default function Cas9({ d, quality }: { d: Ready; quality: Quality }) {
         onPointerMove={domTip(
           'HNH',
           t(
-            'Domínio nuclease que cliva a fita-alvo. Ele gira ~180° até o DNA só quando o pareamento está completo — um "checkpoint" que reduz cortes indevidos.',
-            'Nuclease domain that cleaves the target strand. It swings ~180° onto the DNA only once pairing is complete — a checkpoint that limits spurious cuts.',
+            'Domínio nuclease que cliva a fita-alvo. Ele gira ~180° até o DNA só quando o pareamento está completo, uma checagem final que reduz cortes indevidos.',
+            'Nuclease domain that cleaves the target strand. It swings ~180° onto the DNA only once pairing is complete, a final check that limits spurious cuts.',
           ),
         )}
         onPointerOut={untip}

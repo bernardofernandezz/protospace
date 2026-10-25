@@ -20,7 +20,7 @@ interface QuizContent {
 export const QUIZ: L<QuizContent> = {
   pt: {
     eyebrow: 'Quiz rápido',
-    title: ['Teste o que ', 'ficou', ' — onze perguntas.'],
+    title: ['Teste o que ', 'ficou', ' em onze perguntas.'],
     lead: 'Cada resposta vem com uma explicação curta. Funciona bem como fechamento da apresentação ou como revisão antes da prova.',
     questions: [
       {
@@ -96,7 +96,7 @@ export const QUIZ: L<QuizContent> = {
           'Sequenciar os sítios preditos e, se o risco importa, usar métodos empíricos (ex.: GUIDE-seq)',
         ],
         correct: 3,
-        feedback: 'Predição ajuda a escolher onde olhar, mas a confirmação vem do sequenciamento — incluindo a busca por grandes deleções.',
+        feedback: 'Predição ajuda a escolher onde olhar, mas a confirmação vem do sequenciamento, incluindo a busca por grandes deleções.',
       },
       {
         id: 'q8',
@@ -109,7 +109,7 @@ export const QUIZ: L<QuizContent> = {
         ],
         correct: 1,
         feedback:
-          'Editores de base só trocam uma letra por outra — não inserem nem removem nada. Para devolver as três letras é preciso um molde (HDR) ou a transcriptase reversa do prime editing.',
+          'Editores de base só trocam uma letra por outra. Não inserem nem removem nada. Para devolver as três letras é preciso um molde (HDR) ou a transcriptase reversa do prime editing.',
       },
       {
         id: 'q9',
@@ -153,7 +153,7 @@ export const QUIZ: L<QuizContent> = {
   },
   en: {
     eyebrow: 'Quick quiz',
-    title: ['Test what ', 'stuck', ' — eleven questions.'],
+    title: ['Test what ', 'stuck', ' in eleven questions.'],
     lead: 'Each answer comes with a short explanation. Works well as a closer for the talk or as a review before an exam.',
     questions: [
       {
@@ -230,7 +230,7 @@ export const QUIZ: L<QuizContent> = {
           'Sequence predicted sites and, when risk matters, use empirical methods (e.g. GUIDE-seq)',
         ],
         correct: 3,
-        feedback: 'Prediction helps decide where to look, but confirmation comes from sequencing — including a search for large deletions.',
+        feedback: 'Prediction helps decide where to look, but confirmation comes from sequencing, including a search for large deletions.',
       },
       {
         id: 'q8',
@@ -243,7 +243,7 @@ export const QUIZ: L<QuizContent> = {
         ],
         correct: 1,
         feedback:
-          'Base editors only swap one letter for another — they insert and delete nothing. Giving the three letters back needs a template (HDR) or the reverse transcriptase of prime editing.',
+          'Base editors only swap one letter for another. They cannot insert or delete anything. Giving the three letters back needs a template (HDR) or the reverse transcriptase of prime editing.',
       },
       {
         id: 'q9',

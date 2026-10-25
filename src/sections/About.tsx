@@ -6,7 +6,7 @@ const BUILT: L<[string, string][]> = {
   pt: [
     [
       'Simulação 3D procedural',
-      'DNA com sulcos maior e menor, dobra no PAM, R-loop, giro do domínio HNH, reparo por NHEJ (Ku70/80 + ligase) e HDR — tudo gerado por código e shaders GLSL próprios, sem modelos 3D externos.',
+      'DNA com sulcos maior e menor, dobra no PAM, R-loop, giro do domínio HNH, reparo por NHEJ (Ku70/80 + ligase) e HDR. Tudo gerado por código e shaders GLSL próprios, sem modelos 3D externos.',
     ],
     [
       'Lógica de sequência real',
@@ -24,7 +24,7 @@ const BUILT: L<[string, string][]> = {
   en: [
     [
       'Procedural 3D simulation',
-      'DNA with major and minor grooves, PAM bending, R-loop, HNH domain swing, NHEJ (Ku70/80 + ligase) and HDR repair — all generated in code with custom GLSL shaders, no external 3D models.',
+      'DNA with major and minor grooves, PAM bending, R-loop, HNH domain swing, NHEJ (Ku70/80 + ligase) and HDR repair. All generated in code with custom GLSL shaders, no external 3D models.',
     ],
     [
       'Real sequence logic',
@@ -68,17 +68,17 @@ export default function About() {
         title={
           t.lang === 'en' ? (
             <>
-              Built to teach — <span className="text-gradient">and to be explored</span>.
+              Built to teach, <span className="text-gradient">and to be explored</span>.
             </>
           ) : (
             <>
-              Feito para ensinar — <span className="text-gradient">e para ser explorado</span>.
+              Feito para ensinar <span className="text-gradient">e para ser explorado</span>.
             </>
           )
         }
         lead={t(
-          'Um site de apoio a seminário que virou um laboratório interativo: o conteúdo científico, a simulação e a interface foram pensados juntos, para que a visualização ajude a entender — e nunca exagere — o que a técnica faz.',
-          'A seminar companion site that became an interactive lab: the science, the simulation and the interface were designed together, so the visuals help explain — and never overstate — what the technique does.',
+          'Um site de apoio a seminário que virou um laboratório interativo: o conteúdo científico, a simulação e a interface foram pensados juntos, para que a visualização ajude a entender o que a técnica faz, sem nunca exagerar.',
+          'A seminar companion site that became an interactive lab: the science, the simulation and the interface were designed together, so the visuals help explain what the technique does without ever overstating it.',
         )}
       />
 

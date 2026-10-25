@@ -724,8 +724,8 @@ function Verdict({ dis, verdict, proteins, effect }: { dis: Disease; verdict: Ve
   const say = {
     success: disrupt
       ? t(
-          'O motivo GATA1 deixou de existir neste alelo: o BCL11A não é mais ligado nos precursores eritroides e a hemoglobina fetal volta a subir. Serve qualquer edição que quebre o motivo — inclusive o indel "bagunçado" do NHEJ, que aqui é justamente o que se quer.',
-          'The GATA1 motif no longer exists in this allele: BCL11A is no longer switched on in erythroid precursors and fetal haemoglobin rises again. Any edit that breaks the motif works — including the "messy" NHEJ indel, which here is exactly what you want.',
+          'O motivo GATA1 deixou de existir neste alelo: o BCL11A não é mais ligado nos precursores eritroides e a hemoglobina fetal volta a subir. Serve qualquer edição que quebre o motivo, inclusive o indel "bagunçado" do NHEJ, que aqui é justamente o que se quer.',
+          'The GATA1 motif no longer exists in this allele: BCL11A is no longer switched on in erythroid precursors and fetal haemoglobin rises again. Any edit that breaks the motif works, including the "messy" NHEJ indel, which here is exactly what you want.',
         )
       : t(
           'A proteína voltou a ser idêntica à do alelo saudável: a sequência foi restaurada e o resto ficou intacto. Como a herança é recessiva, corrigir parte das células já costuma aliviar muito os sintomas.',
@@ -733,16 +733,16 @@ function Verdict({ dis, verdict, proteins, effect }: { dis: Disease; verdict: Ve
         ),
     unchanged: disrupt
       ? t(
-          'O motivo continua legível, então o interruptor segue ligado. Use Cas9 selvagem com NHEJ e um guia cujo corte caia sobre o motivo — molde e editores de base não ajudam aqui.',
-          'The motif is still readable, so the switch stays on. Use wild-type Cas9 with NHEJ and a guide whose cut lands on the motif — a template and base editors do not help here.',
+          'O motivo continua legível, então o interruptor segue ligado. Use Cas9 selvagem com NHEJ e um guia cujo corte caia sobre o motivo. Molde e editores de base não ajudam aqui.',
+          'The motif is still readable, so the switch stays on. Use wild-type Cas9 with NHEJ and a guide whose cut lands on the motif. A template or base editors do not help here.',
         )
       : t(
           'A proteína continua a do alelo doente: nenhuma edição chegou ao alvo. Escolha um sítio cujo corte caia perto dele e use molde (HDR) ou prime editing.',
           'The protein is still the disease allele: no edit reached the target. Pick a site whose cut lands near it and use a template (HDR) or prime editing.',
         ),
     broken: t(
-      'A proteína saiu diferente das duas: o reparo apagou ou somou bases e desalinhou o quadro de leitura. Isso desliga o gene, não conserta a sequência errada — para isso é preciso molde (HDR) ou prime editing.',
-      'The protein matches neither: repair deleted or added bases and shifted the reading frame. That switches the gene off, it does not fix the wrong sequence — that needs a template (HDR) or prime editing.',
+      'A proteína saiu diferente das duas: o reparo apagou ou somou bases e desalinhou o quadro de leitura. Isso desliga o gene, não conserta a sequência errada. Para isso é preciso molde (HDR) ou prime editing.',
+      'The protein matches neither: repair deleted or added bases and shifted the reading frame. That switches the gene off, it does not fix the wrong sequence. That needs a template (HDR) or prime editing.',
     ),
   }[verdict]
 
@@ -872,8 +872,8 @@ function PopulationView() {
           </div>
           <p className="mt-1 text-[11px] text-mist/70">
             {t(
-              'Saldo de bases por alelo editado — é o que um sequenciamento do amplicon mostraria (ex.: CRISPResso).',
-              'Net bases per edited allele — what amplicon sequencing would show (e.g. CRISPResso).',
+              'Saldo de bases por alelo editado. É o que um sequenciamento do amplicon mostraria (ex.: CRISPResso).',
+              'Net bases per edited allele. This is what amplicon sequencing would show (e.g. CRISPResso).',
             )}
           </p>
         </div>

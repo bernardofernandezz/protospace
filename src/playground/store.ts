@@ -327,8 +327,8 @@ function outcomeText(p: Params, c: Candidate, ops: Op[], fix: Fix | undefined, e
       // adiante do nick segue a fita do guia (ver primeEditOps)
       const reach = (ops[0].pos - c.cut) * c.strand
       return en
-        ? `Prime editing: the reverse transcriptase copies the [[pegrna|pegRNA]] tail ${reach} nt downstream of the nick — no double-strand break and no donor template.`
-        : `Prime editing: a transcriptase reversa copia a cauda do [[pegrna|pegRNA]] ${reach} nt adiante do nick — sem quebra de fita dupla e sem molde doador.`
+        ? `Prime editing: the reverse transcriptase copies the [[pegrna|pegRNA]] tail ${reach} nt downstream of the nick, with no double-strand break and no donor template.`
+        : `Prime editing: a transcriptase reversa copia a cauda do [[pegrna|pegRNA]] ${reach} nt adiante do nick, sem quebra de fita dupla e sem molde doador.`
     }
     const behind = fix ? (c.cut - fix.pos) * c.strand : 0
     return en
@@ -345,8 +345,8 @@ function outcomeText(p: Params, c: Candidate, ops: Op[], fix: Fix | undefined, e
   if (p.repair === 'hdr') {
     if (fix && Math.abs(fix.pos - c.cut) <= FIX_RANGE) {
       return en
-        ? `[[hdr|HDR]] with template: the healthy [[alelo|allele]] comes back — ${fixText(p.locus, fix, en)}.`
-        : `[[hdr|HDR]] com molde: o [[alelo|alelo]] saudável volta — ${fixText(p.locus, fix, en)}.`
+        ? `[[hdr|HDR]] with template: the healthy [[alelo|allele]] comes back: ${fixText(p.locus, fix, en)}.`
+        : `[[hdr|HDR]] com molde: o [[alelo|alelo]] saudável volta: ${fixText(p.locus, fix, en)}.`
     }
     if (fix) {
       return en

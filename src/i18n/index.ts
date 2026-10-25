@@ -28,12 +28,12 @@ const META: L<{ title: string; description: string }> = {
   pt: {
     title: 'Protospace · CRISPR-Cas9 do guia ao reparo, em 3D',
     description:
-      'Site interativo sobre CRISPR-Cas9: mecanismo, evolução da ferramenta, boas práticas, aplicações e bioética — com um playground 3D do guia ao reparo.',
+      'Site interativo sobre CRISPR-Cas9: mecanismo, evolução da ferramenta, boas práticas, aplicações e bioética, com um playground 3D do guia ao reparo.',
   },
   en: {
     title: 'Protospace · CRISPR-Cas9 from guide to repair, in 3D',
     description:
-      'Interactive site about CRISPR-Cas9: mechanism, tool evolution, lab best practices, applications and bioethics — with a 3D playground from guide design to DNA repair.',
+      'Interactive site about CRISPR-Cas9: mechanism, tool evolution, lab best practices, applications and bioethics, with a 3D playground from guide design to DNA repair.',
   },
 }
 

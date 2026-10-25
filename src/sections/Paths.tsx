@@ -35,8 +35,8 @@ export default function Paths() {
           )
         }
         lead={t(
-          'A anemia falciforme é uma única letra trocada, e ainda assim há mais de um jeito de resolvê-la — inclusive um que nem toca no gene defeituoso. Cada cartão abre o playground já configurado: teste e compare o que acontece.',
-          'Sickle cell disease is a single swapped letter, and even so there is more than one way to deal with it — including one that never touches the faulty gene. Each card opens the playground ready to run: try it and compare what happens.',
+          'A anemia falciforme é uma única letra trocada, e ainda assim há mais de um jeito de resolvê-la, inclusive um que nem toca no gene defeituoso. Cada cartão abre o playground já configurado: teste e compare o que acontece.',
+          'Sickle cell disease is a single swapped letter, and even so there is more than one way to deal with it, including one that never touches the faulty gene. Each card opens the playground ready to run: try it and compare what happens.',
         )}
       />
 

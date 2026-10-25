@@ -56,8 +56,8 @@ export const EXHIBITS: Exhibit[] = [
     short: { pt: 'PAM', en: 'PAM' },
     title: { pt: 'PAM (NGG)', en: 'PAM (NGG)' },
     body: {
-      pt: 'Sem PAM não há corte: o domínio PI da Cas9 reconhece o NGG antes de testar o guia — é assim que a bactéria poupa o próprio arranjo CRISPR.',
-      en: 'No PAM, no cut: Cas9’s PI domain reads the NGG before testing the guide — that is how bacteria spare their own CRISPR array.',
+      pt: 'Sem PAM não há corte: o domínio PI da Cas9 reconhece o NGG antes de testar o guia. É assim que a bactéria poupa o próprio arranjo CRISPR.',
+      en: 'No PAM, no cut: Cas9’s PI domain reads the NGG before testing the guide. That is how bacteria spare their own CRISPR array.',
     },
     fact: {
       pt: 'Variantes como SpCas9-NG e SpRY afrouxam a exigência de PAM e ampliam os sítios editáveis.',
@@ -184,8 +184,8 @@ export const EXHIBITS: Exhibit[] = [
     short: { pt: 'Epigenética', en: 'Epigenetics' },
     title: { pt: 'Metilação do DNA', en: 'DNA methylation' },
     body: {
-      pt: 'Grupos metil (esferas brilhantes) em citosinas de dinucleotídeos CpG, sobretudo em promotores, tendem a silenciar genes — sem mudar a sequência. A acetilação de histonas faz o contrário: abre a cromatina.',
-      en: 'Methyl groups (glowing spheres) on cytosines in CpG dinucleotides, especially in promoters, tend to silence genes — without changing the sequence. Histone acetylation does the opposite: it opens chromatin.',
+      pt: 'Grupos metil (esferas brilhantes) em citosinas de dinucleotídeos CpG, sobretudo em promotores, tendem a silenciar genes, sem mudar a sequência. A acetilação de histonas faz o contrário: abre a cromatina.',
+      en: 'Methyl groups (glowing spheres) on cytosines in CpG dinucleotides, especially in promoters, tend to silence genes without changing the sequence. Histone acetylation does the opposite: it opens chromatin.',
     },
     fact: {
       pt: 'Fundindo uma Cas9 “morta” (dCas9) a ativadores, repressores ou enzimas epigenéticas, dá para ligar ou desligar genes sem cortar o DNA (CRISPRa/CRISPRi).',
@@ -218,8 +218,8 @@ export const EXHIBITS: Exhibit[] = [
     short: { pt: 'Telômero', en: 'Telomere' },
     title: { pt: 'Telômeros', en: 'Telomeres' },
     body: {
-      pt: 'As pontas dos cromossomos são milhares de repetições TTAGGG. A cada divisão elas encurtam um pouco — um relógio celular.',
-      en: 'Chromosome ends are thousands of TTAGGG repeats. They shorten a little with every division — a cellular clock.',
+      pt: 'As pontas dos cromossomos são milhares de repetições TTAGGG. A cada divisão elas encurtam um pouco, como um relógio da célula.',
+      en: 'Chromosome ends are thousands of TTAGGG repeats. They shorten a little with every division, like a cellular clock.',
     },
     fact: {
       pt: 'A telomerase, com seu próprio molde de RNA, repõe os telômeros; está ativa em células-tronco e na maioria dos cânceres. Nobel de 2009 (Blackburn, Greider e Szostak).',
@@ -235,8 +235,8 @@ export const EXHIBITS: Exhibit[] = [
     short: { pt: 'Genoma humano', en: 'Human genome' },
     title: { pt: 'Genoma humano', en: 'Human genome' },
     body: {
-      pt: 'Cerca de 3,1 bilhões de pares de bases por conjunto haploide e ~20 mil genes codificantes de proteína — que ocupam só ~1–2% da sequência.',
-      en: 'About 3.1 billion base pairs per haploid set and ~20,000 protein-coding genes — which make up only ~1–2% of the sequence.',
+      pt: 'Cerca de 3,1 bilhões de pares de bases por conjunto haploide e ~20 mil genes codificantes de proteína, que ocupam só ~1–2% da sequência.',
+      en: 'About 3.1 billion base pairs per haploid set and ~20,000 protein-coding genes, which make up only ~1–2% of the sequence.',
     },
     fact: {
       pt: 'Esticado, o DNA de uma célula humana mede cerca de 2 metros. A primeira sequência humana completa, de ponta a ponta (T2T), só saiu em 2022.',
@@ -275,8 +275,8 @@ export const EXHIBITS: Exhibit[] = [
       en: 'RNA polymerase II opens a stretch of DNA and copies the template strand into pre-mRNA (orange), 5′ to 3′. It is the first step of the central dogma: DNA → RNA → protein.',
     },
     fact: {
-      pt: 'Promotores e fatores de transcrição decidem quando e quanto cada gene é lido — é assim que um neurônio e uma célula da pele, com o mesmo genoma, ficam tão diferentes.',
-      en: 'Promoters and transcription factors decide when and how much each gene is read — which is how a neuron and a skin cell, with the same genome, end up so different.',
+      pt: 'Promotores e fatores de transcrição decidem quando e quanto cada gene é lido. É assim que um neurônio e uma célula da pele, com o mesmo genoma, ficam tão diferentes.',
+      en: 'Promoters and transcription factors decide when and how much each gene is read. That is how a neuron and a skin cell, with the same genome, end up so different.',
     },
   },
   {
@@ -288,8 +288,8 @@ export const EXHIBITS: Exhibit[] = [
     short: { pt: 'Splicing', en: 'Splicing' },
     title: { pt: 'Splicing', en: 'Splicing' },
     body: {
-      pt: 'O spliceossomo remove os íntrons — que saem em forma de laço, o “lariat” — e une os éxons. Íntrons quase sempre começam por GU e terminam em AG.',
-      en: 'The spliceosome removes introns — which leave as a loop, the “lariat” — and joins the exons. Introns almost always start with GU and end with AG.',
+      pt: 'O spliceossomo remove os íntrons, que saem em forma de laço (o “lariat”), e une os éxons. Íntrons quase sempre começam por GU e terminam em AG.',
+      en: 'The spliceosome removes introns, which leave as a loop (the “lariat”), and joins the exons. Introns almost always start with GU and end with AG.',
     },
     fact: {
       pt: 'Com splicing alternativo, ~20 mil genes geram muito mais proteínas diferentes. Muitas doenças vêm de mutações em sítios de splicing.',
@@ -308,8 +308,8 @@ export const EXHIBITS: Exhibit[] = [
       en: 'Huge complexes with eight-fold symmetry control traffic between nucleus and cytoplasm: mRNA leaves; proteins such as Cas9 come in.',
     },
     fact: {
-      pt: 'Por isso a Cas9 usada em células humanas leva sinais de localização nuclear (NLS) fundidos — sem eles, ela mal chega ao DNA.',
-      en: 'That is why Cas9 used in human cells carries fused nuclear localisation signals (NLS) — without them it barely reaches the DNA.',
+      pt: 'Por isso a Cas9 usada em células humanas leva sinais de localização nuclear (NLS) fundidos. Sem eles, ela mal chega ao DNA.',
+      en: 'That is why Cas9 used in human cells carries fused nuclear localisation signals (NLS). Without them it barely reaches the DNA.',
     },
   },
   {
@@ -341,8 +341,8 @@ export const EXHIBITS: Exhibit[] = [
       en: 'Read from the centre out: 1st, 2nd and 3rd base. 64 codons for 20 amino acids; AUG (white) starts, UAA, UAG and UGA (red) stop. Several codons give the same amino acid.',
     },
     fact: {
-      pt: 'Por isso nem toda substituição muda a proteína — e um indel que não é múltiplo de 3 embaralha tudo depois dele (frameshift), como no NHEJ do playground.',
-      en: 'That is why not every substitution changes the protein — and an indel that is not a multiple of 3 scrambles everything after it (frameshift), as in the playground’s NHEJ.',
+      pt: 'Por isso nem toda substituição muda a proteína, e um indel que não é múltiplo de 3 embaralha tudo depois dele (frameshift), como no NHEJ do playground.',
+      en: 'That is why not every substitution changes the protein, and an indel that is not a multiple of 3 scrambles everything after it (frameshift), as in the playground’s NHEJ.',
     },
   },
 
@@ -356,8 +356,8 @@ export const EXHIBITS: Exhibit[] = [
     short: { pt: 'Arranjo CRISPR', en: 'CRISPR array' },
     title: { pt: 'CRISPR: o sistema imune das bactérias', en: 'CRISPR: the bacterial immune system' },
     body: {
-      pt: 'Dentro da bactéria, trechos de DNA de vírus (espaçadores coloridos) ficam guardados entre repetições (brancas) — um álbum de “procurados” que guia a Cas9.',
-      en: 'Inside the bacterium, snippets of viral DNA (coloured spacers) are stored between repeats (white) — a “most wanted” album that guides Cas9.',
+      pt: 'Dentro da bactéria, trechos de DNA de vírus (espaçadores coloridos) ficam guardados entre repetições (brancas), formando um álbum de “procurados” que guia a Cas9.',
+      en: 'Inside the bacterium, snippets of viral DNA (coloured spacers) are stored between repeats (white), forming a “most wanted” album that guides Cas9.',
     },
     fact: {
       pt: 'Francisco Mojica estudou essas repetições desde 1993 e propôs a função imune em 2005; em 2007, experimentos com bactérias do iogurte confirmaram.',
@@ -423,8 +423,8 @@ export const EXHIBITS: Exhibit[] = [
     short: { pt: 'Variação (SNP)', en: 'Variation (SNP)' },
     title: { pt: 'Variação humana: SNPs', en: 'Human variation: SNPs' },
     body: {
-      pt: 'Duas pessoas quaisquer diferem em cerca de 1 base a cada 1.000 — milhões de variantes de um único nucleotídeo (SNPs), como a destacada entre as duas hélices.',
-      en: 'Any two people differ at roughly 1 base in 1,000 — millions of single-nucleotide variants (SNPs), like the one highlighted between the two helices.',
+      pt: 'Duas pessoas quaisquer diferem em cerca de 1 base a cada 1.000. São milhões de variantes de um único nucleotídeo (SNPs), como a destacada entre as duas hélices.',
+      en: 'Any two people differ at roughly 1 base in 1,000. That adds up to millions of single-nucleotide variants (SNPs), like the one highlighted between the two helices.',
     },
     fact: {
       pt: 'A maioria dos SNPs é neutra; alguns mudam o risco de doenças ou a resposta a remédios (farmacogenética). Editores de bases foram feitos para corrigir exatamente esse tipo de troca.',

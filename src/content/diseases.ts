@@ -52,8 +52,8 @@ export const DISEASES: Disease[] = [
       en: 'HBB c.20A>T: codon 6 (7 in HGVS numbering, which counts the initial methionine) changes from GAG (Glu) to GTG (Val). Valine is hydrophobic and creates a sticky patch between deoxygenated haemoglobin molecules, which polymerise into fibres. This is the substitution that defines HbS.',
     },
     inherit: {
-      pt: 'Herança recessiva: quem tem só um alelo alterado (traço falciforme) costuma ser assintomático. A doença aparece com os dois alelos alterados — por isso a terapia precisa corrigir (ou compensar) os dois.',
-      en: 'Recessive inheritance: carrying one altered allele (sickle cell trait) is usually asymptomatic. The disease appears with both alleles altered — so therapy must correct (or compensate for) both.',
+      pt: 'Herança recessiva: quem tem só um alelo alterado (traço falciforme) costuma ser assintomático. A doença aparece com os dois alelos alterados. Por isso a terapia precisa corrigir (ou compensar) os dois.',
+      en: 'Recessive inheritance: carrying one altered allele (sickle cell trait) is usually asymptomatic. The disease appears with both alleles altered, so therapy must correct (or compensate for) both.',
     },
   },
   {
@@ -71,12 +71,12 @@ export const DISEASES: Disease[] = [
       en: 'Three letters are missing from the CFTR gene, and with them one amino acid of the protein. The channel that should move chloride out of the cell folds wrongly and is destroyed before reaching the membrane: mucus turns thick and clogs lungs and pancreas.',
     },
     tech: {
-      pt: 'CFTR c.1521_1523delCTT (p.Phe508del): deleção em quadro no éxon 11, presente em cerca de 70 % dos alelos de fibrose cística. A proteína é sintetizada, mas o controle de qualidade do retículo endoplasmático a degrada (defeito de classe II). Repare que nenhum editor de bases devolve letras perdidas — aqui só HDR ou prime editing resolvem.',
-      en: 'CFTR c.1521_1523delCTT (p.Phe508del): an in-frame deletion in exon 11, found in roughly 70 % of cystic fibrosis alleles. The protein is made, but endoplasmic reticulum quality control degrades it (class II defect). Note that no base editor can give back missing letters — here only HDR or prime editing work.',
+      pt: 'CFTR c.1521_1523delCTT (p.Phe508del): deleção em quadro no éxon 11, presente em cerca de 70 % dos alelos de fibrose cística. A proteína é sintetizada, mas o controle de qualidade do retículo endoplasmático a degrada (defeito de classe II). Repare que nenhum editor de bases devolve letras perdidas: aqui só HDR ou prime editing resolvem.',
+      en: 'CFTR c.1521_1523delCTT (p.Phe508del): an in-frame deletion in exon 11, found in roughly 70 % of cystic fibrosis alleles. The protein is made, but endoplasmic reticulum quality control degrades it (class II defect). Note that no base editor can give back missing letters, so here only HDR or prime editing work.',
     },
     inherit: {
-      pt: 'Recessiva: são necessários dois alelos alterados. Como o pulmão se renova a partir de células-tronco das vias aéreas, uma terapia genética precisa alcançar essas células — e não apenas as que estão na superfície hoje.',
-      en: 'Recessive: two altered alleles are needed. Because the lung renews itself from airway stem cells, a gene therapy must reach those cells — not only the ones sitting on the surface today.',
+      pt: 'Recessiva: são necessários dois alelos alterados. Como o pulmão se renova a partir de células-tronco das vias aéreas, uma terapia genética precisa alcançar essas células, e não apenas as que estão na superfície hoje.',
+      en: 'Recessive: two altered alleles are needed. Because the lung renews itself from airway stem cells, a gene therapy must reach those cells, not only the ones sitting on the surface today.',
     },
   },
   {
@@ -89,8 +89,8 @@ export const DISEASES: Disease[] = [
     goal: 'disrupt',
     motif: 'TTATCA',
     plain: {
-      pt: 'Aqui o alvo não é o gene defeituoso. Todo mundo nasce produzindo hemoglobina fetal e desliga essa produção nos primeiros meses de vida. Quebrando o interruptor que faz esse desligamento, a pessoa volta a produzir hemoglobina fetal — e ela ocupa o lugar da hemoglobina doente.',
-      en: 'Here the target is not the faulty gene. Everyone is born making fetal haemoglobin and switches it off in the first months of life. By breaking the switch that performs the shut-off, a person makes fetal haemoglobin again — and it takes the place of the diseased haemoglobin.',
+      pt: 'Aqui o alvo não é o gene defeituoso. Todo mundo nasce produzindo hemoglobina fetal e desliga essa produção nos primeiros meses de vida. Quebrando o interruptor que faz esse desligamento, a pessoa volta a produzir hemoglobina fetal, que ocupa o lugar da hemoglobina doente.',
+      en: 'Here the target is not the faulty gene. Everyone is born making fetal haemoglobin and switches it off in the first months of life. By breaking the switch that performs the shut-off, a person makes fetal haemoglobin again, which takes the place of the diseased haemoglobin.',
     },
     tech: {
       pt: 'O corte destrói o motivo GATA1 no núcleo funcional do DHS +58 do BCL11A. Sem esse motivo, o BCL11A deixa de ser expresso nos precursores eritroides, o HBG1/HBG2 é desreprimido e a HbF sobe. É a lógica do exa-cel (Casgevy), aprovado em 2023. Note que, neste cenário, o indel do NHEJ é o objetivo: um reparo fiel não serve de nada.',

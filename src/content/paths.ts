@@ -37,8 +37,8 @@ export const PATHS: Path[] = [
       en: 'Instead of breaking both strands, the enzyme nicks one and a reverse transcriptase writes there the sequence dictated by the guide RNA itself. No double-strand break, no donor template.',
     },
     result: {
-      pt: 'Corrige o [[alelo|alelo]] com muito menos indel indesejado — desde que exista um sítio cujo nick caia logo antes da mutação.',
-      en: 'It fixes the [[alelo|allele]] with far fewer unwanted indels — as long as there is a site whose nick falls just before the mutation.',
+      pt: 'Corrige o [[alelo|alelo]] com muito menos indel indesejado, desde que exista um sítio cujo nick caia logo antes da mutação.',
+      en: 'It fixes the [[alelo|allele]] with far fewer unwanted indels, as long as there is a site whose nick falls just before the mutation.',
     },
     preset: { disease: 'sickle', cas: 'pe' },
     color: '#4cc9ff',
@@ -47,8 +47,8 @@ export const PATHS: Path[] = [
     id: 'abe',
     name: { pt: 'Trocar a letra sem cortar (editor de base)', en: 'Swap the letter without cutting (base editor)' },
     plain: {
-      pt: 'Um editor de adenina converte A em G sem quebrar o DNA. Na anemia falciforme ele não devolve a letra original, mas pode gerar a hemoglobina Makassar — uma variante benigna que não falciforma.',
-      en: 'An adenine editor converts A to G without breaking the DNA. In sickle cell disease it does not restore the original letter, but it can create haemoglobin Makassar — a benign variant that does not sickle.',
+      pt: 'Um editor de adenina converte A em G sem quebrar o DNA. Na anemia falciforme ele não devolve a letra original, mas pode gerar a hemoglobina Makassar, uma variante inofensiva que não deforma as hemácias.',
+      en: 'An adenine editor converts A to G without breaking the DNA. In sickle cell disease it does not restore the original letter, but it can create haemoglobin Makassar, a harmless variant that does not deform red blood cells.',
     },
     result: {
       pt: 'Aqui o caminho trava: neste trecho não há PAM NGG que coloque a base certa na janela de edição (posições 4–8 do guia), então o editor mexe nas vizinhas. A escolha da enzima e do PAM decide o que é possível.',
@@ -61,8 +61,8 @@ export const PATHS: Path[] = [
     id: 'bcl11a',
     name: { pt: 'Não mexer no gene doente (Casgevy)', en: 'Leave the faulty gene alone (Casgevy)' },
     plain: {
-      pt: 'A terapia aprovada não corrige a HBB. Ela quebra um interruptor no BCL11A, e a pessoa volta a produzir a hemoglobina fetal que tinha ao nascer — que ocupa o lugar da hemoglobina doente.',
-      en: 'The approved therapy does not fix HBB. It breaks a switch in BCL11A, and the person goes back to making the fetal haemoglobin they had at birth — which takes the place of the diseased haemoglobin.',
+      pt: 'A terapia aprovada não corrige a HBB. Ela quebra um interruptor no BCL11A, e a pessoa volta a produzir a hemoglobina fetal que tinha ao nascer. Ela ocupa o lugar da hemoglobina doente.',
+      en: 'The approved therapy does not fix HBB. It breaks a switch in BCL11A, and the person goes back to making the fetal haemoglobin they had at birth. It takes the place of the diseased haemoglobin.',
     },
     result: {
       pt: 'É o caminho mais eficiente da lista, porque aqui o [[indel|indel]] "bagunçado" do [[nhej|NHEJ]] é exatamente o objetivo, e não um efeito colateral.',

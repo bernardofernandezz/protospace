@@ -18,9 +18,9 @@ export const CONCLUSION: L<{ eyebrow: string; title: [string, string, string]; l
   pt: {
     eyebrow: 'Conclusão',
     title: ['Uma ferramenta poderosa pede ', 'perguntas à altura', '.'],
-    lead: 'CRISPR tornou a edição de genomas barata, rápida e acessível. Isso amplia o alcance da pesquisa e da medicina — e, na mesma medida, a responsabilidade de quem a usa.',
+    lead: 'CRISPR tornou a edição de genomas barata, rápida e acessível. Isso amplia o alcance da pesquisa e da medicina e, na mesma medida, a responsabilidade de quem a usa.',
     takeaways: [
-      'A Cas9 corta; a célula decide. Entender o reparo é entender o resultado — e os riscos.',
+      'A Cas9 corta; a célula decide. Entender o reparo é entender o resultado e os riscos.',
       'Rigor faz parte da técnica: guias bem desenhados, controles, validação por sequenciamento e relato transparente.',
       'A pergunta ética não é só “podemos?”, mas “para quem, com que segurança e decidido por quem?”.',
     ],
@@ -28,9 +28,9 @@ export const CONCLUSION: L<{ eyebrow: string; title: [string, string, string]; l
   en: {
     eyebrow: 'Conclusion',
     title: ['A powerful tool calls for ', 'questions to match', '.'],
-    lead: 'CRISPR made genome editing cheap, fast and accessible. That widens the reach of research and medicine — and, in equal measure, the responsibility of those who use it.',
+    lead: 'CRISPR made genome editing cheap, fast and accessible. That widens the reach of research and medicine and, in equal measure, the responsibility of those who use it.',
     takeaways: [
-      'Cas9 cuts; the cell decides. Understanding repair means understanding the outcome — and the risks.',
+      'Cas9 cuts; the cell decides. Understanding repair means understanding the outcome and the risks.',
       'Rigour is part of the technique: well-designed guides, controls, sequencing-based validation and transparent reporting.',
       'The ethical question is not just “can we?”, but “for whom, how safely and decided by whom?”.',
     ],
@@ -187,7 +187,7 @@ export const REFERENCES: Reference[] = [
     authors: 'Stein R',
     year: '2021',
     title: 'First sickle cell patient treated with CRISPR gene editing still thriving',
-    source: 'NPR — Shots',
+    source: 'NPR (Shots)',
     link: 'https://www.npr.org/sections/health-shots/2021/12/31/1067400512/first-sickle-cell-patient-treated-with-crispr-gene-editing-still-thriving',
   },
   {
@@ -204,7 +204,7 @@ export const REFERENCES: Reference[] = [
     group: MILESTONES,
     authors: 'The Royal Swedish Academy of Sciences',
     year: '2020',
-    title: 'The Nobel Prize in Chemistry 2020 — press release',
+    title: 'Press release: The Nobel Prize in Chemistry 2020',
     source: 'nobelprize.org',
     link: 'https://www.nobelprize.org/prizes/chemistry/2020/press-release/',
   },
@@ -256,7 +256,7 @@ export const REFERENCES: Reference[] = [
   {
     id: 'rn16',
     group: LAW,
-    authors: 'CTNBio — Comissão Técnica Nacional de Biossegurança',
+    authors: 'CTNBio (Comissão Técnica Nacional de Biossegurança)',
     year: '2018',
     title: 'Resolução Normativa nº 16, de 15 de janeiro de 2018 (Técnicas Inovadoras de Melhoramento de Precisão)',
     source: 'Diário Oficial da União',

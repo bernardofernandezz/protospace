@@ -29,8 +29,8 @@ function narration(t: T, step: number, nuclease: NucleaseId, cas: CasType, deliv
       }
       return cas12a
         ? t(
-            'Escolhemos um protoespaçador de 20 nt imediatamente a 3′ de um PAM TTTV — do lado oposto ao da Cas9. O crRNA (acima) tem a mesma sequência, com U no lugar de T.',
-            'We pick a 20-nt protospacer immediately 3′ of a TTTV PAM — on the opposite side from Cas9. The crRNA (above) has the same sequence, with U instead of T.',
+            'Escolhemos um protoespaçador de 20 nt imediatamente a 3′ de um PAM TTTV, do lado oposto ao da Cas9. O crRNA (acima) tem a mesma sequência, com U no lugar de T.',
+            'We pick a 20-nt protospacer immediately 3′ of a TTTV PAM, on the opposite side from Cas9. The crRNA (above) has the same sequence, with U instead of T.',
           )
         : t(
             'Escolhemos um protoespaçador de 20 nt imediatamente a 5′ de um PAM NGG. O espaçador do sgRNA (acima) tem a mesma sequência, com U no lugar de T. Bases em vermelho são mismatches.',
@@ -112,8 +112,8 @@ function narration(t: T, step: number, nuclease: NucleaseId, cas: CasType, deliv
             'HDR: a template with homology arms lines up at the site and is copied. It is less efficient and happens mostly in S/G2 phases of the cell cycle.',
           )
         : t(
-            'NHEJ: o anel Ku70/80 encaixa nas pontas, a ligase as religa — muitas vezes com pequenas inserções ou deleções (indels). Predomina na maioria das células.',
-            'NHEJ: the Ku70/80 ring threads onto the ends and ligase rejoins them — often with small insertions or deletions (indels). It dominates in most cells.',
+            'NHEJ: o anel Ku70/80 encaixa nas pontas, a ligase as religa, muitas vezes com pequenas inserções ou deleções (indels). Predomina na maioria das células.',
+            'NHEJ: the Ku70/80 ring threads onto the ends and ligase rejoins them, often with small insertions or deletions (indels). It dominates in most cells.',
           )
     default:
       return t(
