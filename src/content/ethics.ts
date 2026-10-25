@@ -48,18 +48,18 @@ export const ETHICS: L<EthicsContent> = {
         title: 'Somática × germinativa',
         summary: 'A linha que a maior parte das diretrizes trata como fronteira: editar uma pessoa ou editar uma linhagem.',
         details: [
-          'A edição [[somatica|somática]] altera células do corpo de alguém já nascido — sangue, fígado, olho. O efeito termina com aquela pessoa, e o debate se parece com o de qualquer terapia nova: eficácia, riscos, consentimento.',
+          'A edição [[somatica|somática]] altera células do corpo de alguém já nascido, como as do sangue, do fígado ou dos olhos. O efeito termina com aquela pessoa, e o debate se parece com o de qualquer terapia nova: eficácia, riscos, consentimento.',
           'A edição [[germinativa|germinativa]] altera embriões, óvulos ou espermatozoides. A mudança passa a todas as células do futuro indivíduo e aos seus descendentes. Por isso pesa mais: os afetados não podem consentir, e um erro se propaga.',
         ],
-        notes: ['Relatórios de referência: NASEM (2017) e OMS (2021) — ver Referências.'],
+        notes: ['Relatórios de referência: NASEM (2017) e OMS (2021), na seção Referências.'],
       },
       {
         id: 'seguranca',
         title: 'Segurança e incerteza',
         summary: 'Off-targets, mosaicismo e alterações grandes que métodos simples não detectam.',
         details: [
-          'Mesmo um guia bem desenhado pode cortar trechos parecidos com o alvo, os [[offtarget|off-targets]]. Além disso, a [[dsb|quebra de fita dupla]] pode causar grandes deleções e embaralhar pedaços do cromossomo — alterações que os testes de rotina não enxergam.',
-          'Em embriões há ainda o [[mosaicismo|mosaicismo]]: a edição acontece depois da primeira divisão e só parte das células é alterada. Efeitos de longo prazo só se conhecem com acompanhamento de anos — o que exige registros e transparência.',
+          'Mesmo um guia bem desenhado pode cortar trechos parecidos com o alvo, os [[offtarget|off-targets]]. Além disso, a [[dsb|quebra de fita dupla]] pode causar grandes deleções e embaralhar pedaços do cromossomo, mudanças que os testes de rotina não enxergam.',
+          'Em embriões há ainda o [[mosaicismo|mosaicismo]]: a edição acontece depois da primeira divisão e só parte das células é alterada. Efeitos de longo prazo só se conhecem com acompanhamento de anos, e isso exige registros e transparência.',
         ],
         notes: ['Ex.: Kosicki et al., 2018, sobre grandes deleções após cortes da Cas9.'],
       },
@@ -68,7 +68,7 @@ export const ETHICS: L<EthicsContent> = {
         title: 'Consentimento e gerações futuras',
         summary: 'Quem decide por quem ainda não existe?',
         details: [
-          'Na terapia somática, o paciente (ou responsável) pode pesar riscos e benefícios. Na germinativa, quem carrega as consequências é uma pessoa futura — e seus filhos.',
+          'Na terapia somática, o paciente (ou responsável) pode pesar riscos e benefícios. Na germinativa, quem carrega as consequências é uma pessoa que ainda vai nascer, e os filhos dela.',
           'Há também consentimento coletivo: populações afetadas por gene drives ou por decisões de saúde pública precisam participar da escolha, não apenas ser informadas.',
         ],
       },
@@ -78,7 +78,7 @@ export const ETHICS: L<EthicsContent> = {
         summary: 'Uma cura que custa milhões de dólares é uma cura para quem?',
         details: [
           'As primeiras terapias aprovadas têm preços de lista na casa dos milhões de dólares por paciente e exigem centros especializados. A anemia falciforme, alvo do Casgevy, é mais frequente em populações que historicamente têm menos acesso à saúde.',
-          'Discutir CRISPR com seriedade inclui discutir financiamento público, propriedade intelectual e capacidade instalada — inclusive no SUS.',
+          'Discutir CRISPR com seriedade inclui discutir financiamento público, patentes e estrutura para oferecer o tratamento, inclusive no SUS.',
         ],
         notes: ['Valores variam por país e negociação; trate números como ordem de grandeza.'],
       },
@@ -88,7 +88,7 @@ export const ETHICS: L<EthicsContent> = {
         summary: 'Tratar doença é diferente de "melhorar" características?',
         details: [
           'Corrigir uma mutação que causa doença grave tem amplo apoio. Usar a mesma técnica para alterar traços como altura, força ou desempenho cognitivo levanta outra pergunta: o que conta como "normal" e quem define?',
-          'A fronteira nem sempre é nítida — reduzir o risco de uma doença comum é terapia ou aprimoramento? — e a resposta tem implicações para desigualdade e discriminação.',
+          'A fronteira nem sempre é nítida. Reduzir o risco de uma doença comum é terapia ou aprimoramento? A resposta tem implicações para desigualdade e discriminação.',
         ],
       },
       {
@@ -128,7 +128,7 @@ export const ETHICS: L<EthicsContent> = {
       {
         id: 'gene-drive',
         title: 'Liberar um gene drive contra mosquitos transmissores de malária?',
-        summary: 'Gene drives espalham uma edição por uma população selvagem em poucas gerações — por exemplo, tornando fêmeas estéreis.',
+        summary: 'Gene drives espalham uma edição por uma população selvagem em poucas gerações, por exemplo tornando as fêmeas estéreis.',
         pro: [
           'A malária mata centenas de milhares de pessoas por ano, a maioria crianças.',
           'Pode reduzir o uso de inseticidas.',
@@ -168,13 +168,23 @@ export const ETHICS: L<EthicsContent> = {
     ],
     brazil: {
       title: 'O que diz a regulação brasileira',
-      summary: 'O Brasil tem um marco legal específico para engenharia genética, separando o que é proibido, o que é avaliado caso a caso e o que segue as regras de pesquisa clínica.',
+      summary:
+        'O Brasil tem um marco legal específico para engenharia genética, separando o que é proibido, o que é avaliado caso a caso e o que segue as regras de pesquisa clínica.',
       items: [
-        { label: 'Lei de Biossegurança (11.105/2005)', text: 'Proíbe a engenharia genética em célula germinal humana, zigoto e embrião humanos (art. 6º, III) e tipifica a prática como crime, com pena de reclusão de 1 a 4 anos e multa (art. 25). Também cria a CTNBio e o sistema de CIBios.' },
-        { label: 'CTNBio · RN nº 16/2018', text: 'Define a avaliação caso a caso das Técnicas Inovadoras de Melhoramento de Precisão (TIMP). Um produto editado sem DNA recombinante no resultado final pode não ser classificado como OGM.' },
-        { label: 'Pesquisa clínica e terapias avançadas', text: 'Ensaios em humanos passam pelo sistema CEP/Conep; produtos de terapia gênica e celular são regulados pela Anvisa como terapias avançadas.' },
+        {
+          label: 'Lei de Biossegurança (11.105/2005)',
+          text: 'Proíbe a engenharia genética em célula germinal humana, zigoto e embrião humanos (art. 6º, III) e tipifica a prática como crime, com pena de reclusão de 1 a 4 anos e multa (art. 25). Também cria a CTNBio e as CIBios, comissões internas de biossegurança de cada instituição.',
+        },
+        {
+          label: 'CTNBio · RN nº 16/2018',
+          text: 'Define a avaliação caso a caso das Técnicas Inovadoras de Melhoramento de Precisão (TIMP). Um produto editado sem DNA recombinante no resultado final pode não ser classificado como OGM.',
+        },
+        {
+          label: 'Pesquisa clínica e terapias avançadas',
+          text: 'Ensaios em humanos passam pelos comitês de ética em pesquisa (sistema CEP/Conep); produtos de terapia gênica e celular são regulados pela Anvisa como terapias avançadas.',
+        },
       ],
-      notes: ['Resumo didático — consulte o texto legal vigente antes de citar em trabalhos.'],
+      notes: ['Resumo didático. Consulte o texto legal vigente antes de citar em trabalhos.'],
     },
   },
   en: {
@@ -187,18 +197,18 @@ export const ETHICS: L<EthicsContent> = {
         title: 'Somatic vs germline',
         summary: 'The line most guidelines treat as a boundary: editing a person or editing a lineage.',
         details: [
-          '[[somatica|Somatic]] editing changes body cells of someone already born — blood, liver, eye. The effect ends with that person, and the debate resembles that of any new therapy: efficacy, risk, consent.',
+          '[[somatica|Somatic]] editing changes body cells of someone already born, such as blood, liver or eye cells. The effect ends with that person, and the debate resembles that of any new therapy: efficacy, risk, consent.',
           '[[germinativa|Germline]] editing changes embryos, eggs or sperm. The change reaches every cell of the future individual and their descendants. That is why it weighs more: those affected cannot consent, and a mistake propagates.',
         ],
-        notes: ['Key reports: NASEM (2017) and WHO (2021) — see References.'],
+        notes: ['Key reports: NASEM (2017) and WHO (2021), listed under References.'],
       },
       {
         id: 'seguranca',
         title: 'Safety and uncertainty',
         summary: 'Off-targets, mosaicism and large changes that simple methods miss.',
         details: [
-          'Even a well-designed guide can cut sites that resemble the target. On top of that, a double-strand break can cause large deletions and chromosomal rearrangements that a short PCR cannot see.',
-          'In embryos there is also [[mosaicismo|mosaicism]]: the edit happens after the first division and only some cells are changed. Long-term effects are only known after years of follow-up — which requires registries and transparency.',
+          'Even a well-designed guide can cut stretches that resemble the target, the [[offtarget|off-targets]]. On top of that, the [[dsb|double-strand break]] can cause large deletions and shuffle pieces of the chromosome, changes that routine tests cannot see.',
+          'In embryos there is also [[mosaicismo|mosaicism]]: the edit happens after the first division and only some cells are changed. Long-term effects are only known after years of follow-up, which requires registries and transparency.',
         ],
         notes: ['E.g. Kosicki et al., 2018, on large deletions after Cas9 cuts.'],
       },
@@ -207,7 +217,7 @@ export const ETHICS: L<EthicsContent> = {
         title: 'Consent and future generations',
         summary: 'Who decides for someone who does not exist yet?',
         details: [
-          'In somatic therapy, the patient (or guardian) can weigh risks and benefits. In germline editing, the consequences fall on a future person — and their children.',
+          'In somatic therapy, the patient (or guardian) can weigh risks and benefits. In germline editing, the consequences fall on a person not yet born, and on their children.',
           'There is also collective consent: populations affected by gene drives or public-health decisions need to take part in the choice, not just be informed.',
         ],
       },
@@ -217,7 +227,7 @@ export const ETHICS: L<EthicsContent> = {
         summary: 'A cure that costs millions of dollars is a cure for whom?',
         details: [
           'The first approved therapies have list prices in the millions of dollars per patient and require specialised centres. Sickle cell disease, Casgevy’s target, is more common in populations that have historically had less access to healthcare.',
-          'Discussing CRISPR seriously includes discussing public funding, intellectual property and installed capacity — including in public health systems such as Brazil’s SUS.',
+          'Discussing CRISPR seriously includes discussing public funding, patents and the capacity to deliver treatment, including in public health systems such as Brazil’s SUS.',
         ],
         notes: ['Prices vary by country and negotiation; treat figures as orders of magnitude.'],
       },
@@ -227,7 +237,7 @@ export const ETHICS: L<EthicsContent> = {
         summary: 'Is treating disease different from “improving” traits?',
         details: [
           'Correcting a mutation that causes serious disease has broad support. Using the same technique to change traits such as height, strength or cognitive performance raises another question: what counts as “normal”, and who decides?',
-          'The line is not always sharp — is lowering the risk of a common disease therapy or enhancement? — and the answer has implications for inequality and discrimination.',
+          'The line is not always sharp. Is lowering the risk of a common disease therapy or enhancement? The answer has implications for inequality and discrimination.',
         ],
       },
       {
@@ -267,7 +277,7 @@ export const ETHICS: L<EthicsContent> = {
       {
         id: 'gene-drive',
         title: 'Release a gene drive against malaria-carrying mosquitoes?',
-        summary: 'Gene drives spread an edit through a wild population within a few generations — for example, making females sterile.',
+        summary: 'Gene drives spread an edit through a wild population within a few generations, for example by making females sterile.',
         pro: [
           'Malaria kills hundreds of thousands of people a year, most of them children.',
           'Could reduce insecticide use.',
@@ -307,13 +317,23 @@ export const ETHICS: L<EthicsContent> = {
     ],
     brazil: {
       title: 'What Brazilian regulation says',
-      summary: 'Brazil has a specific legal framework for genetic engineering, separating what is prohibited, what is assessed case by case and what follows clinical-research rules.',
+      summary:
+        'Brazil has a specific legal framework for genetic engineering, separating what is prohibited, what is assessed case by case and what follows clinical-research rules.',
       items: [
-        { label: 'Biosafety Law (11,105/2005)', text: 'Prohibits genetic engineering of human germ cells, zygotes and embryos (art. 6, III) and makes the practice a crime punishable by 1 to 4 years’ imprisonment and a fine (art. 25). It also creates CTNBio, the national biosafety commission, and the system of internal biosafety committees.' },
-        { label: 'CTNBio · Normative Resolution 16/2018', text: 'Sets case-by-case assessment of Innovative Precision Breeding Techniques (TIMP). An edited product with no recombinant DNA in the final result may not be classified as a GMO.' },
-        { label: 'Clinical research and advanced therapies', text: 'Human trials go through the CEP/Conep research-ethics system; gene and cell therapy products are regulated by Anvisa as advanced therapies.' },
+        {
+          label: 'Biosafety Law (11,105/2005)',
+          text: 'Prohibits genetic engineering of human germ cells, zygotes and embryos (art. 6, III) and makes the practice a crime punishable by 1 to 4 years’ imprisonment and a fine (art. 25). It also creates CTNBio, the national biosafety commission, and the system of internal biosafety committees.',
+        },
+        {
+          label: 'CTNBio · Normative Resolution 16/2018',
+          text: 'Sets case-by-case assessment of Innovative Precision Breeding Techniques (TIMP). An edited product with no recombinant DNA in the final result may not be classified as a GMO.',
+        },
+        {
+          label: 'Clinical research and advanced therapies',
+          text: 'Human trials go through the CEP/Conep research-ethics system; gene and cell therapy products are regulated by Anvisa as advanced therapies.',
+        },
       ],
-      notes: ['Teaching summary — check the current legal text before citing it.'],
+      notes: ['Teaching summary. Check the current legal text before citing it.'],
     },
   },
 }

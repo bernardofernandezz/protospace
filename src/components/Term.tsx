@@ -17,10 +17,20 @@ export function Term({ k, children }: { k: string; children: ReactNode }) {
   if (!e) return <>{children}</>
   const full = e.full && t.pick(e.full)
   const what = t.pick(e.what)
-  if (!CAN_POP) return <abbr className="term" title={full ? `${full}. ${what}` : what}>{children}</abbr>
+  if (!CAN_POP)
+    return (
+      <abbr className="term" title={full ? `${full}. ${what}` : what}>
+        {children}
+      </abbr>
+    )
   return (
     <>
-      <button type="button" className="term" popovertarget={id} aria-label={t(`${plainText(children)}: ver explicação`, `${plainText(children)}: see explanation`)}>
+      <button
+        type="button"
+        className="term"
+        popovertarget={id}
+        aria-label={t(`${plainText(children)}: ver explicação`, `${plainText(children)}: see explanation`)}
+      >
         {children}
       </button>
       <span popover="auto" id={id} className="term-pop glass">
@@ -43,9 +53,19 @@ export function Rich({ children }: { children: string }) {
   let last = 0
   for (const m of children.matchAll(TERM_RE)) {
     if (m.index > last) parts.push(children.slice(last, m.index))
-    parts.push(<Term key={m.index} k={m[1]}>{m[2] ?? m[1]}</Term>)
+    parts.push(
+      <Term key={m.index} k={m[1]}>
+        {m[2] ?? m[1]}
+      </Term>,
+    )
     last = m.index + m[0].length
   }
   parts.push(children.slice(last))
-  return <>{parts.map((p, i) => <Fragment key={i}>{p}</Fragment>)}</>
+  return (
+    <>
+      {parts.map((p, i) => (
+        <Fragment key={i}>{p}</Fragment>
+      ))}
+    </>
+  )
 }

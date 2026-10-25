@@ -18,6 +18,9 @@ export default defineConfig({
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    // Safari (motor WebKit) como num iPhone: só no CI, porque o WebKit do Playwright não instala em toda distro Linux
+    // (o WebKit do Linux compõe por software e não tem WebGL: prazos maiores, e os testes do 3D se pulam sozinhos)
+    ...(process.env.CI ? [{ name: 'iphone', use: { ...devices['iPhone 14'], launchOptions: {} }, timeout: 120_000, expect: { timeout: 20_000 } }] : []),
   ],
   webServer: { command: 'node scripts/serve.mjs 4173', url: 'http://localhost:4173', reuseExistingServer: !process.env.CI },
 })

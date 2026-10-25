@@ -5,7 +5,11 @@ import type { Stance } from '../content/ethics'
 
 export type Tally = Record<Stance, number>
 export type Tallies = Record<string, Tally>
-interface Row { dilemma_id: string; stance: Stance; votes: number }
+interface Row {
+  dilemma_id: string
+  stance: Stance
+  votes: number
+}
 
 // URL e chave publicável são públicas por design (o acesso é controlado no banco).
 const URL = import.meta.env.VITE_SUPABASE_URL || 'https://vroqgaybxzzwmjrfacux.supabase.co'
@@ -21,7 +25,10 @@ export function voterId() {
   const key = 'protospace-voter'
   try {
     let id = localStorage.getItem(key)
-    if (!id) { id = crypto.randomUUID(); localStorage.setItem(key, id) }
+    if (!id) {
+      id = crypto.randomUUID()
+      localStorage.setItem(key, id)
+    }
     return id
   } catch {
     return crypto.randomUUID()
@@ -49,8 +56,8 @@ export async function castVote(dilemma: string, stance: Stance): Promise<Tally> 
   return fold(data as Row[])[dilemma] ?? EMPTY
 }
 
-/** Totais ao vivo: chama `onRow` a cada mudança. Devolve a função de cancelamento. */
-export async function subscribeTallies(onRow: (dilemma: string, stance: Stance, votes: number) => void) {
+/** Totais ao vivo: chama `onRow` a cada mudança e `onFail` se o canal for recusado. Devolve a função de cancelamento. */
+export async function subscribeTallies(onRow: (dilemma: string, stance: Stance, votes: number) => void, onFail: () => void) {
   const supabase = await db()
   const channel: RealtimeChannel = supabase
     .channel('dilemma-tallies')
@@ -58,6 +65,10 @@ export async function subscribeTallies(onRow: (dilemma: string, stance: Stance, 
       const r = p.new as Row
       onRow(r.dilemma_id, r.stance, r.votes)
     })
-    .subscribe()
-  return () => { supabase.removeChannel(channel) }
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') onFail()
+    })
+  return () => {
+    supabase.removeChannel(channel)
+  }
 }

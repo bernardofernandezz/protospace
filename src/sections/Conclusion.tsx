@@ -14,7 +14,18 @@ export default function Conclusion() {
   const C = t.pick(CONCLUSION)
   return (
     <section id="referencias" className="section">
-      <SectionHeader n="10" eyebrow={C.eyebrow} title={<>{C.title[0]}<span className="text-gradient">{C.title[1]}</span>{C.title[2]}</>} lead={C.lead} />
+      <SectionHeader
+        n="10"
+        eyebrow={C.eyebrow}
+        title={
+          <>
+            {C.title[0]}
+            <span className="text-gradient">{C.title[1]}</span>
+            {C.title[2]}
+          </>
+        }
+        lead={C.lead}
+      />
 
       <div className="grid gap-5 md:grid-cols-3" data-reveal>
         {C.takeaways.map((tk, i) => (
@@ -27,7 +38,9 @@ export default function Conclusion() {
 
       <div className="mt-20" data-reveal>
         <h3 className="text-3xl font-semibold md:text-4xl">{t('Referências', 'References')}</h3>
-        <p className="mt-3 max-w-2xl text-sm text-mist">{t('Fontes primárias, relatórios e legislação citados ao longo do site.', 'Primary sources, reports and legislation cited throughout the site.')}</p>
+        <p className="mt-3 max-w-2xl text-sm text-mist">
+          {t('Fontes primárias, relatórios e legislação citados ao longo do site.', 'Primary sources, reports and legislation cited throughout the site.')}
+        </p>
 
         <div className="mt-8 space-y-10">
           {byGroup(REFERENCES, t.lang).map(([group, items]) => (
@@ -39,11 +52,18 @@ export default function Conclusion() {
                     <span className="font-mono text-xs text-dna md:w-16 md:shrink-0">{r.year}</span>
                     <span className="flex-1">
                       <span className="block font-medium text-white">{r.title}</span>
-                      <span className="mt-1 block text-sm text-mist">{r.authors} · <em>{r.source}</em></span>
+                      <span className="mt-1 block text-sm text-mist">
+                        {r.authors} · <em>{r.source}</em>
+                      </span>
                     </span>
                     {r.link && (
-                      <a href={r.link} target="_blank" rel="noreferrer noopener"
-                        aria-label={`${r.link.includes('doi.org') ? 'DOI' : t('acessar', 'open')}: ${r.title} (${t('abre em nova aba', 'opens in a new tab')})`} className="shrink-0 text-sm text-dna underline underline-offset-4 hover:text-bio">
+                      <a
+                        href={r.link}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        aria-label={`${r.link.includes('doi.org') ? 'DOI' : t('acessar', 'open')}: ${r.title} (${t('abre em nova aba', 'opens in a new tab')})`}
+                        className="shrink-0 text-sm text-dna underline underline-offset-4 hover:text-bio"
+                      >
                         {r.link.includes('doi.org') ? 'DOI' : t('acessar', 'open')} <span aria-hidden="true">↗</span>
                       </a>
                     )}

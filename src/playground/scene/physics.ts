@@ -1,9 +1,13 @@
 // Física mínima do modo Explorar: sonda que "nada" no nucleoplasma e moléculas que ela empurra.
-// ponytail: colisão O(n·m) sem broadphase — ok até ~500 corpos; Rapier se precisar de corpos rígidos/pilhas.
 import * as THREE from 'three'
 
-export interface Body { pos: THREE.Vector3; vel: THREE.Vector3 }
-export interface Floater extends Body { home: THREE.Vector3 }
+export interface Body {
+  pos: THREE.Vector3
+  vel: THREE.Vector3
+}
+export interface Floater extends Body {
+  home: THREE.Vector3
+}
 
 export const MAX_SPEED = 9
 const ACCEL = 40
@@ -30,7 +34,10 @@ export function pushOut(b: Body, points: readonly THREE.Vector3[], n: number, r:
     _d.divideScalar(dist)
     b.pos.addScaledVector(_d, r - dist)
     const vn = b.vel.dot(_d)
-    if (vn < 0) { b.vel.addScaledVector(_d, -vn * 1.3); impact = Math.max(impact, -vn) }
+    if (vn < 0) {
+      b.vel.addScaledVector(_d, -vn * 1.3)
+      impact = Math.max(impact, -vn)
+    }
   }
   return impact
 }

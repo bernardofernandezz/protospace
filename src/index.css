@@ -57,6 +57,26 @@
 
 .stage:fullscreen { height: 100vh; border-radius: 0; }
 
+/* no Explorar a câmera passa por cenas claras: o HUD ganha fundo escuro para manter o contraste */
+/* a barra de etapas sai no Explorar (o cartão da zona tem os botões "Ver etapa") */
+.stage.exploring .explore-off { display: none; }
+.stage.exploring .glass { background: rgba(4, 6, 11, 0.72); border-color: rgba(255, 255, 255, 0.28); }
+
+/* Explorar no toque: palco em tela cheia (o iPhone não tem Fullscreen API para elementos), fora das áreas
+   seguras (a sombra pinta o entorno), e HUD enxuto */
+@media (pointer: coarse) {
+  .stage.exploring {
+    position: fixed; z-index: 85; height: auto; min-height: 0; border: 0; border-radius: 0;
+    inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    box-shadow: 0 0 0 100vmax var(--color-ink);
+  }
+  .stage.exploring .explore-hide { display: none; }
+  /* content-visibility (abaixo) contém a pintura da seção e prenderia o palco fixo dentro dela */
+  #playground:has(.stage.exploring) { content-visibility: visible; }
+  /* rótulos 3D (drei <Html>) têm z-index enorme: somem enquanto o Mapa cobre a cena */
+  .stage:has(.map-open) .label3d { visibility: hidden; }
+}
+
 /* grão de filme procedural */
 .grain {
   pointer-events: none; position: fixed; inset: -50%; z-index: 70; opacity: 0.06;
@@ -119,6 +139,8 @@ html.lenis, html.lenis body { height: auto; }
 /* seções fora da tela não passam por estilo/layout/pintura até se aproximarem (performance) */
 main > .section:not(#o-que-e) { content-visibility: auto; contain-intrinsic-size: auto 1400px; }
 .grain { will-change: transform; }
+/* no celular o grão (6% de opacidade) quase não aparece e custaria uma camada de tela cheia animada o tempo todo */
+@media (pointer: coarse) { .grain { display: none; } }
 
 /* revelação ao rolar (classe .in adicionada por IntersectionObserver em App.tsx) */
 .motion [data-reveal] {

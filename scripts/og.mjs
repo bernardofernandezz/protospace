@@ -10,8 +10,8 @@ const display = font('@fontsource-variable/space-grotesk/files/space-grotesk-lat
 const mono = font('@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2')
 
 const COPY = {
-  pt: { eyebrow: 'SIMULAÇÃO 3D INTERATIVA', title: ['Editar o genoma.', 'Pensar as consequências.'], sub: 'CRISPR-Cas9 do guia ao reparo — mecanismo, boas práticas e bioética.' },
-  en: { eyebrow: 'INTERACTIVE 3D SIMULATION', title: ['Edit the genome.', 'Weigh the consequences.'], sub: 'CRISPR-Cas9 from guide to repair — mechanism, best practice and bioethics.' },
+  pt: { eyebrow: 'SIMULAÇÃO 3D INTERATIVA', title: ['Editar o genoma.', 'Pensar as consequências.'], sub: 'CRISPR-Cas9 do guia ao reparo: mecanismo, boas práticas e bioética.' },
+  en: { eyebrow: 'INTERACTIVE 3D SIMULATION', title: ['Edit the genome.', 'Weigh the consequences.'], sub: 'CRISPR-Cas9 from guide to repair: mechanism, best practice and bioethics.' },
 }
 
 const browser = await chromium.launch({

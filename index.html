@@ -4,7 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Protospace · CRISPR-Cas9 do guia ao reparo, em 3D</title>
-    <meta name="description" content="Site interativo sobre CRISPR-Cas9: mecanismo, evolução da ferramenta, boas práticas, aplicações e bioética — com um playground 3D do guia ao reparo." />
+    <meta
+      name="description"
+      content="Site interativo sobre CRISPR-Cas9: mecanismo, evolução da ferramenta, boas práticas, aplicações e bioética, com um playground 3D do guia ao reparo."
+    />
     <meta name="author" content="Bernardo Fernandez" />
     <meta name="theme-color" content="#04060b" />
     <meta name="color-scheme" content="dark" />
@@ -17,8 +20,11 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Protospace" />
     <meta property="og:url" content="%VITE_SITE_URL%/" />
-    <meta property="og:title" content="Protospace — CRISPR-Cas9 do guia ao reparo, em 3D" />
-    <meta property="og:description" content="Mecanismo, boas práticas e bioética da edição genética, com um playground 3D interativo: desenhe o guia, crie mismatches e veja a Cas9 cortar e a célula reparar." />
+    <meta property="og:title" content="Protospace: CRISPR-Cas9 do guia ao reparo, em 3D" />
+    <meta
+      property="og:description"
+      content="Mecanismo, boas práticas e bioética da edição genética, com um playground 3D interativo: desenhe o guia, crie mismatches e veja a Cas9 cortar e a célula reparar."
+    />
     <meta property="og:image" content="%VITE_SITE_URL%/og-pt.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -26,7 +32,7 @@
     <meta property="og:locale" content="pt_BR" />
     <meta property="og:locale:alternate" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Protospace — CRISPR-Cas9 do guia ao reparo, em 3D" />
+    <meta name="twitter:title" content="Protospace: CRISPR-Cas9 do guia ao reparo, em 3D" />
     <meta name="twitter:description" content="Mecanismo, boas práticas e bioética da edição genética, com um playground 3D interativo." />
     <meta name="twitter:image" content="%VITE_SITE_URL%/og-pt.png" />
 
@@ -39,12 +45,16 @@
       {
         "@context": "https://schema.org",
         "@type": "LearningResource",
-        "name": "Protospace — CRISPR-Cas9 do guia ao reparo, em 3D",
+        "name": "Protospace: CRISPR-Cas9 do guia ao reparo, em 3D",
         "description": "Site interativo de apoio a seminário sobre CRISPR-Cas9, com simulação 3D do mecanismo de edição genética.",
         "inLanguage": ["pt-BR", "en"],
         "learningResourceType": ["Interactive simulation", "Presentation"],
         "educationalLevel": "Higher education",
-        "about": [{ "@type": "Thing", "name": "CRISPR" }, { "@type": "Thing", "name": "Genome editing" }, { "@type": "Thing", "name": "Bioethics" }],
+        "about": [
+          { "@type": "Thing", "name": "CRISPR" },
+          { "@type": "Thing", "name": "Genome editing" },
+          { "@type": "Thing", "name": "Bioethics" }
+        ],
         "url": "%VITE_SITE_URL%/",
         "image": "%VITE_SITE_URL%/og-pt.png",
         "author": { "@type": "Person", "name": "Bernardo Fernandez", "url": "https://github.com/bernardofernandezz" },
@@ -54,28 +64,99 @@
 
     <style>
       /* tela de carregamento: aparece antes do JS e sai quando o hero 3D está pronto (src/lib/boot.ts) */
-      html, body { background: #04060b; }
-      #boot { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-        background: radial-gradient(700px 500px at 50% 45%, rgba(62,240,208,.08), transparent 70%), #04060b; transition: opacity .7s ease, visibility .7s; }
-      #boot.boot-out { opacity: 0; visibility: hidden; }
-      #boot svg { width: 64px; height: 64px; filter: drop-shadow(0 0 14px rgba(62,240,208,.45)); }
-      #boot path { stroke-dasharray: 80; animation: boot-draw 1.4s ease-in-out infinite alternate; }
-      #boot .name { font: 600 22px/1 system-ui, sans-serif; letter-spacing: -.01em; color: #fff; }
-      #boot .name b { color: #3ef0d0; font-weight: 600; }
-      #boot .bar { position: relative; width: 168px; height: 2px; border-radius: 2px; overflow: hidden; background: rgba(255,255,255,.08); }
-      #boot .bar::after { content: ""; position: absolute; inset: 0; width: 40%; border-radius: 2px; background: linear-gradient(90deg, #3ef0d0, #7dff9b, #ff4fa3); animation: boot-bar 1.2s cubic-bezier(.6,0,.4,1) infinite; }
-      @keyframes boot-draw { from { stroke-dashoffset: 80; } to { stroke-dashoffset: 0; } }
-      @keyframes boot-bar { from { translate: -100% 0; } to { translate: 250% 0; } }
-      @media (prefers-reduced-motion: reduce) { #boot path, #boot .bar::after { animation: none; stroke-dasharray: none; } }
+      html,
+      body {
+        background: #04060b;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        background: radial-gradient(700px 500px at 50% 45%, rgba(62, 240, 208, 0.08), transparent 70%), #04060b;
+        transition:
+          opacity 0.7s ease,
+          visibility 0.7s;
+      }
+      #boot.boot-out {
+        opacity: 0;
+        visibility: hidden;
+      }
+      #boot svg {
+        width: 64px;
+        height: 64px;
+        filter: drop-shadow(0 0 14px rgba(62, 240, 208, 0.45));
+      }
+      #boot path {
+        stroke-dasharray: 80;
+        animation: boot-draw 1.4s ease-in-out infinite alternate;
+      }
+      #boot .name {
+        font:
+          600 22px/1 system-ui,
+          sans-serif;
+        letter-spacing: -0.01em;
+        color: #fff;
+      }
+      #boot .name b {
+        color: #3ef0d0;
+        font-weight: 600;
+      }
+      #boot .bar {
+        position: relative;
+        width: 168px;
+        height: 2px;
+        border-radius: 2px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      #boot .bar::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        width: 40%;
+        border-radius: 2px;
+        background: linear-gradient(90deg, #3ef0d0, #7dff9b, #ff4fa3);
+        animation: boot-bar 1.2s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+      }
+      @keyframes boot-draw {
+        from {
+          stroke-dashoffset: 80;
+        }
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      @keyframes boot-bar {
+        from {
+          translate: -100% 0;
+        }
+        to {
+          translate: 250% 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot path,
+        #boot .bar::after {
+          animation: none;
+          stroke-dasharray: none;
+        }
+      }
     </style>
   </head>
   <body>
     <div id="boot" role="status" aria-label="Carregando · Loading">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 2c0 9 14 10 14 18s-14 9-14 10M23 2c0 9-14 10-14 18s14 9 14 10" stroke="#3ef0d0" stroke-width="2.2" fill="none" stroke-linecap="round" /></svg>
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M9 2c0 9 14 10 14 18s-14 9-14 10M23 2c0 9-14 10-14 18s14 9 14 10" stroke="#3ef0d0" stroke-width="2.2" fill="none" stroke-linecap="round" />
+      </svg>
       <div class="name" aria-hidden="true">Proto<b>space</b></div>
       <div class="bar" aria-hidden="true"></div>
     </div>
-    <noscript><p style="color:#a9b8c9;font-family:system-ui;padding:2rem">Este site precisa de JavaScript. · This site needs JavaScript.</p></noscript>
+    <noscript><p style="color: #a9b8c9; font-family: system-ui; padding: 2rem">Este site precisa de JavaScript. · This site needs JavaScript.</p></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

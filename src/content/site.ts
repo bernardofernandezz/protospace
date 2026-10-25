@@ -9,7 +9,7 @@ export const SITE = {
   author: {
     name: 'Bernardo Fernandez',
     github: 'https://github.com/bernardofernandezz',
-    linkedin: '',
+    linkedin: 'https://www.linkedin.com/in/bernardofernandezz',
   },
-  stack: ['React 18', 'TypeScript', 'Three.js', 'React Three Fiber', 'GLSL', 'GSAP', 'Tailwind CSS v4', 'Vite'],
+  stack: ['React', 'TypeScript', 'Three.js', 'React Three Fiber', 'GLSL', 'GSAP', 'Tailwind CSS v4', 'Vite'],
 } as const

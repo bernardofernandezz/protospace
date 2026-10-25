@@ -21,7 +21,13 @@ const COMP: Record<string, string> = { A: 'T', T: 'A', C: 'G', G: 'C' }
 const heroScroll = () => Math.min(1, Math.max(0, scrollY / Math.max(1, innerHeight)))
 
 // temporários reutilizados (sem alocação por quadro durante a rolagem)
-const _m = new THREE.Matrix4(), _y = new THREE.Vector3(), _ys = new THREE.Vector3(), _x = new THREE.Vector3(0, 1, 0), _z = new THREE.Vector3(), _mid = new THREE.Vector3(), _col = new THREE.Color()
+const _m = new THREE.Matrix4(),
+  _y = new THREE.Vector3(),
+  _ys = new THREE.Vector3(),
+  _x = new THREE.Vector3(0, 1, 0),
+  _z = new THREE.Vector3(),
+  _mid = new THREE.Vector3(),
+  _col = new THREE.Color()
 
 /** Placa de base k, de `from` em direção a `to`, encolhendo conforme a fita abre. */
 function plate(im: THREE.InstancedMesh, k: number, from: THREE.Vector3, to: THREE.Vector3, base: string, open: number) {
@@ -40,14 +46,30 @@ function Helix({ still }: { still: boolean }) {
   const plates = useRef<THREE.InstancedMesh>(null!)
   const phos = useRef<THREE.InstancedMesh>(null!)
   const tubes = useMemo(() => ({ a: new Tube(N, 4, 12), b: new Tube(N, 4, 12) }), [])
-  useEffect(() => () => { tubes.a.dispose(); tubes.b.dispose() }, [tubes])
-  const mats = useMemo(() => ({
-    bb: glowingPhysical({ vertexColors: true, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.15, glow: 0.4 }),
-    plate: glowingPhysical({ roughness: 0.35, clearcoat: 0.5, glow: 0.42 }),
-    phos: glowingPhysical({ roughness: 0.2, clearcoat: 1, glow: 0.3 }),
-  }), [])
+  useEffect(
+    () => () => {
+      tubes.a.dispose()
+      tubes.b.dispose()
+    },
+    [tubes],
+  )
+  const mats = useMemo(
+    () => ({
+      bb: glowingPhysical({ vertexColors: true, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.15, glow: 0.4 }),
+      plate: glowingPhysical({ roughness: 0.35, clearcoat: 0.5, glow: 0.42 }),
+      phos: glowingPhysical({ roughness: 0.2, clearcoat: 1, glow: 0.3 }),
+    }),
+    [],
+  )
   const geo = useMemo(() => ({ plate: new RoundedBoxGeometry(0.13, 1, 0.36, 2, 0.04), phos: new THREE.SphereGeometry(0.17, 16, 12) }), [])
-  useEffect(() => () => { for (const m of Object.values(mats)) m.dispose(); geo.plate.dispose(); geo.phos.dispose() }, [mats, geo])
+  useEffect(
+    () => () => {
+      for (const m of Object.values(mats)) m.dispose()
+      geo.plate.dispose()
+      geo.phos.dispose()
+    },
+    [mats, geo],
+  )
   const pts = useMemo(() => ({ a: Array.from({ length: N }, () => new THREE.Vector3()), b: Array.from({ length: N }, () => new THREE.Vector3()) }), [])
   const state = useRef({ u: -1 })
   const c1 = useMemo(() => new THREE.Color(PALETTE.strand1), [])
@@ -81,8 +103,18 @@ function Helix({ still }: { still: boolean }) {
       phos.current.setColorAt(i, c1)
       phos.current.setColorAt(N + i, c2)
     }
-    tubes.a.update(pts.a, N, () => 0.12, (_, o) => o.copy(c1))
-    tubes.b.update(pts.b, N, () => 0.12, (_, o) => o.copy(c2))
+    tubes.a.update(
+      pts.a,
+      N,
+      () => 0.12,
+      (_, o) => o.copy(c1),
+    )
+    tubes.b.update(
+      pts.b,
+      N,
+      () => 0.12,
+      (_, o) => o.copy(c2),
+    )
     for (const im of [plates.current, phos.current]) {
       im.instanceMatrix.needsUpdate = true
       if (im.instanceColor) im.instanceColor.needsUpdate = true
@@ -102,7 +134,7 @@ function Particles({ still }: { still: boolean }) {
   const ref = useRef<THREE.Points>(null!)
   const geo = useMemo(() => {
     let s = 9
-    const r = () => ((s = (s * 16807) % 2147483647) / 2147483647)
+    const r = () => (s = (s * 16807) % 2147483647) / 2147483647
     const pos = new Float32Array(1200 * 3)
     for (let i = 0; i < pos.length; i++) pos[i] = (r() - 0.5) * (i % 3 === 2 ? 30 : 50)
     return new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3))
@@ -144,7 +176,13 @@ function ReadySignal({ onReady }: { onReady?: () => void }) {
 
 export default function HeroHelix({ active, still, onReady }: { active: boolean; still: boolean; onReady?: () => void }) {
   return (
-    <Canvas frameloop={!active ? 'never' : still ? 'demand' : 'always'} camera={{ position: [0, 0, 16], fov: 45 }} dpr={COARSE ? [1, 1.25] : [1, 1.75]} gl={{ antialias: false, stencil: false }} aria-hidden="true">
+    <Canvas
+      frameloop={!active ? 'never' : still ? 'demand' : 'always'}
+      camera={{ position: [0, 0, 16], fov: 45 }}
+      dpr={COARSE ? [1, 1.25] : [1, 1.75]}
+      gl={{ antialias: false, stencil: false }}
+      aria-hidden="true"
+    >
       <ReadySignal onReady={onReady} />
       <ambientLight intensity={0.4} />
       <directionalLight position={[6, 8, 8]} intensity={2} color={'#d6f4ff'} />

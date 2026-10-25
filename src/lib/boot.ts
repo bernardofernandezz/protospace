@@ -3,7 +3,9 @@
 
 let resolve: () => void = () => {}
 /** Resolve quando a tela de carregamento começa a sair (animações de entrada esperam por ela). */
-export const bootDone = new Promise<void>((r) => { resolve = r })
+export const bootDone = new Promise<void>((r) => {
+  resolve = r
+})
 
 let finished = false
 

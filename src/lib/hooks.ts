@@ -14,13 +14,21 @@ export function useInView(ref: RefObject<Element>, rootMargin = '100px') {
 
 export const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+// Criar um contexto WebGL é caro (dezenas a centenas de ms quando o WebGL roda por software)
+// e o resultado não muda durante a sessão: o navegador ainda limita quantos contextos ficam vivos.
+let webgl: boolean | undefined
+let softwareGL: boolean | undefined
+
 export function hasWebGL() {
-  try {
-    const c = document.createElement('canvas')
-    return !!(c.getContext('webgl2') || c.getContext('webgl'))
-  } catch {
-    return false
+  if (webgl === undefined) {
+    try {
+      const c = document.createElement('canvas')
+      webgl = !!(c.getContext('webgl2') || c.getContext('webgl'))
+    } catch {
+      webgl = false
+    }
   }
+  return webgl
 }
 
 /**
@@ -28,14 +36,16 @@ export function hasWebGL() {
  * animação 3D contínua trava a página — melhor não carregar efeitos decorativos.
  */
 export function isSoftwareGL() {
+  if (softwareGL !== undefined) return softwareGL
   try {
     const gl = document.createElement('canvas').getContext('webgl')
-    if (!gl) return false
+    if (!gl) return (softwareGL = false)
     const ext = gl.getExtension('WEBGL_debug_renderer_info')
     const renderer = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER))
     gl.getExtension('WEBGL_lose_context')?.loseContext()
-    return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer)
+    softwareGL = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer)
   } catch {
-    return false
+    softwareGL = false
   }
+  return softwareGL
 }

@@ -1,10 +1,16 @@
 // Estado visual da simulação: tudo é função pura de (parâmetros, etapa, progresso),
 // então voltar/avançar etapas sempre reproduz a mesma cena.
 import * as THREE from 'three'
+import { isBaseEditor, spacerIndex, spacerPos } from '../../lib/dna'
 import { useSim, type useDerived } from '../store'
 
 // ---------- geometria do B-DNA estilizado ----------
 export const RISE = 0.34 // nm por par de bases (escala da cena)
+
+/** Espaçador do guia e, só no prime editor, a extensão do pegRNA copiada pela RT. */
+export const SPACER_NT = 20
+export const PEG_TAIL_NT = 8
+export const RNA_MAX = SPACER_NT + PEG_TAIL_NT
 export const RADIUS = 1
 export const TWIST = (2 * Math.PI) / 10.5 // ~10,5 pb por volta
 /** Defasagem entre as fitas (≠ 180°): é o que cria os sulcos maior e menor. */
@@ -17,7 +23,10 @@ export const BEND = 0.44
 export const MAXN = 176
 
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
-export const smooth = (a: number, b: number, x: number) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
+export const smooth = (a: number, b: number, x: number) => {
+  const t = clamp01((x - a) / (b - a))
+  return t * t * (3 - 2 * t)
+}
 /** 0 antes da etapa, 1 depois, rampa suave dentro dela. */
 export const phase = (step: number, p: number, at: number, a = 0, b = 1) => (step > at ? 1 : step < at ? 0 : smooth(a, b, p))
 /** Sobe em [a,b], desce em [c,e]. */
@@ -28,15 +37,23 @@ type Derived = ReturnType<typeof useDerived>
 export type Ready = Extract<Derived, { cand: object }>
 
 // ---------- trajetória de busca da Cas9 (etapa 2) ----------
-interface CasPath { idx: number; hop: number; probe: number; probeAmt: number }
+interface CasPath {
+  idx: number
+  hop: number
+  probe: number
+  probeAmt: number
+}
 
 /** Difusão 3D + interrogação de PAMs: visita até 2 PAMs "isca" vizinhos antes do alvo. */
 function casPath(d: Ready, u: number, n: number): CasPath {
   const cands = d.candidates
   const sel = cands.indexOf(d.cand)
-  const decoys = cands.map((_, i) => i).filter((i) => i !== sel)
+  const decoys = cands
+    .map((_, i) => i)
+    .filter((i) => i !== sel)
     .sort((a, b) => Math.abs(cands[a].start - d.cand.start) - Math.abs(cands[b].start - d.cand.start))
-    .slice(0, 2).sort((a, b) => cands[a].start - cands[b].start)
+    .slice(0, 2)
+    .sort((a, b) => cands[a].start - cands[b].start)
   const stops = [...decoys, sel]
   const center = (ci: number) => cands[ci].start + 11
   // segmentos: [viagem, pausa] por parada; o alvo não tem pausa (o R-loop vem depois)
@@ -67,19 +84,24 @@ export function visual(d: Ready, step: number, p: number) {
   const acts = !!d.acts
   const dsb = d.cuts === 'dsb'
   const nick = d.cuts === 'nick'
-  const be = cas === 'be' && acts
+  const be = isBaseEditor(cas) && acts
   const hdr = dsb && repair === 'hdr'
   const nhej = dsb && repair === 'nhej'
   const s4 = step === 4
   const n = d.applied.seq.length
   return {
-    step, p, acts, dsb, nick, be, hdr, nhej,
+    step,
+    p,
+    acts,
+    dsb,
+    nick,
+    be,
+    hdr,
+    nhej,
     edited: step > 4 || (s4 && p > 0.55),
     design: step === 0 ? 1 : 0,
     // R-loop completo com guia bom; com mismatches demais ele abre um pouco e colapsa
-    rloop: acts
-      ? phase(step, p, 2, 0.62, 1) * (1 - phase(step, p, 4, 0.2, 0.6))
-      : step === 2 ? 0.38 * bump(p, 0.62, 0.78, 0.86, 1) : 0,
+    rloop: acts ? phase(step, p, 2, 0.62, 1) * (1 - phase(step, p, 4, 0.2, 0.6)) : step === 2 ? 0.38 * bump(p, 0.62, 0.78, 0.86, 1) : 0,
     casIn: phase(step, p, 2, 0, 0.1),
     casLeave: phase(step, p, 4, 0, 0.4),
     search: step === 2 ? smooth(0, 0.6, p) : step > 2 ? 1 : 0,
@@ -124,11 +146,24 @@ export interface Layout {
   changed: boolean[] | null
 }
 const L: Layout = {
-  n: 0, seq: '', s: new Float32Array(MAXN), theta: new Float32Array(MAXN), center: v3(), p1: v3(), p2: v3(), h1: v3(),
-  open: new Float32Array(MAXN), rna: Array.from({ length: 20 }, () => new THREE.Vector3()), deleted: new Uint8Array(MAXN), changed: null,
+  n: 0,
+  seq: '',
+  s: new Float32Array(MAXN),
+  theta: new Float32Array(MAXN),
+  center: v3(),
+  p1: v3(),
+  p2: v3(),
+  h1: v3(),
+  open: new Float32Array(MAXN),
+  rna: Array.from({ length: RNA_MAX }, () => new THREE.Vector3()),
+  deleted: new Uint8Array(MAXN),
+  changed: null,
 }
 
-const _N = new THREE.Vector3(), _Z = new THREE.Vector3(0, 0, 1), _D = new THREE.Vector3(), _T = new THREE.Vector3()
+const _N = new THREE.Vector3(),
+  _Z = new THREE.Vector3(0, 0, 1),
+  _D = new THREE.Vector3(),
+  _T = new THREE.Vector3()
 
 /** Normal (lado do lóbulo REC) e tangente da linha central num ângulo θ. */
 export const normalAt = (theta: number, out: THREE.Vector3) => out.set(-Math.sin(theta), Math.cos(theta), 0)
@@ -137,9 +172,18 @@ export const tangentAt = (theta: number, out: THREE.Vector3) => out.set(Math.cos
 /** Ponto da linha central num índice fracionário (extrapola nas pontas). Retorna θ. */
 export function centerAt(lay: Layout, i: number, out: THREE.Vector3): number {
   const n = lay.n
-  if (i <= 0) { const th = lay.theta[0]; out.copy(lay.center[0]).addScaledVector(tangentAt(th, _T), i * RISE); return th }
-  if (i >= n - 1) { const th = lay.theta[n - 1]; out.copy(lay.center[n - 1]).addScaledVector(tangentAt(th, _T), (i - n + 1) * RISE); return th }
-  const k = Math.floor(i), f = i - k
+  if (i <= 0) {
+    const th = lay.theta[0]
+    out.copy(lay.center[0]).addScaledVector(tangentAt(th, _T), i * RISE)
+    return th
+  }
+  if (i >= n - 1) {
+    const th = lay.theta[n - 1]
+    out.copy(lay.center[n - 1]).addScaledVector(tangentAt(th, _T), (i - n + 1) * RISE)
+    return th
+  }
+  const k = Math.floor(i),
+    f = i - k
   out.lerpVectors(lay.center[k], lay.center[k + 1], f)
   return THREE.MathUtils.lerp(lay.theta[k], lay.theta[k + 1], f)
 }
@@ -152,7 +196,7 @@ function compute(d: Ready, v: Visual, locus: string): Layout {
   L.seq = seq
   L.changed = v.edited ? d.applied.changed : null
   // arco ao longo do eixo, com o afastamento das pontas no corte
-  for (let i = 0; i < n; i++) L.s[i] = (i - (n - 1) / 2) * RISE + (v.edited ? 0 : (i >= c.cut ? v.gap / 2 : -v.gap / 2))
+  for (let i = 0; i < n; i++) L.s[i] = (i - (n - 1) / 2) * RISE + (v.edited ? 0 : i >= c.cut ? v.gap / 2 : -v.gap / 2)
   // dobra no PAM proporcional ao R-loop; integra a linha central a partir do meio do alvo
   const beta = v.edited ? 0 : BEND * v.rloop
   const sP = v.edited ? 0 : L.s[Math.min(n - 1, c.start + 20)]
@@ -160,11 +204,13 @@ function compute(d: Ready, v: Visual, locus: string): Layout {
   const a = v.edited ? Math.floor(n / 2) : Math.min(n - 1, c.start + 10)
   L.center[a].set(L.s[a], 0, 0)
   for (let i = a + 1; i < n; i++) {
-    const th = (L.theta[i] + L.theta[i - 1]) / 2, ds = L.s[i] - L.s[i - 1]
+    const th = (L.theta[i] + L.theta[i - 1]) / 2,
+      ds = L.s[i] - L.s[i - 1]
     L.center[i].set(L.center[i - 1].x + ds * Math.cos(th), L.center[i - 1].y + ds * Math.sin(th), 0)
   }
   for (let i = a - 1; i >= 0; i--) {
-    const th = (L.theta[i] + L.theta[i + 1]) / 2, ds = L.s[i + 1] - L.s[i]
+    const th = (L.theta[i] + L.theta[i + 1]) / 2,
+      ds = L.s[i + 1] - L.s[i]
     L.center[i].set(L.center[i + 1].x - ds * Math.cos(th), L.center[i + 1].y - ds * Math.sin(th), 0)
   }
 
@@ -177,11 +223,17 @@ function compute(d: Ready, v: Visual, locus: string): Layout {
     normalAt(th, _N)
     const phi = i * TWIST
     const cc = L.center[i]
-    L.h1[i].copy(cc).addScaledVector(_N, RADIUS * Math.cos(phi)).addScaledVector(_Z, RADIUS * Math.sin(phi))
-    L.p2[i].copy(cc).addScaledVector(_N, RADIUS * Math.cos(phi + GROOVE)).addScaledVector(_Z, RADIUS * Math.sin(phi + GROOVE))
+    L.h1[i]
+      .copy(cc)
+      .addScaledVector(_N, RADIUS * Math.cos(phi))
+      .addScaledVector(_Z, RADIUS * Math.sin(phi))
+    L.p2[i]
+      .copy(cc)
+      .addScaledVector(_N, RADIUS * Math.cos(phi + GROOVE))
+      .addScaledVector(_Z, RADIUS * Math.sin(phi + GROOVE))
     // R-loop: a fita não-alvo é deslocada num arco para a frente; abre do PAM para a ponta distal
-    const j = i - c.start
-    const inT = !v.edited && j >= 0 && j < 20
+    const j = spacerPos(c, i)
+    const inT = !v.edited && j >= 0
     const o = inT ? smooth(((19 - j) / 20) * 0.7, ((19 - j) / 20) * 0.7 + 0.3, v.rloop) : 0
     L.open[i] = o
     if (o > 0) {
@@ -209,7 +261,12 @@ export function frame(d: Ready): { v: Visual; L: Layout } {
 
 // ---------- posição da Cas9 e do RNA ----------
 const _C = new THREE.Vector3()
-export interface CasPose { pos: THREE.Vector3; theta: number; visible: boolean; scale: number }
+export interface CasPose {
+  pos: THREE.Vector3
+  theta: number
+  visible: boolean
+  scale: number
+}
 const pose: CasPose = { pos: new THREE.Vector3(), theta: 0, visible: false, scale: 0 }
 
 export function casPose(v: Visual, lay: Layout): CasPose {
@@ -223,30 +280,53 @@ export function casPose(v: Visual, lay: Layout): CasPose {
   return pose
 }
 
-/** Espaçador do sgRNA: desenhado acima do alvo (etapa 0), guardado na Cas9 ou pareado no R-loop. */
-export function rnaLayout(v: Visual, lay: Layout): boolean {
+/** Cauda que só o pegRNA tem (PBS + molde da RT), desenhada como extensão livre do espaçador. */
+function pegTail(lay: Layout) {
+  _D.subVectors(lay.rna[SPACER_NT - 1], lay.rna[SPACER_NT - 2]).normalize()
+  for (let k = 1; k <= PEG_TAIL_NT; k++) {
+    lay.rna[SPACER_NT - 1 + k]
+      .copy(lay.rna[SPACER_NT - 1])
+      .addScaledVector(_D, k * RISE * 1.1)
+      .addScaledVector(_Z, k * 0.12)
+  }
+}
+
+/**
+ * Espaçador do sgRNA: desenhado acima do alvo (etapa 0), guardado na Cas9 ou pareado no R-loop.
+ * Retorna quantos pontos foram escritos — o prime editor acrescenta a cauda do pegRNA.
+ */
+export function rnaLayout(v: Visual, lay: Layout): number {
   const c = v.cand
-  if (v.edited || v.step === 1) return false
+  if (v.edited || v.step === 1) return 0
+  const prime = useSim.getState().cas === 'pe'
+  const total = prime ? RNA_MAX : SPACER_NT
+
   if (v.step === 0) {
-    for (let j = 0; j < 20; j++) {
-      const i = c.start + j
+    for (let j = 0; j < SPACER_NT; j++) {
+      const i = spacerIndex(c, j)
       normalAt(lay.theta[i], _N)
       lay.rna[j].copy(lay.center[i]).addScaledVector(_N, 3.1).addScaledVector(_Z, 0.4)
     }
-    return true
+    if (prime) pegTail(lay)
+    return total
   }
+
   const cp = casPose(v, lay)
-  if (!cp.visible) return false
+  if (!cp.visible) return 0
   tangentAt(cp.theta, _T)
   normalAt(cp.theta, _N)
-  for (let j = 0; j < 20; j++) {
-    const i = c.start + j
-    _C.copy(cp.pos).addScaledVector(_T, (j - 11) * RISE).addScaledVector(_N, 1.9).addScaledVector(_Z, -0.2)
+  for (let j = 0; j < SPACER_NT; j++) {
+    const i = spacerIndex(c, j)
+    _C.copy(cp.pos)
+      .addScaledVector(_T, (j - 11) * RISE)
+      .addScaledVector(_N, 1.9)
+      .addScaledVector(_Z, -0.2)
     // pareado: no lugar da fita não-alvo, levemente para dentro (heterodúplex)
     _D.copy(lay.h1[i]).lerp(lay.center[i], 0.08)
     lay.rna[j].lerpVectors(_C, _D, lay.open[i])
   }
-  return true
+  if (prime) pegTail(lay)
+  return total
 }
 
 /** Alvo do foco (câmera e profundidade de campo), escrito pelo CameraRig. */

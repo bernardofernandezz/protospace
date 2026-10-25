@@ -12,7 +12,10 @@ export const untip = () => useSim.getState().set({ tip: null })
 
 /** Pedido de captura de imagem: atendido logo após o render do quadro (o buffer ainda é válido). */
 let captureRequest: ((url: string) => void) | null = null
-export const requestCapture = () => new Promise<string>((resolve) => { captureRequest = resolve })
+export const requestCapture = () =>
+  new Promise<string>((resolve) => {
+    captureRequest = resolve
+  })
 export function takeCaptureRequest() {
   const r = captureRequest
   captureRequest = null

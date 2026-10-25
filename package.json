@@ -7,12 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "node src/lib/dna.check.ts && node src/playground/scene/physics.check.ts",
+    "test": "node src/lib/dna.check.ts && node src/lib/compare.check.ts && node src/playground/scene/physics.check.ts && node src/content/missions.check.ts && node src/content/diseases.check.ts",
     "lint": "eslint .",
     "typecheck": "tsc -b",
     "format": "prettier --write .",
     "test:e2e": "playwright test",
-    "og": "node scripts/og.mjs"
+    "og": "node scripts/og.mjs",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.1.0",
@@ -21,6 +22,7 @@
     "@react-three/drei": "^9.115.0",
     "@react-three/fiber": "^8.17.10",
     "@react-three/postprocessing": "^2.16.3",
+    "@sentry/browser": "^10.76.2",
     "@supabase/supabase-js": "^2.118.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
@@ -37,6 +39,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
+    "@sentry/vite-plugin": "^4.9.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^22.20.5",
     "@types/qrcode": "^1.5.6",

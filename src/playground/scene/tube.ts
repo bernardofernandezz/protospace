@@ -29,7 +29,10 @@ export class Tube {
     const idx: number[] = []
     for (let k = 0; k < this.maxSamples - 1; k++) {
       for (let r = 0; r < radial; r++) {
-        const a = k * radial + r, b = k * radial + ((r + 1) % radial), c = a + radial, d = b + radial
+        const a = k * radial + r,
+          b = k * radial + ((r + 1) % radial),
+          c = a + radial,
+          d = b + radial
         idx.push(a, c, b, b, c, d)
       }
     }
@@ -47,21 +50,32 @@ export class Tube {
    */
   update(pts: THREE.Vector3[], n: number, radius: (i: number, u: number) => number, color: (i: number, out: THREE.Color) => void) {
     const { sub, radial, samples: S, tangents: Tg } = this
-    if (n < 2) { this.geometry.setDrawRange(0, 0); return }
+    if (n < 2) {
+      this.geometry.setDrawRange(0, 0)
+      return
+    }
     const m = (n - 1) * sub + 1
     // amostragem Catmull-Rom uniforme
     for (let k = 0; k < m; k++) {
       const i = Math.min(n - 2, Math.floor(k / sub))
       const u = k === m - 1 ? 1 : (k - i * sub) / sub
-      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(n - 1, i + 2)]
-      const u2 = u * u, u3 = u2 * u
-      const a = -0.5 * u3 + u2 - 0.5 * u, b = 1.5 * u3 - 2.5 * u2 + 1, c = -1.5 * u3 + 2 * u2 + 0.5 * u, d = 0.5 * u3 - 0.5 * u2
+      const p0 = pts[Math.max(0, i - 1)],
+        p1 = pts[i],
+        p2 = pts[i + 1],
+        p3 = pts[Math.min(n - 1, i + 2)]
+      const u2 = u * u,
+        u3 = u2 * u
+      const a = -0.5 * u3 + u2 - 0.5 * u,
+        b = 1.5 * u3 - 2.5 * u2 + 1,
+        c = -1.5 * u3 + 2 * u2 + 0.5 * u,
+        d = 0.5 * u3 - 0.5 * u2
       S[k].set(p0.x * a + p1.x * b + p2.x * c + p3.x * d, p0.y * a + p1.y * b + p2.y * c + p3.y * d, p0.z * a + p1.z * b + p2.z * c + p3.z * d)
     }
     for (let k = 0; k < m; k++) Tg[k].subVectors(S[Math.min(m - 1, k + 1)], S[Math.max(0, k - 1)]).normalize()
 
     // referenciais por transporte paralelo (sem as torções bruscas de Frenet)
-    const N = _n, B = _b
+    const N = _n,
+      B = _b
     N.set(0, 0, 1)
     if (Math.abs(Tg[0].dot(N)) > 0.9) N.set(0, 1, 0)
     N.addScaledVector(Tg[0], -N.dot(Tg[0])).normalize()
@@ -74,16 +88,28 @@ export class Tube {
       const i = Math.min(n - 1, Math.floor(k / sub))
       const u = k === m - 1 ? 0 : (k - i * sub) / sub
       const r = radius(Math.min(i, n - 1), u)
-      if (i !== ci) { color(i, col); ci = i }
+      if (i !== ci) {
+        color(i, col)
+        ci = i
+      }
       const P = S[k]
       for (let j = 0; j < radial; j++) {
         const ang = (j / radial) * Math.PI * 2
-        const cx = Math.cos(ang), sy = Math.sin(ang)
-        const nx = N.x * cx + B.x * sy, ny = N.y * cx + B.y * sy, nz = N.z * cx + B.z * sy
+        const cx = Math.cos(ang),
+          sy = Math.sin(ang)
+        const nx = N.x * cx + B.x * sy,
+          ny = N.y * cx + B.y * sy,
+          nz = N.z * cx + B.z * sy
         const o = (k * radial + j) * 3
-        this.pos[o] = P.x + nx * r; this.pos[o + 1] = P.y + ny * r; this.pos[o + 2] = P.z + nz * r
-        this.nor[o] = nx; this.nor[o + 1] = ny; this.nor[o + 2] = nz
-        this.col[o] = col.r; this.col[o + 1] = col.g; this.col[o + 2] = col.b
+        this.pos[o] = P.x + nx * r
+        this.pos[o + 1] = P.y + ny * r
+        this.pos[o + 2] = P.z + nz * r
+        this.nor[o] = nx
+        this.nor[o + 1] = ny
+        this.nor[o + 2] = nz
+        this.col[o] = col.r
+        this.col[o + 1] = col.g
+        this.col[o + 2] = col.b
       }
     }
     this.geometry.setDrawRange(0, (m - 1) * radial * 6)
@@ -95,10 +121,14 @@ export class Tube {
     }
   }
 
-  dispose() { this.geometry.dispose() }
+  dispose() {
+    this.geometry.dispose()
+  }
 }
 
-const _n = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Color()
+const _n = new THREE.Vector3(),
+  _b = new THREE.Vector3(),
+  _c = new THREE.Color()
 
 /** Afinamento de uma quebra entre os pontos `at-1` e `at`: raio → 0 no meio do intervalo. */
 export const breakTaper = (i: number, u: number, at: number, amt: number) => {
