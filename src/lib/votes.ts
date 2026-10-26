@@ -2,6 +2,7 @@
 // Escrita só pela função `cast_vote` (1 voto por navegador e por dilema); leitura dos totais é pública.
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import type { Stance } from '../content/ethics'
+import { readText, writeText } from './storage'
 
 export type Tally = Record<Stance, number>
 export type Tallies = Record<string, Tally>
@@ -23,16 +24,12 @@ const db = () => (client ??= import('@supabase/supabase-js').then(({ createClien
 /** Identificador anônimo e estável deste navegador (não identifica a pessoa). */
 export function voterId() {
   const key = 'protospace-voter'
-  try {
-    let id = localStorage.getItem(key)
-    if (!id) {
-      id = crypto.randomUUID()
-      localStorage.setItem(key, id)
-    }
-    return id
-  } catch {
-    return crypto.randomUUID()
+  let id = readText(key)
+  if (!id) {
+    id = crypto.randomUUID()
+    writeText(key, id)
   }
+  return id
 }
 
 const fold = (rows: Row[], into: Tallies = {}) => {

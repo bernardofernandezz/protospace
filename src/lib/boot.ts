@@ -15,8 +15,8 @@ export async function finishBoot() {
   // evita trocar de fonte depois que o conteúdo aparece
   await Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 1500))])
   const el = document.getElementById('boot')
+  el?.addEventListener('transitionend', () => el.remove(), { once: true })
   el?.classList.add('boot-out')
-  setTimeout(() => el?.remove(), 700)
   resolve()
 }
 

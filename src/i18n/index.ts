@@ -2,6 +2,7 @@
 // fora do React (useFrame, lógica do playground) também consiga ler o idioma atual.
 import { useMemo } from 'react'
 import { create } from 'zustand'
+import { readText, writeText } from '../lib/storage'
 
 export type Lang = 'pt' | 'en'
 /** Valor localizado: o mesmo dado nas duas línguas. */
@@ -12,16 +13,11 @@ const KEY = 'crispr-lang'
 /** Ordem: ?lang= na URL → caminho /en/ → escolha salva → português.
  * Sem palpite pelo idioma do navegador: `/` é a versão PT declarada no hreflang (inclusive para buscadores). */
 function detect(): Lang {
-  try {
-    const q = new URLSearchParams(location.search).get('lang')
-    if (q === 'pt' || q === 'en') return q
-    if (/^\/en(\/|$)/.test(location.pathname)) return 'en'
-    const saved = localStorage.getItem(KEY)
-    if (saved === 'pt' || saved === 'en') return saved
-  } catch {
-    /* armazenamento indisponível */
-  }
-  return 'pt'
+  const q = new URLSearchParams(location.search).get('lang')
+  if (q === 'pt' || q === 'en') return q
+  if (/^\/en(\/|$)/.test(location.pathname)) return 'en'
+  const saved = readText(KEY)
+  return saved === 'en' ? 'en' : 'pt'
 }
 
 const META: L<{ title: string; description: string }> = {
@@ -47,11 +43,7 @@ function apply(lang: Lang) {
 export const useLang = create<{ lang: Lang; setLang: (l: Lang) => void }>((set) => ({
   lang: detect(),
   setLang: (lang) => {
-    try {
-      localStorage.setItem(KEY, lang)
-    } catch {
-      /* armazenamento indisponível */
-    }
+    writeText(KEY, lang)
     // URL canônica do idioma (/ ou /en/), mantendo os demais parâmetros e o #hash
     const url = new URL(location.href)
     url.searchParams.delete('lang')

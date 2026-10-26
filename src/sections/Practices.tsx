@@ -3,6 +3,7 @@ import SectionHeader from '../components/SectionHeader'
 import { useT, type L } from '../i18n'
 import { Rich } from '../components/Term'
 import { plain } from '../content/glossary'
+import { readJSON, writeJSON } from '../lib/storage'
 
 type Group = { k: string; title: string; color: string; items: [string, string][] }
 
@@ -275,25 +276,12 @@ const GROUPS: L<Group[]> = {
 }
 
 const KEY = 'crispr-checklist-v2'
-const load = (): Record<string, boolean> => {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? '{}')
-  } catch {
-    return {}
-  }
-}
 
 export default function Practices() {
   const t = useT()
   const groups = t.pick(GROUPS)
-  const [done, setDone] = useState<Record<string, boolean>>(load)
-  useEffect(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(done))
-    } catch {
-      /* armazenamento indisponível */
-    }
-  }, [done])
+  const [done, setDone] = useState(() => readJSON<Record<string, boolean>>(KEY, {}))
+  useEffect(() => writeJSON(KEY, done), [done])
   const total = groups.reduce((a, g) => a + g.items.length, 0)
   const count = Object.values(done).filter(Boolean).length
   const R = 52,

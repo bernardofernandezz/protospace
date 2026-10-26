@@ -40,6 +40,7 @@ import { MISSIONS } from '../content/missions'
 import { findDisease, targetPos, type Disease } from '../content/diseases'
 import { comparePlan, rank, type RowPlan } from '../lib/compare'
 import type { Preset } from './open'
+import { readJSON, readText } from '../lib/storage'
 
 export const STEPS: L<string[]> = {
   pt: ['Design do guia', 'Entrega', 'Busca e reconhecimento', 'Clivagem', 'Reparo', 'Resultado'],
@@ -116,12 +117,8 @@ export const SEEN_KEY = 'protospace.seen'
 export const SOUND_KEY = 'protospace.sound'
 export const MISSIONS_KEY = 'protospace.missions'
 function load(key: string, valid: (id: string) => boolean): string[] {
-  try {
-    const v = JSON.parse(localStorage.getItem(key) ?? '[]')
-    return Array.isArray(v) ? v.filter((x) => typeof x === 'string' && valid(x)) : []
-  } catch {
-    return []
-  }
+  const v = readJSON<unknown>(key, [])
+  return Array.isArray(v) ? v.filter((x) => typeof x === 'string' && valid(x)) : []
 }
 
 const isCoarse = () => typeof matchMedia !== 'undefined' && (matchMedia('(pointer: coarse)').matches || innerWidth < 768)
@@ -198,13 +195,7 @@ export const useSim = create<SimState>((set, get) => ({
   bases: '',
   cargo: false,
   missionsDone: load(MISSIONS_KEY, (x) => MISSIONS.some((m) => m.id === x)),
-  sound: (() => {
-    try {
-      return localStorage.getItem(SOUND_KEY) !== 'off'
-    } catch {
-      return true
-    }
-  })(),
+  sound: readText(SOUND_KEY) !== 'off',
   set: (p) => set(p),
   setLocus: (locus) => {
     const { nuclease } = get()
@@ -454,4 +445,5 @@ export function useDerived() {
 }
 
 // depuração/testes automatizados (somente em desenvolvimento)
-if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __sim: typeof useSim }).__sim = useSim
+// usado pelo scripts/og.mjs para posicionar a cena da imagem de compartilhamento
+if (import.meta.env.DEV && typeof window !== 'undefined') Object.assign(window, { __sim: useSim })
