@@ -401,3 +401,18 @@ test('menu mobile mostra o progresso de seções visitadas', async ({ page, isMo
   await page.getByRole('button', { name: 'Menu' }).click()
   await expect(page.getByText(/Progresso: \d+\/\d+ seções/)).toBeVisible()
 })
+
+test('modo apresentação mostra o roteiro da etapa e acompanha a navegação', async ({ page }) => {
+  await page.goto('/?lang=pt#playground')
+  const steps = page.getByRole('list', { name: 'Etapas do experimento' }).getByRole('button')
+  await steps.first().waitFor()
+  await page
+    .getByRole('button', { name: /Modo apresentação|Apresentação/ })
+    .first()
+    .click()
+  const notes = page.getByRole('complementary', { name: 'Roteiro do apresentador' })
+  await expect(notes).toContainText('etapa 1')
+  await steps.nth(3).click()
+  await expect(notes).toContainText('etapa 4')
+  await expect(notes).toContainText('região seed')
+})
