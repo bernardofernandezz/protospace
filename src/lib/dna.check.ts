@@ -4,6 +4,7 @@ import {
   BASE_EDITORS,
   COMP,
   DEFAULT_LOCUS,
+  MAX_LOCUS,
   PE_RANGE,
   aminoAcid,
   applyOps,
@@ -16,6 +17,7 @@ import {
   inPam,
   nhejOps,
   offTargetSites,
+  parseLocus,
   population,
   primeEditOps,
   repairOdds,
@@ -184,5 +186,9 @@ assert.deepEqual(population(popArgs), pop, 'a mesma semente deve dar o mesmo res
 assert.notDeepEqual(population({ ...popArgs, seed: 8 }), pop, 'sementes diferentes, resultados diferentes')
 assert.equal(population({ ...popArgs, pEngage: 0 }).tally.unedited, pop.alleles, 'sem engate, nada é editado')
 assert.equal(population({ ...popArgs, succeeded: () => false }).tally.intended, 0, 'sem sucesso, nada conta como pretendido')
+
+// colar um FASTA: o cabeçalho não vira bases e o excesso além de MAX_LOCUS é sinalizado
+assert.deepEqual(parseLocus('>gene A C G T\nacgt\nTTGA'), { seq: 'ACGTTTGA', truncated: false })
+assert.deepEqual(parseLocus('A'.repeat(MAX_LOCUS + 5)), { seq: 'A'.repeat(MAX_LOCUS), truncated: true })
 
 console.log('ok:', cands.map((k) => `${k.protospacer} ${k.pam} score=${k.score}`).join('\n    '))

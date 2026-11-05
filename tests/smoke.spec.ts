@@ -299,3 +299,12 @@ test('desafios aparecem na aba Resultado', async ({ page }) => {
   await page.getByRole('list', { name: 'Etapas do experimento' }).getByRole('button').nth(5).click()
   await expect(page.getByText(/Desafios · \d\/4/)).toBeVisible()
 })
+
+test('colar FASTA no locus ignora o cabeçalho', async ({ page }) => {
+  await page.goto('/?lang=pt#playground')
+  await page.getByText('Editar a sequência do locus').click()
+  const box = page.getByLabel('Sequência do locus')
+  await box.fill('>gene A C G T\nTTGACGGTCAGGTCCATGTCGACGTTCCAGTGGCTAACG')
+  await page.getByRole('button', { name: /^Aplicar/ }).click()
+  await expect(box).toHaveValue('TTGACGGTCAGGTCCATGTCGACGTTCCAGTGGCTAACG')
+})

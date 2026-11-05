@@ -52,6 +52,19 @@ export const MAX_LOCUS = 160
 export const COMP: Record<string, string> = { A: 'T', T: 'A', C: 'G', G: 'C' }
 
 export const clean = (s: string) => s.toUpperCase().replace(/[^ACGT]/g, '')
+/**
+ * Sequência colada pelo usuário → locus: descarta linhas de cabeçalho FASTA (">...") e o que não for A/C/G/T,
+ * e corta em MAX_LOCUS (`truncated` avisa que sobrou sequência de fora).
+ */
+export function parseLocus(raw: string): { seq: string; truncated: boolean } {
+  const all = clean(
+    raw
+      .split(/\r?\n/)
+      .filter((l) => !l.startsWith('>'))
+      .join(''),
+  )
+  return { seq: all.slice(0, MAX_LOCUS), truncated: all.length > MAX_LOCUS }
+}
 export const gcContent = (s: string) => (s.match(/[GC]/g)?.length ?? 0) / Math.max(1, s.length)
 
 /** Score ilustrativo de on-target: penaliza GC fora de 40–70 %, TTTT (terminador do promotor U6) e homopolímeros. */
