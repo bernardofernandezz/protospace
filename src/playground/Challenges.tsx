@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { CHALLENGES } from '../content/challenges'
 import { useT } from '../i18n'
 import { readJSON, writeJSON } from '../lib/storage'
@@ -12,7 +13,7 @@ export default function Challenges() {
   const t = useT()
   const d = useDerived()
   const [done, setDone] = useState<string[]>(() => readJSON<string[]>(KEY, []))
-  const { cas, nuclease } = useSim((s) => ({ cas: s.cas, nuclease: s.nuclease }))
+  const { cas, nuclease } = useSim(useShallow((s) => ({ cas: s.cas, nuclease: s.nuclease })))
 
   useEffect(() => {
     if (!d.cand) return
