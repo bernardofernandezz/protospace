@@ -1,5 +1,6 @@
 // Os painéis 2D do playground: a sequência do locus e as quatro abas (guia, parâmetros,
 // comparar e resultado). A cena 3D e os controles ficam em Playground.tsx.
+import Challenges from './Challenges'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import {
@@ -968,6 +969,7 @@ export function ResultPanel() {
         )}
       </div>
       <PopulationView />
+      <Challenges />
       <p className="text-[11px] text-mist/60">
         {t(
           'Todos os números são ilustrativos (modelo logístico simples), não previsões experimentais.',

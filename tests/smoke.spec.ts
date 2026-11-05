@@ -293,3 +293,9 @@ test('prever antes de ver: a busca pede um palpite e as etapas seguintes dizem s
   await steps.nth(3).click()
   await expect(page.getByRole('status').filter({ hasText: 'chance de corte' })).toBeVisible()
 })
+
+test('desafios aparecem na aba Resultado', async ({ page }) => {
+  await page.goto('/?lang=pt#playground')
+  await page.getByRole('list', { name: 'Etapas do experimento' }).getByRole('button').nth(5).click()
+  await expect(page.getByText(/Desafios · \d\/4/)).toBeVisible()
+})
