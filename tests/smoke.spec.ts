@@ -34,7 +34,9 @@ async function skipWithoutWebGL(page: Page) {
 function trackErrors(page: Page) {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
   return errors
 }
 
@@ -122,7 +124,10 @@ test('missões de pilotagem mostram o progresso e podem ser puladas', async ({ p
   await page.locator('.stage').scrollIntoViewIfNeeded()
   await skipWithoutWebGL(page)
   await expect(page.locator('.stage canvas').first()).toBeVisible({ timeout: 20_000 })
-  await page.getByRole('toolbar', { name: 'Controles da simulação' }).getByRole('button', { name: /Explorar/ }).click()
+  await page
+    .getByRole('toolbar', { name: 'Controles da simulação' })
+    .getByRole('button', { name: /Explorar/ })
+    .click()
   await expect(page.getByText('Missão 4/11')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Ir', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'Pular' }).click()
@@ -173,13 +178,22 @@ test('dilemas: votação compartilhada mostra resultado só depois do voto', asy
   // sem rolagem suave: o Lenis pode sobrescrever a rolagem programática do teste (falha intermitente)
   await page.emulateMedia({ reducedMotion: 'reduce' })
   const rows = (d: string, pro: number, con: number, depends: number) => [
-    { dilemma_id: d, stance: 'pro', votes: pro }, { dilemma_id: d, stance: 'con', votes: con }, { dilemma_id: d, stance: 'depends', votes: depends },
+    { dilemma_id: d, stance: 'pro', votes: pro },
+    { dilemma_id: d, stance: 'con', votes: con },
+    { dilemma_id: d, stance: 'depends', votes: depends },
   ]
   // Supabase simulado: o teste nunca grava votos no banco real
-  await page.route('**/rest/v1/dilemma_tallies*', (r) => r.fulfill({ json: [...rows('embriao', 3, 1, 0), ...rows('gene-drive', 0, 0, 0), ...rows('sus', 2, 2, 1)] }))
+  await page.route('**/rest/v1/dilemma_tallies*', (r) =>
+    r.fulfill({ json: [...rows('embriao', 3, 1, 0), ...rows('gene-drive', 0, 0, 0), ...rows('sus', 2, 2, 1)] }),
+  )
   let sent: unknown
-  await page.route('**/rest/v1/rpc/cast_vote', (r) => { sent = r.request().postDataJSON(); return r.fulfill({ json: rows('embriao', 4, 1, 0) }) })
-  await page.routeWebSocket(/supabase\.co/, () => { /* sem tempo real no teste */ })
+  await page.route('**/rest/v1/rpc/cast_vote', (r) => {
+    sent = r.request().postDataJSON()
+    return r.fulfill({ json: rows('embriao', 4, 1, 0) })
+  })
+  await page.routeWebSocket(/supabase\.co/, () => {
+    /* sem tempo real no teste */
+  })
 
   await page.goto('/?lang=pt#bioetica')
   const card = page.locator('article', { hasText: 'Editar embriões' })
@@ -199,10 +213,12 @@ test('dilemas: voto recusado pelo banco é desfeito; falha de rede fica na fila'
   const rows = ['embriao', 'gene-drive', 'sus'].flatMap((d) => ['pro', 'con', 'depends'].map((stance) => ({ dilemma_id: d, stance, votes: 1 })))
   await page.route('**/rest/v1/dilemma_tallies*', (r) => r.fulfill({ json: rows }))
   let rejected = true
-  await page.route('**/rest/v1/rpc/cast_vote', (r) => rejected
-    ? r.fulfill({ status: 400, json: { code: 'P0001', message: 'rate limit', details: null, hint: null } })
-    : r.abort('internetdisconnected'))
-  await page.routeWebSocket(/supabase\.co/, () => { /* sem tempo real no teste */ })
+  await page.route('**/rest/v1/rpc/cast_vote', (r) =>
+    rejected ? r.fulfill({ status: 400, json: { code: 'P0001', message: 'rate limit', details: null, hint: null } }) : r.abort('internetdisconnected'),
+  )
+  await page.routeWebSocket(/supabase\.co/, () => {
+    /* sem tempo real no teste */
+  })
 
   await page.goto('/?lang=pt#bioetica')
   const card = page.locator('article', { hasText: 'Editar embriões' })
@@ -222,9 +238,11 @@ test('dilemas: canal de tempo real recusado cai para releitura periódica', asyn
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.clock.install()
   let votes = 1
-  await page.route('**/rest/v1/dilemma_tallies*', (r) => r.fulfill({
-    json: ['embriao', 'gene-drive', 'sus'].flatMap((d) => ['pro', 'con', 'depends'].map((stance) => ({ dilemma_id: d, stance, votes }))),
-  }))
+  await page.route('**/rest/v1/dilemma_tallies*', (r) =>
+    r.fulfill({
+      json: ['embriao', 'gene-drive', 'sus'].flatMap((d) => ['pro', 'con', 'depends'].map((stance) => ({ dilemma_id: d, stance, votes }))),
+    }),
+  )
   // servidor recusa o canal (ex.: limite de conexões estourado num pico)
   await page.routeWebSocket(/supabase\.co/, (ws) => ws.close())
 
@@ -254,4 +272,14 @@ test('cabeçalhos de segurança de produção estão presentes', async ({ reques
   expect(h['x-frame-options']).toBe('DENY')
   expect(h['strict-transport-security']).toContain('max-age=')
   expect(h['cross-origin-opener-policy']).toBe('same-origin')
+})
+
+test('busca abre com "/" e leva a uma pergunta do FAQ', async ({ page }) => {
+  await page.goto('/')
+  await page.keyboard.press('/')
+  const box = page.getByRole('dialog').getByRole('textbox')
+  await expect(box).toBeFocused()
+  await box.fill('CRISPR')
+  await page.getByRole('dialog').getByRole('button').first().click()
+  await expect(page.getByRole('dialog')).toBeHidden()
 })
