@@ -318,3 +318,26 @@ test('sala ao vivo: o palpite continua funcionando mesmo sem o banco responder',
   await steps.nth(3).click()
   await expect(page.getByRole('status').filter({ hasText: 'chance de corte' })).toBeVisible()
 })
+
+test('sala ao vivo: o telão mostra o QR e a contagem da plateia', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'o QR e a contagem aparecem só a partir de md')
+  await page.route('**/rest/v1/rpc/room_tally', (r) =>
+    r.fulfill({
+      json: [
+        { choice: 'cut', votes: 3 },
+        { choice: 'nocut', votes: 1 },
+      ],
+    }),
+  )
+  await page.goto('/?lang=pt&sala=abcd#playground')
+  await page.getByRole('list', { name: 'Etapas do experimento' }).waitFor()
+  await page
+    .getByRole('button', { name: /Modo apresentação|Apresentação/ })
+    .first()
+    .click()
+  // o QR vem de um chunk carregado sob demanda: na primeira carga, com WebGL por software, passa de 5 s
+  await expect(page.getByRole('img', { name: 'QR code para abrir o site' })).toBeVisible({ timeout: 20_000 })
+  const room = page.getByRole('status').filter({ hasText: 'Sala abcd' })
+  await expect(room).toContainText('Vai cortar: 3')
+  await expect(room).toContainText('Não vai: 1')
+})
