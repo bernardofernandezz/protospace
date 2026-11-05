@@ -141,6 +141,13 @@ export default function Hero() {
           >
             {t('Começar pelo básico', 'Start with the basics')}
           </a>
+          <button
+            type="button"
+            onClick={() => dispatchEvent(new Event('start-tour'))}
+            className="magnetic glass inline-flex items-center rounded-full px-7 py-3.5 font-display text-white/90 transition hover:bg-white/10"
+          >
+            {t('Tour de 5 minutos', '5-minute tour')}
+          </button>
         </div>
 
         <dl className="mt-14 grid max-w-3xl grid-cols-2 gap-x-8 gap-y-6 md:grid-cols-4" data-hero-fade>

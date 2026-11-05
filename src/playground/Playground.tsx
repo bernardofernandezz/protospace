@@ -1,5 +1,6 @@
 import Predict from './Predict'
 import RoomTally from './Room'
+import Timer from './Timer'
 import { useRoomCode } from './roomState'
 import { Component, Suspense, lazy, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -951,6 +952,7 @@ export default function Playground() {
         )}
         {big && !sim.explore && <Qr code={roomCodeValue} />}
         {big && !sim.explore && <RoomTally code={roomCodeValue} />}
+        {big && <Timer />}
       </div>
 
       <p className="mt-2 text-center text-xs text-mist/70 xl:hidden">
