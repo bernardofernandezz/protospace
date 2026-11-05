@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../i18n'
+import { roomCode } from '../lib/room'
+import { castRoom } from '../lib/roomApi'
 import { track } from '../lib/track'
+import { currentRoom } from './roomState'
 import { useDerived, useSim } from './store'
 
 const SEARCH_STEP = 2
@@ -24,6 +27,9 @@ export default function Predict() {
   const answer = (g: boolean) => {
     setGuess(g)
     track('predict', { guess: g, acts: !!d.acts })
+    // quem entrou por ?sala= manda o palpite para o telão (o telão em apresentação não vota)
+    const code = roomCode(location.search)
+    if (code && !useSim.getState().presentation) castRoom(currentRoom(code), g ? 'cut' : 'nocut').catch(() => {})
     useSim.getState().set({ playing: true })
   }
 

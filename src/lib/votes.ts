@@ -20,7 +20,7 @@ const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_efN
 export const EMPTY: Tally = { pro: 0, con: 0, depends: 0 }
 
 let client: Promise<SupabaseClient> | null = null
-const db = () => (client ??= import('@supabase/supabase-js').then(({ createClient }) => createClient(URL, KEY, { auth: { persistSession: false } })))
+export const db = () => (client ??= import('@supabase/supabase-js').then(({ createClient }) => createClient(URL, KEY, { auth: { persistSession: false } })))
 
 /** Identificador anônimo e estável deste navegador (não identifica a pessoa). */
 export function voterId() {
