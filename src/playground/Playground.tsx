@@ -1,3 +1,4 @@
+import Predict from './Predict'
 import { Component, Suspense, lazy, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { DELIVERY, type CasType, type Delivery, type NucleaseId, type Repair } from '../lib/dna'
@@ -747,6 +748,8 @@ export default function Playground() {
         ) : (
           <Fallback reason={lost ? 'lost' : 'nogl'} />
         )}
+
+        <Predict />
 
         {/* indicador de etapas */}
         <ol
