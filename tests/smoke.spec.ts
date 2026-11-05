@@ -341,3 +341,24 @@ test('sala ao vivo: o telão mostra o QR e a contagem da plateia', async ({ page
   await expect(room).toContainText('Vai cortar: 3')
   await expect(room).toContainText('Não vai: 1')
 })
+
+test('quiz: "Refazer só os erros" mantém os acertos e reabre os errados', async ({ page }) => {
+  await page.goto('/?lang=pt#quiz')
+  const quiz = page.locator('#quiz')
+  const qs = quiz.locator('fieldset')
+  const n = await qs.count()
+  // sempre a última alternativa: o quiz não pode ser todo "última alternativa"
+  for (let i = 0; i < n; i++) await qs.nth(i).getByRole('button').last().click()
+  const retry = quiz.getByRole('button', { name: 'Refazer só os erros' })
+  await expect(retry).toBeVisible()
+  const hits = await quiz.getByText('Correto.').count()
+  await retry.click()
+  await expect(retry).toBeHidden()
+  await expect(quiz.getByText('Correto.')).toHaveCount(hits)
+})
+
+test('voltar ao site oferece continuar da última seção', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('protospace:last', 'faq'))
+  await page.goto('/?lang=pt')
+  await expect(page.getByRole('link', { name: /Continuar de onde parou: FAQ/ })).toBeVisible()
+})
