@@ -263,6 +263,17 @@ export default function Nav() {
         ref={menu}
         className={`fixed inset-x-0 bottom-0 top-14 overflow-y-auto bg-ink/97 px-6 pb-10 pt-6 backdrop-blur-xl transition duration-300 lg:hidden ${open ? 'visible opacity-100' : 'invisible -translate-y-2 opacity-0'}`}
       >
+        <div className="mb-6">
+          <p className="hud-label">
+            {t('Progresso', 'Progress')}: {IDS.filter((id) => visited.has(id)).length}/{IDS.length} {t('seções', 'sections')}
+          </p>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
+            <div
+              className="h-full rounded-full bg-linear-to-r from-dna to-bio transition-all duration-500"
+              style={{ width: `${(IDS.filter((id) => visited.has(id)).length / IDS.length) * 100}%` }}
+            />
+          </div>
+        </div>
         {GROUPS.map((g) => (
           <div key={g.label.pt} className="mb-6">
             <p className="hud-label">{t.pick(g.label)}</p>
