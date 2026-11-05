@@ -12,16 +12,23 @@ export default function Search() {
   const [q, setQ] = useState('')
 
   useEffect(() => {
+    const open = () => {
+      setQ('')
+      ref.current?.showModal()
+    }
     const onKey = (e: KeyboardEvent) => {
       const typing = (e.target as Element).closest?.('input, textarea, [contenteditable]')
       if ((e.key === 'k' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !typing)) {
         e.preventDefault()
-        setQ('')
-        ref.current?.showModal()
+        open()
       }
     }
     addEventListener('keydown', onKey)
-    return () => removeEventListener('keydown', onKey)
+    addEventListener('open-search', open)
+    return () => {
+      removeEventListener('keydown', onKey)
+      removeEventListener('open-search', open)
+    }
   }, [])
 
   const hits = useMemo<Hit[]>(() => {
