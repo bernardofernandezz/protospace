@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
 import { QUIZ } from '../content/quiz'
 import { useT } from '../i18n'
+import { readJSON, writeJSON } from '../lib/storage'
+import { track } from '../lib/track'
+
+const BEST_KEY = 'protospace:quiz-best'
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
 
@@ -12,6 +16,18 @@ export default function Quiz() {
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const answered = Object.keys(answers).length
   const score = qs.filter((q) => answers[q.id] === q.correct).length
+  const [best, setBest] = useState(() => readJSON<number>(BEST_KEY, 0))
+
+  // ao responder a última pergunta: registra o evento e guarda o melhor placar deste navegador
+  useEffect(() => {
+    if (answered !== qs.length) return
+    track('quiz_done', { score, total: qs.length })
+    if (score > best) {
+      setBest(score)
+      writeJSON(BEST_KEY, score)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `best` só é lido, não deve reexecutar
+  }, [answered])
 
   return (
     <section id="quiz" className="section">
@@ -106,6 +122,11 @@ export default function Quiz() {
               {t('Acertos', 'Score')}: <span className="text-gradient font-semibold">{score}</span> {t('de', 'of')} {answered}{' '}
               {t(answered === 1 ? 'respondida' : 'respondidas', 'answered')}
             </>
+          )}
+          {best > 0 && (
+            <span className="ml-3 font-mono text-xs text-mist">
+              {t('melhor', 'best')}: {best}/{qs.length}
+            </span>
           )}
         </p>
         <div className="flex items-center gap-4">

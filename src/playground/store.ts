@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
 import { useMemo } from 'react'
+import { track } from '../lib/track'
 import {
   BASE_EDITORS,
   CAS,
@@ -247,6 +248,7 @@ export const useSim = create<SimState>((set, get) => ({
   reset: () => set({ step: 0, progress: 0, playing: false, cinema: false, camTick: get().camTick + 1, seed: get().seed + 1 }),
   setExplore: (on) => {
     const s = get()
+    if (on) track('explore_open')
     set({ explore: on, cinema: false, zone: null, flyTo: null, camTick: s.camTick + 1 })
     // a etapa de entrega é outra escala (a célula inteira): no mundo aberto começamos no locus
     if (on && s.step === 1) s.goto(0)
