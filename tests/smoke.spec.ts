@@ -365,3 +365,35 @@ test('voltar ao site oferece continuar da última seção', async ({ page }) => 
   await page.goto('/?lang=pt')
   await expect(page.getByRole('link', { name: /Continuar de onde parou: FAQ/ })).toBeVisible()
 })
+
+test('tour de 5 minutos percorre as paradas e conclui', async ({ page }) => {
+  await page.goto('/?lang=pt')
+  await page.getByRole('button', { name: 'Tour de 5 minutos' }).click()
+  const pill = page.getByRole('status').filter({ hasText: /Tour \d\/4/ })
+  await expect(pill).toContainText('Tour 1/4')
+  for (let n = 2; n <= 4; n++) {
+    await pill.getByRole('button', { name: /Próxima parada/ }).click()
+    await expect(page.getByRole('status').filter({ hasText: `Tour ${n}/4` })).toBeVisible()
+  }
+  await page.getByRole('button', { name: 'Concluir' }).click()
+  await expect(page.getByText('Tour 4/4')).toBeHidden()
+})
+
+test('quiz oferece compartilhar o resultado ao terminar', async ({ page }) => {
+  await page.goto('/?lang=pt#quiz')
+  const quiz = page.locator('#quiz')
+  const qs = quiz.locator('fieldset')
+  for (let i = 0; i < (await qs.count()); i++) await qs.nth(i).getByRole('button').first().click()
+  await expect(quiz.getByRole('button', { name: 'Compartilhar resultado' })).toBeVisible()
+})
+
+test('modo apresentação mostra o cronômetro', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'o cronômetro aparece só a partir de md')
+  await page.goto('/?lang=pt#playground')
+  await page.getByRole('list', { name: 'Etapas do experimento' }).waitFor()
+  await page
+    .getByRole('button', { name: /Modo apresentação|Apresentação/ })
+    .first()
+    .click()
+  await expect(page.getByRole('timer')).toContainText(/^\d\d:\d\d$/)
+})

@@ -16,6 +16,7 @@ export default function Quiz() {
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const answered = Object.keys(answers).length
   const score = qs.filter((q) => answers[q.id] === q.correct).length
+  const [shared, setShared] = useState(false)
   const [best, setBest] = useState(() => readJSON<number>(BEST_KEY, 0))
 
   // ao responder a última pergunta: registra o evento e guarda o melhor placar deste navegador
@@ -136,6 +137,27 @@ export default function Quiz() {
               style={{ width: `${(score / qs.length) * 100}%` }}
             />
           </div>
+          {answered === qs.length && (
+            <button
+              type="button"
+              onClick={() => {
+                const text = t(
+                  `Acertei ${score} de ${qs.length} no quiz de CRISPR do Protospace.`,
+                  `I got ${score} of ${qs.length} on the Protospace CRISPR quiz.`,
+                )
+                const url = `${location.origin}${location.pathname}#quiz`
+                const done = () => {
+                  setShared(true)
+                  setTimeout(() => setShared(false), 1800)
+                }
+                if (navigator.share) void navigator.share({ text, url }).catch(() => {})
+                else void navigator.clipboard?.writeText(`${text} ${url}`).then(done, () => {})
+              }}
+              className="rounded-full bg-white/10 px-5 py-2 text-sm transition hover:bg-white/20"
+            >
+              {shared ? t('Copiado ✓', 'Copied ✓') : t('Compartilhar resultado', 'Share result')}
+            </button>
+          )}
           {answered === qs.length && score < qs.length && (
             <button
               type="button"
