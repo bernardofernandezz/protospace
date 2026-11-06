@@ -12,6 +12,7 @@ import {
   NEXT_BASE,
   NUCLEASE,
   clean,
+  parseLocus,
   diffSegments,
   findCandidates,
   inPam,
@@ -350,13 +351,20 @@ function GuideFinder() {
           type="button"
           className="mt-1 rounded-lg bg-white/10 px-3 py-1 hover:bg-white/20"
           onClick={() => {
-            const l = clean(draft).slice(0, MAX_LOCUS)
-            setDraft(l)
-            s.setLocus(l)
+            const { seq, truncated } = parseLocus(draft)
+            setDraft(seq)
+            s.setLocus(seq)
+            setMsg(truncated ? t(`Sequência cortada em ${MAX_LOCUS} nt.`, `Sequence trimmed to ${MAX_LOCUS} nt.`) : '')
           }}
         >
           {t('Aplicar', 'Apply')} ({t('máx.', 'max.')} {MAX_LOCUS} nt)
         </button>
+        <p className="mt-1 text-[11px] text-mist/70">
+          {t(
+            'Aceita FASTA. Uso educacional: não projeta guias para experimentos reais.',
+            'FASTA accepted. Educational use: it does not design guides for real experiments.',
+          )}
+        </p>
       </details>
     </>
   )
