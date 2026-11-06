@@ -419,3 +419,9 @@ test('modo apresentação mostra o roteiro da etapa e acompanha a navegação', 
   await expect(notes).toContainText('etapa 4')
   await expect(notes).toContainText('região seed')
 })
+
+test('menu do desktop mostra a contagem de seções visitadas', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'a contagem do menu superior aparece só a partir de lg')
+  await page.goto('/?lang=pt')
+  await expect(page.getByLabel(/Progresso: \d+ de \d+ seções/)).toBeVisible()
+})

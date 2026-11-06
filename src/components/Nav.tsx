@@ -227,6 +227,13 @@ export default function Nav() {
           </ul>
 
           <div className="flex items-center gap-2">
+            <span
+              className="hidden font-mono text-xs text-mist lg:inline"
+              title={t('Seções visitadas', 'Sections visited')}
+              aria-label={`${t('Progresso', 'Progress')}: ${IDS.filter((id) => visited.has(id)).length} ${t('de', 'of')} ${IDS.length} ${t('seções', 'sections')}`}
+            >
+              {IDS.filter((id) => visited.has(id)).length}/{IDS.length}
+            </span>
             <LangToggle />
             <button type="button" className="hud-btn" onClick={() => dispatchEvent(new Event('open-search'))} aria-label={t('Buscar (/)', 'Search (/)')}>
               <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
