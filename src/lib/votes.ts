@@ -3,6 +3,7 @@
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import type { Stance } from '../content/ethics'
 import { readText, writeText } from './storage'
+import { track } from './track'
 
 export type Tally = Record<Stance, number>
 export type Tallies = Record<string, Tally>
@@ -50,6 +51,7 @@ export async function fetchTallies(): Promise<Tallies> {
 export async function castVote(dilemma: string, stance: Stance): Promise<Tally> {
   const { data, error } = await (await db()).rpc('cast_vote', { p_dilemma: dilemma, p_voter: voterId(), p_stance: stance })
   if (error) throw error
+  track('vote', { dilemma, stance })
   return fold(data as Row[])[dilemma] ?? EMPTY
 }
 

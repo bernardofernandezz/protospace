@@ -1,48 +1,36 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLang, useT, type L } from '../i18n'
+import { useLang, useT } from '../i18n'
+import { GROUPS } from '../content/nav'
 import { SITE } from '../content/site'
+import { readJSON, writeJSON } from '../lib/storage'
 
-type Item = [id: string, label: L]
-const GROUPS: { label: L; items: Item[] }[] = [
-  {
-    label: { pt: 'Ciência', en: 'Science' },
-    items: [
-      ['o-que-e', { pt: 'O que é', en: 'What it is' }],
-      ['como-funciona', { pt: 'Como funciona', en: 'How it works' }],
-      ['evolucao', { pt: 'Evolução', en: 'Evolution' }],
-    ],
-  },
-  {
-    label: { pt: 'Playground 3D', en: '3D Playground' },
-    items: [
-      ['playground', { pt: 'Playground', en: 'Playground' }],
-      ['caminhos', { pt: 'Quatro caminhos', en: 'Four paths' }],
-    ],
-  },
-  {
-    label: { pt: 'Prática', en: 'Practice' },
-    items: [
-      ['boas-praticas', { pt: 'Boas práticas', en: 'Best practices' }],
-      ['aplicacoes', { pt: 'Aplicações', en: 'Applications' }],
-    ],
-  },
-  {
-    label: { pt: 'Sociedade', en: 'Society' },
-    items: [
-      ['bioetica', { pt: 'Bioética', en: 'Bioethics' }],
-      ['quiz', { pt: 'Quiz', en: 'Quiz' }],
-    ],
-  },
-  {
-    label: { pt: 'Recursos', en: 'Resources' },
-    items: [
-      ['faq', { pt: 'FAQ', en: 'FAQ' }],
-      ['referencias', { pt: 'Referências', en: 'References' }],
-      ['sobre', { pt: 'Sobre o projeto', en: 'About' }],
-    ],
-  },
-]
+const VISITED_KEY = 'protospace:visited'
+
 const IDS = ['inicio', ...GROUPS.flatMap((g) => g.items.map(([id]) => id))]
+
+/** Seções que o visitante já alcançou, guardadas neste navegador. */
+function useVisited(active: string) {
+  const [visited, setVisited] = useState(() => new Set(readJSON<string[]>(VISITED_KEY, [])))
+  useEffect(() => {
+    if (visited.has(active)) return
+    const next = new Set(visited).add(active)
+    setVisited(next)
+    writeJSON(VISITED_KEY, [...next])
+  }, [active, visited])
+  return visited
+}
+
+function Seen({ on }: { on: boolean }) {
+  const t = useT()
+  return on ? (
+    <>
+      <span aria-hidden="true" className="ml-2 text-bio">
+        ✓
+      </span>
+      <span className="sr-only">{t('visitada', 'visited')}</span>
+    </>
+  ) : null
+}
 
 const GitHub = () => (
   <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-current" aria-hidden="true">
@@ -73,6 +61,7 @@ function LangToggle() {
 export default function Nav() {
   const t = useT()
   const [active, setActive] = useState('inicio')
+  const visited = useVisited(active)
   const [open, setOpen] = useState(false)
   const [drop, setDrop] = useState<number | null>(null)
   const burger = useRef<HTMLButtonElement>(null)
@@ -197,6 +186,7 @@ export default function Nav() {
                           className={`block rounded-xl px-3 py-2 text-sm transition ${active === id ? 'bg-white/10 text-white' : 'text-mist hover:bg-white/5 hover:text-white'}`}
                         >
                           {t.pick(label)}
+                          <Seen on={visited.has(id) && active !== id} />
                         </a>
                       </li>
                     ))}
@@ -249,6 +239,7 @@ export default function Nav() {
                     className={`block border-b border-white/5 py-3 font-display text-2xl transition ${active === id ? 'text-dna' : 'text-white/90'}`}
                   >
                     {t.pick(label)}
+                    <Seen on={visited.has(id) && active !== id} />
                   </a>
                 </li>
               ))}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
 import { Rich } from '../components/Term'
 import { FAQ, FAQ_HEADER } from '../content/faq'
@@ -11,6 +11,19 @@ export default function Faq() {
   const [group, setGroup] = useState(0)
   const [open, setOpen] = useState<string | null>(faq[0].items[0].id)
   const g = faq[group]
+
+  // a busca (Search.tsx) pede para abrir uma pergunta específica
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail
+      const gi = faq.findIndex((x) => x.items.some((i) => i.id === id))
+      if (gi < 0) return
+      setGroup(gi)
+      setOpen(id)
+    }
+    addEventListener('faq-open', onOpen)
+    return () => removeEventListener('faq-open', onOpen)
+  }, [faq])
 
   return (
     <section id="faq" className="section">

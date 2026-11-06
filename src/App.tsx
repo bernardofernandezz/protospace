@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import Nav from './components/Nav'
 import Cursor from './components/Cursor'
+import Search from './components/Search'
 import SectionHeader from './components/SectionHeader'
 import Hero from './sections/Hero'
 import Intro from './sections/Intro'
@@ -222,6 +223,7 @@ export default function App() {
       </a>
       <Cursor />
       <Nav />
+      <Search />
       <main>
         <Hero />
         <Intro />
