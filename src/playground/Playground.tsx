@@ -1,4 +1,6 @@
 import Predict from './Predict'
+import RoomTally from './Room'
+import { useRoomCode } from './roomState'
 import { Component, Suspense, lazy, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { DELIVERY, type CasType, type Delivery, type NucleaseId, type Repair } from '../lib/dna'
@@ -6,7 +8,7 @@ import { hasWebGL, useInView } from '../lib/hooks'
 import { report } from '../lib/monitor'
 import { writeJSON, writeText } from '../lib/storage'
 import { useT, type T } from '../i18n'
-import { MISSIONS_KEY, SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, experimentUrl, useDerived, useSim } from './store'
+import { MISSIONS_KEY, SEEN_KEY, SOUND_KEY, STEPS, STEP_COUNT, experimentUrl, useDerived, useParams, useSim } from './store'
 import { EXHIBIT, EXHIBITS, REGIONS, type Region } from '../content/exhibits'
 import { BASES, MISSIONS, accomplished, currentMission } from '../content/missions'
 import { input, requestCapture } from './scene/shared'
@@ -526,16 +528,21 @@ class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode
 }
 
 /** QR code do site (modo apresentação): a plateia abre no celular. Renderizado como imagem (sem injeção de HTML). */
-function Qr() {
+function Qr({ code }: { code: string }) {
   const t = useT()
   const [src, setSrc] = useState('')
+  const params = useParams() // o QR acompanha o experimento do telão
   useEffect(() => {
-    const url = new URL(t.lang === 'en' ? '/en/' : '/', location.origin)
+    // o aluno abre o mesmo experimento e entra na sala (?sala=)
+    const url = new URL(experimentUrl())
+    url.pathname = t.lang === 'en' ? '/en/' : '/'
+    url.hash = 'playground'
+    url.searchParams.set('sala', code)
     import('qrcode')
       .then((q) => q.toDataURL(url.toString(), { margin: 1, width: 240, color: { dark: '#04060bff', light: '#ffffffff' } }))
       .then(setSrc)
       .catch(() => setSrc(''))
-  }, [t.lang])
+  }, [t.lang, code, params])
   if (!src) return null
   return (
     <div className="absolute right-4 top-24 hidden w-28 rounded-xl bg-white p-1.5 text-center shadow-2xl md:block">
@@ -582,6 +589,7 @@ export default function Playground() {
   )
   const d = useDerived()
   const acts = !!d.acts
+  const roomCodeValue = useRoomCode()
   const steps = t.pick(STEPS)
 
   const toggleSound = () => {
@@ -941,7 +949,8 @@ export default function Playground() {
             {t('tela cheia', 'fullscreen')} · P {t('sair', 'exit')}
           </p>
         )}
-        {big && !sim.explore && <Qr />}
+        {big && !sim.explore && <Qr code={roomCodeValue} />}
+        {big && !sim.explore && <RoomTally code={roomCodeValue} />}
       </div>
 
       <p className="mt-2 text-center text-xs text-mist/70 xl:hidden">
