@@ -276,9 +276,12 @@ test('cabeçalhos de segurança de produção estão presentes', async ({ reques
 
 test('busca abre com "/" e leva a uma pergunta do FAQ', async ({ page }) => {
   await page.goto('/')
-  await page.keyboard.press('/')
   const box = page.getByRole('dialog').getByRole('textbox')
-  await expect(box).toBeFocused()
+  // o atalho só existe depois da hidratação: no WebKit lento do CI o primeiro "/" pode vir cedo demais
+  await expect(async () => {
+    await page.keyboard.press('/')
+    await expect(box).toBeFocused({ timeout: 1000 })
+  }).toPass({ timeout: 20_000 })
   await box.fill('CRISPR')
   await page.getByRole('dialog').getByRole('button').first().click()
   await expect(page.getByRole('dialog')).toBeHidden()
