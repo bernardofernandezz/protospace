@@ -136,6 +136,15 @@ export default function Quiz() {
               style={{ width: `${(score / qs.length) * 100}%` }}
             />
           </div>
+          {answered === qs.length && score < qs.length && (
+            <button
+              type="button"
+              onClick={() => setAnswers((a) => Object.fromEntries(qs.filter((q) => a[q.id] === q.correct).map((q) => [q.id, q.correct])))}
+              className="rounded-full bg-dna/20 px-5 py-2 text-sm text-dna transition hover:bg-dna/30"
+            >
+              {t('Refazer só os erros', 'Retry only the misses')}
+            </button>
+          )}
           <button type="button" onClick={() => setAnswers({})} className="rounded-full bg-white/10 px-5 py-2 text-sm transition hover:bg-white/20">
             {t('Recomeçar', 'Restart')}
           </button>

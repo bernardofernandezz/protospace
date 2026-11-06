@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useLang, useT } from '../i18n'
 import { GROUPS } from '../content/nav'
 import { SITE } from '../content/site'
-import { readJSON, writeJSON } from '../lib/storage'
+import { readJSON, readText, writeJSON, writeText } from '../lib/storage'
 
 const VISITED_KEY = 'protospace:visited'
+const LAST_KEY = 'protospace:last'
 
 const IDS = ['inicio', ...GROUPS.flatMap((g) => g.items.map(([id]) => id))]
 
@@ -18,6 +19,35 @@ function useVisited(active: string) {
     writeJSON(VISITED_KEY, [...next])
   }, [active, visited])
   return visited
+}
+
+/** Quem volta ao site (sem âncora na URL) vê um atalho para a última seção que alcançou. */
+function Resume({ active }: { active: string }) {
+  const t = useT()
+  const [target] = useState(() => {
+    const last = readText(LAST_KEY)
+    return !location.hash && last && last !== 'inicio' && IDS.includes(last) ? last : null
+  })
+  const [shown, setShown] = useState(true)
+  useEffect(() => {
+    if (active !== 'inicio') writeText(LAST_KEY, active)
+  }, [active])
+  useEffect(() => {
+    const id = setTimeout(() => setShown(false), 12000)
+    return () => clearTimeout(id)
+  }, [])
+  const label = GROUPS.flatMap((g) => g.items).find(([id]) => id === target)?.[1]
+  if (!target || !label || !shown || active !== 'inicio') return null
+  return (
+    <div className="glass fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full px-4 py-2 text-sm">
+      <a href={`#${target}`} className="text-dna hover:underline">
+        {t('Continuar de onde parou', 'Continue where you left off')}: {t.pick(label)}
+      </a>
+      <button type="button" onClick={() => setShown(false)} aria-label={t('Fechar', 'Close')} className="text-mist hover:text-white">
+        ✕
+      </button>
+    </div>
+  )
 }
 
 function Seen({ on }: { on: boolean }) {
@@ -224,6 +254,7 @@ export default function Nav() {
           </div>
         </nav>
       </div>
+      <Resume active={active} />
       <div ref={bar} className="h-[2px] origin-left bg-linear-to-r from-dna via-bio to-cas" style={{ transform: 'scaleX(0)' }} aria-hidden="true" />
 
       {/* drawer mobile */}
