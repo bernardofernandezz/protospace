@@ -397,3 +397,10 @@ test('modo apresentação mostra o cronômetro', async ({ page, isMobile }) => {
     .click()
   await expect(page.getByRole('timer')).toContainText(/^\d\d:\d\d$/)
 })
+
+test('menu mobile mostra o progresso de seções visitadas', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'a gaveta do menu só existe no mobile')
+  await page.goto('/?lang=pt')
+  await page.getByRole('button', { name: 'Menu' }).click()
+  await expect(page.getByText(/Progresso: \d+\/\d+ seções/)).toBeVisible()
+})
