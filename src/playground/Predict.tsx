@@ -37,10 +37,18 @@ export default function Predict() {
       >
         <p className="font-display text-lg">{t('Antes de ver: a Cas vai cortar o alvo?', 'Before you look: will Cas cut the target?')}</p>
         <div className="mt-4 flex justify-center gap-3">
-          <button type="button" className="rounded-full bg-bio/20 px-5 py-2 text-sm ring-1 ring-bio/60 hover:bg-bio/30" onClick={() => answer(true)}>
+          <button
+            type="button"
+            className="rounded-full bg-bio/20 px-5 py-2 text-sm ring-1 ring-bio/60 pointer-coarse:py-3 hover:bg-bio/30"
+            onClick={() => answer(true)}
+          >
             {t('Vai cortar', 'It will cut')}
           </button>
-          <button type="button" className="rounded-full bg-cas/20 px-5 py-2 text-sm ring-1 ring-cas/60 hover:bg-cas/30" onClick={() => answer(false)}>
+          <button
+            type="button"
+            className="rounded-full bg-cas/20 px-5 py-2 text-sm ring-1 ring-cas/60 pointer-coarse:py-3 hover:bg-cas/30"
+            onClick={() => answer(false)}
+          >
             {t('Não vai', 'It won’t')}
           </button>
         </div>
@@ -51,7 +59,7 @@ export default function Predict() {
   if (step === SEARCH_STEP) return null
   const right = guess === !!d.acts
   return (
-    <p role="status" className="glass absolute right-3 top-14 z-10 rounded-full px-4 py-1.5 text-xs md:right-5 md:top-16">
+    <p role="status" className="glass absolute right-3 top-24 z-10 rounded-full px-4 py-1.5 text-xs md:right-5 md:top-16">
       <b className={right ? 'text-bio' : 'text-cas'}>{right ? t('Você acertou', 'You got it right') : t('Dessa vez não', 'Not this time')}</b>{' '}
       <span className="text-mist">
         {t('· chance de corte', '· cut chance')} {Math.round(d.pOn * 100)}%
