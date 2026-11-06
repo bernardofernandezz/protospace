@@ -1,5 +1,6 @@
 import Predict from './Predict'
 import RoomTally from './Room'
+import Script from './Script'
 import Timer from './Timer'
 import { useRoomCode } from './roomState'
 import { Component, Suspense, lazy, useEffect, useRef, useState, type ReactNode } from 'react'
@@ -954,6 +955,7 @@ export default function Playground() {
         {big && !sim.explore && <RoomTally code={roomCodeValue} />}
         {big && <Timer />}
       </div>
+      {big && !sim.explore && <Script step={sim.step} />}
 
       <p className="mt-2 text-center text-xs text-mist/70 xl:hidden">
         {t(
