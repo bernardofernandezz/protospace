@@ -286,3 +286,13 @@ test('busca abre com "/" e leva a uma pergunta do FAQ', async ({ page }) => {
   await page.getByRole('dialog').getByRole('button').first().click()
   await expect(page.getByRole('dialog')).toBeHidden()
 })
+
+test('prever antes de ver: a busca pede um palpite e as etapas seguintes dizem se acertou', async ({ page }) => {
+  await page.goto('/?lang=pt#playground')
+  const steps = page.getByRole('list', { name: 'Etapas do experimento' }).getByRole('button')
+  await steps.nth(2).click()
+  await expect(page.getByRole('group', { name: 'Previsão' })).toBeVisible()
+  await page.getByRole('button', { name: 'Vai cortar' }).click()
+  await steps.nth(3).click()
+  await expect(page.getByRole('status').filter({ hasText: 'chance de corte' })).toBeVisible()
+})
