@@ -17,7 +17,7 @@ type Tool = {
   edits: string
 }
 
-const TOOLS: L<Tool[]> = {
+export const TOOLS: L<Tool[]> = {
   pt: [
     {
       k: 'cas9',

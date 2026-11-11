@@ -7,7 +7,7 @@ import { readJSON, writeJSON } from '../lib/storage'
 
 type Group = { k: string; title: string; color: string; items: [string, string][] }
 
-const GROUPS: L<Group[]> = {
+export const GROUPS: L<Group[]> = {
   pt: [
     {
       k: 'design',
