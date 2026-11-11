@@ -5,7 +5,7 @@ import { Rich } from '../components/Term'
 
 type App = { t: string; c: string; span?: string; b: string; tag: string }
 
-const APPS: L<App[]> = {
+export const APPS: L<App[]> = {
   pt: [
     {
       t: 'Terapia somática: doenças genéticas',

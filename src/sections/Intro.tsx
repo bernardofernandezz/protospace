@@ -6,7 +6,7 @@ import { Rich, Term } from '../components/Term'
 
 type Event = { year: string; title: string; body: string; accent?: boolean }
 
-const TIMELINE: L<Event[]> = {
+export const TIMELINE: L<Event[]> = {
   pt: [
     {
       year: '1987',
@@ -115,7 +115,7 @@ const TIMELINE: L<Event[]> = {
   ],
 }
 
-const STEPS: L<[string, string, string][]> = {
+export const STEPS: L<[string, string, string][]> = {
   pt: [
     ['1. Guardar', 'Depois de um ataque, a bactéria arquiva um pedaço do [[dna|DNA]] do vírus entre suas repetições. É a memória da infecção.', '#3ef0d0'],
     ['2. Copiar', 'Esse arquivo é transcrito em pequenos [[rna|RNAs]]. Cada um carrega a “foto” de um vírus e serve de guia.', '#ffb547'],

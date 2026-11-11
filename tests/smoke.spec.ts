@@ -379,6 +379,38 @@ test('tour de 5 minutos percorre as paradas e conclui', async ({ page }) => {
   await expect(page.getByText('Tour 4/4')).toBeHidden()
 })
 
+test('modo slide é um deck próprio: percorre todos os slides sem estourar a tela e sai com Esc', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'atalhos de teclado')
+  test.setTimeout(240_000) // 50 slides; os do playground rodam WebGL por software no CI
+  await page.goto('/?lang=pt')
+  // `lenis` entra quando a rolagem suave termina de carregar, a qualquer momento: não vem do deck
+  const htmlBefore = await page.evaluate(() => document.documentElement.className.replace(/\s*\blenis\b/, ''))
+  await page.getByRole('button', { name: 'Modo slide' }).click()
+  const deck = page.locator('[data-deck]')
+  await expect(deck).toBeVisible()
+  await expect(deck.locator('canvas')).toHaveCount(1) // o genoma 3D do slide de título
+  const bar = deck.getByRole('status')
+  let m: RegExpMatchArray | null = null
+  for (let guard = 0; guard < 120; guard++) {
+    m = (await bar.innerText()).match(/(\d+)\/(\d+)/)
+    // cada slide cabe nos 1080px do palco e há no máximo um canvas WebGL por vez
+    const over = await deck.evaluate((d) => {
+      const f = d.querySelector('[data-frame]')
+      return f ? f.scrollHeight - f.clientHeight : 0
+    })
+    expect(over).toBeLessThanOrEqual(0)
+    expect(await deck.locator('canvas').count()).toBeLessThanOrEqual(1)
+    if (m![1] === m![2]) break
+    await page.keyboard.press('ArrowRight')
+    await page.waitForTimeout(150)
+  }
+  expect(m![1]).toBe(m![2])
+  await page.keyboard.press('Escape')
+  await expect(deck).toBeHidden()
+  // o deck não mexe no site: nada de classes ou estilos globais deixados para trás
+  expect(await page.evaluate(() => document.documentElement.className.replace(/\s*\blenis\b/, ''))).toBe(htmlBefore)
+})
+
 test('quiz oferece compartilhar o resultado ao terminar', async ({ page }) => {
   await page.goto('/?lang=pt#quiz')
   const quiz = page.locator('#quiz')
