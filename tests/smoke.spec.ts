@@ -379,6 +379,19 @@ test('tour de 5 minutos percorre as paradas e conclui', async ({ page }) => {
   await expect(page.getByText('Tour 4/4')).toBeHidden()
 })
 
+test('modo slide avança pelas seções com o teclado e sai com Esc', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'atalhos de teclado')
+  await page.goto('/?lang=pt')
+  await page.getByRole('button', { name: 'Modo slide' }).click()
+  const bar = page.getByRole('status').filter({ hasText: /\d+\/\d+/ })
+  await expect(bar).toContainText('Início')
+  await expect(page.locator('html.slides')).toHaveCount(1)
+  await page.keyboard.press('ArrowRight')
+  await expect(bar).not.toContainText('Início')
+  await page.keyboard.press('Escape')
+  await expect(page.locator('html.slides')).toHaveCount(0)
+})
+
 test('quiz oferece compartilhar o resultado ao terminar', async ({ page }) => {
   await page.goto('/?lang=pt#quiz')
   const quiz = page.locator('#quiz')
