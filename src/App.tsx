@@ -4,6 +4,7 @@ import { SpeedInsights } from '@vercel/speed-insights/react'
 import Nav from './components/Nav'
 import Cursor from './components/Cursor'
 import Search from './components/Search'
+import Slides from './components/Slides'
 import Tour from './components/Tour'
 import SectionHeader from './components/SectionHeader'
 import Hero from './sections/Hero'
@@ -226,6 +227,7 @@ export default function App() {
       <Nav />
       <Search />
       <Tour />
+      <Slides />
       <main>
         <Hero />
         <Intro />
