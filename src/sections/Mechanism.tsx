@@ -5,7 +5,7 @@ import MechanismDiagram from './MechanismDiagram'
 import { useT, type L } from '../i18n'
 import { Rich } from '../components/Term'
 
-const STEPS: L<{ k: string; t: string; b: string }[]> = {
+export const STEPS: L<{ k: string; t: string; b: string }[]> = {
   pt: [
     {
       k: 'sgRNA',
