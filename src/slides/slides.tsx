@@ -410,9 +410,10 @@ export function buildSlides(t: T): Slide[] {
         <p className="font-mono text-[24px] uppercase tracking-[0.3em] text-dna">{t('Obrigado', 'Thank you')}</p>
         <h2 className="mt-6 font-display text-[120px] font-semibold leading-none tracking-tight">{SITE.name}</h2>
         <P size={36} className="mt-8">
-          {t(`${REFERENCES.length} referências e o playground completo no site:`, `${REFERENCES.length} references and the full playground on the site:`)}
+          {t(`${REFERENCES.length} referências e o playground completo no site`, `${REFERENCES.length} references and the full playground on the site`)}
         </P>
-        <p className="mt-4 font-mono text-[40px] text-dna">{SITE.url?.replace(/^https?:\/\//, '')}</p>
+        {/* fora da Vercel o build cai em localhost (vite.config.ts): não faz sentido projetar isso */}
+        {!/localhost|127\.0\.0\.1/.test(SITE.url) && <p className="mt-4 font-mono text-[40px] text-dna">{SITE.url.replace(/^https?:\/\//, '')}</p>}
         <p className="mt-12 text-[28px] text-white">
           {SITE.author.name} <span className="text-mist">· {SITE.repo.replace('https://', '')}</span>
         </p>

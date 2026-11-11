@@ -88,6 +88,7 @@ export default function Deck({ onExit }: { onExit: () => void }) {
       aria-label={t('Modo slide', 'Slide mode')}
       className="fixed inset-0 z-[80] overflow-hidden bg-ink text-white"
       data-deck
+      data-idle={idle || undefined}
     >
       {slide.bg === 'helix' && wide && (
         <>

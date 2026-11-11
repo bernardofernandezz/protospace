@@ -383,7 +383,8 @@ test('modo slide é um deck próprio: percorre todos os slides sem estourar a te
   test.skip(isMobile, 'atalhos de teclado')
   test.setTimeout(240_000) // 50 slides; os do playground rodam WebGL por software no CI
   await page.goto('/?lang=pt')
-  const htmlBefore = await page.evaluate(() => document.documentElement.className)
+  // `lenis` entra quando a rolagem suave termina de carregar, a qualquer momento: não vem do deck
+  const htmlBefore = await page.evaluate(() => document.documentElement.className.replace(/\s*\blenis\b/, ''))
   await page.getByRole('button', { name: 'Modo slide' }).click()
   const deck = page.locator('[data-deck]')
   await expect(deck).toBeVisible()
@@ -407,7 +408,7 @@ test('modo slide é um deck próprio: percorre todos os slides sem estourar a te
   await page.keyboard.press('Escape')
   await expect(deck).toBeHidden()
   // o deck não mexe no site: nada de classes ou estilos globais deixados para trás
-  expect(await page.evaluate(() => document.documentElement.className)).toBe(htmlBefore)
+  expect(await page.evaluate(() => document.documentElement.className.replace(/\s*\blenis\b/, ''))).toBe(htmlBefore)
 })
 
 test('quiz oferece compartilhar o resultado ao terminar', async ({ page }) => {

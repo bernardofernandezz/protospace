@@ -90,6 +90,8 @@
 
 @media (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .has-cursor, .has-cursor * { cursor: none !important; }
+/* modo slide parado: o cursor some, como num programa de apresentação */
+html:has([data-deck][data-idle]) [data-cursor] { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -34,7 +34,7 @@ export default function Cursor() {
     }
   }, [])
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed left-0 top-0 z-[90] hidden [@media(pointer:fine)]:block motion-reduce:hidden!">
+    <div aria-hidden="true" data-cursor className="pointer-events-none fixed left-0 top-0 z-[90] hidden [@media(pointer:fine)]:block motion-reduce:hidden!">
       <div ref={dot} className="absolute -left-1 -top-1 h-2 w-2 rounded-full bg-dna mix-blend-screen" />
       <div ref={ring} className="absolute -left-5 -top-5 h-10 w-10 rounded-full border border-dna/60 transition-[scale] duration-200" />
     </div>

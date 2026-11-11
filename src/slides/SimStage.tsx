@@ -48,8 +48,9 @@ export default function SimStage({ step }: { step: number }) {
   }, [step])
 
   if (!hasWebGL() || lost) return <div className="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_40%,#12203a,#04070f)]" />
+  // isolate: os rótulos 3D (Html do drei, z-index próprio) ficam abaixo do texto do slide
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 isolate">
       <Suspense fallback={null}>
         <Scene active onLost={() => setLost(true)} />
       </Suspense>
