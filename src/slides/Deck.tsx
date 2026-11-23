@@ -17,6 +17,7 @@ export default function Deck({ onExit }: { onExit: () => void }) {
   const slides = useMemo(() => buildSlides(t), [t])
   const [pos, setPos] = useState({ i: 0, step: 0 })
   const [idle, setIdle] = useState(false)
+  const [blank, setBlank] = useState(false)
   const [size, setSize] = useState({ w: innerWidth, h: innerHeight })
   const root = useRef<HTMLDivElement>(null)
   const slide = slides[Math.min(pos.i, slides.length - 1)]
@@ -42,6 +43,7 @@ export default function Deck({ onExit }: { onExit: () => void }) {
       else if (k === 'home') setPos({ i: 0, step: 0 })
       else if (k === 'end') setPos({ i: live.current.slides.length - 1, step: 0 })
       else if (k === 'escape') live.current.onExit()
+      else if (k === 'b') setBlank((v) => !v)
       else if (k === 'f') void (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())
       // as demais teclas também não chegam ao site (atalhos do playground, busca etc.)
       e.stopPropagation()
@@ -59,6 +61,18 @@ export default function Deck({ onExit }: { onExit: () => void }) {
     }
     const onResize = () => setSize({ w: innerWidth, h: innerHeight })
     const onFs = () => !document.fullscreenElement && live.current.onExit()
+    // mantém a tela acesa durante a fala; o navegador solta o lock ao trocar de aba, então pede de novo na volta
+    let lock: WakeLockSentinel | undefined
+    let gone = false
+    const wake = () => {
+      if (document.visibilityState !== 'visible') return
+      void navigator.wakeLock
+        ?.request('screen')
+        .then((l) => (gone ? void l.release() : (lock = l)))
+        .catch(() => {})
+    }
+    document.addEventListener('visibilitychange', wake)
+    wake()
     document.addEventListener('keydown', onKey, true)
     root.current?.addEventListener('wheel', onWheel, { passive: false })
     addEventListener('mousemove', onMove)
@@ -71,6 +85,9 @@ export default function Deck({ onExit }: { onExit: () => void }) {
       removeEventListener('mousemove', onMove)
       removeEventListener('resize', onResize)
       document.removeEventListener('fullscreenchange', onFs)
+      document.removeEventListener('visibilitychange', wake)
+      gone = true
+      void lock?.release()
       clearTimeout(timer)
       if (document.fullscreenElement) void document.exitFullscreen()
     }
@@ -136,6 +153,7 @@ export default function Deck({ onExit }: { onExit: () => void }) {
           ✕
         </button>
       </div>
+      {blank && <div className="absolute inset-0 z-20 bg-black" data-blank />}
     </div>
   )
 }

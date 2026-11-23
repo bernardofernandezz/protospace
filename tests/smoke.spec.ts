@@ -405,6 +405,11 @@ test('modo slide é um deck próprio: percorre todos os slides sem estourar a te
     await page.waitForTimeout(150)
   }
   expect(m![1]).toBe(m![2])
+  // B apaga a tela e volta
+  await page.keyboard.press('b')
+  await expect(deck.locator('[data-blank]')).toBeVisible()
+  await page.keyboard.press('b')
+  await expect(deck.locator('[data-blank]')).toHaveCount(0)
   await page.keyboard.press('Escape')
   await expect(deck).toBeHidden()
   // o deck não mexe no site: nada de classes ou estilos globais deixados para trás
